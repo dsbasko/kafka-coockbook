@@ -1,0 +1,11 @@
+go 1.26
+
+use ./internal
+
+// Workspace-level replace. Модуль google.golang.org/genproto исторически
+// содержал googleapis/rpc/status, потом этот пакет переехал в отдельный
+// модуль google.golang.org/genproto/googleapis/rpc. Старый монолит,
+// который тянет cockroachdb/errors (через pebble в лекции 07-02),
+// конфликтует с новым split'ом, который тянет google.golang.org/grpc.
+// Свежий genproto монолит rpc/status уже не содержит — конфликт уходит.
+replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20260427160629-7cedc36a6bc4

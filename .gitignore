@@ -3,3 +3,30 @@
 Thumbs.db
 
 !.gitignore
+
+# Kafka Connect plugins — устанавливаются через `make connect-install-plugins`,
+# распакованные jar'ы не коммитим (большие, ~150MB+).
+connect-plugins/*
+!connect-plugins/.gitkeep
+!connect-plugins/README.md
+
+# Скомпилированные бинарники лекций — запускаются через `go run` или `make run`.
+# Каждый bin лежит рядом с `cmd/<name>/main.go` либо в корне лекции.
+*/*/quorum-status
+*/*/inspect
+*/*/watch-isr
+*/*/load-and-watch
+*/*/producer
+*/*/consumer
+*/*/bench-acks
+*/*/forced-retry
+*/*/bench
+*/*/loud-member
+*/*/idempotent-pg
+*/*/format-bench
+*/*/event-time-vs-processing-time
+*/*/orders-producer
+*/*/load-generator
+*/*/topic-profiles
+*/*/courier
+*/*/mock-webhook
