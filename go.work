@@ -12,6 +12,11 @@ use (
 	./02-producer/02-03-idempotent-producer
 	./02-producer/02-04-batching-and-throughput
 	./02-producer/02-05-errors-retries-headers
+	./03-consumer/03-01-groups-and-rebalance
+	./03-consumer/03-02-offset-commits
+	./03-consumer/03-03-processing-guarantees
+	./03-consumer/03-04-error-handling
+	./03-consumer/03-05-concurrency-and-lag
 	./internal
 )
 
