@@ -1,0 +1,30 @@
+name: lecture-04-05
+
+# Поднимает mock-webhook — HTTP-приёмник на :8090, который имитирует
+# сломанный downstream через FAIL_RATE_503 / FAIL_RATE_TIMEOUT.
+#
+# Запуск: docker compose -f docker-compose.override.yml up -d
+#
+# Если докер не нужен — есть второй вариант: `make run-mock` запускает
+# тот же бинарник как обычный go-процесс. Для лекции docker удобнее тем,
+# что mock остаётся в фоне между перезапусками courier'а.
+services:
+  mock-webhook:
+    build:
+      context: ./cmd/mock-webhook
+      dockerfile: Dockerfile
+    image: lecture-04-05-mock-webhook
+    container_name: lecture-04-05-mock-webhook
+    hostname: lecture-04-05-mock-webhook
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      LISTEN_ADDR: ":8090"
+      FAIL_RATE_503: "${FAIL_RATE_503:-0}"
+      FAIL_RATE_TIMEOUT: "${FAIL_RATE_TIMEOUT:-0}"
+      LATENCY_MS: "${LATENCY_MS:-50}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

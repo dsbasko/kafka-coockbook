@@ -17,6 +17,11 @@ use (
 	./03-consumer/03-03-processing-guarantees
 	./03-consumer/03-04-error-handling
 	./03-consumer/03-05-concurrency-and-lag
+	./04-reliability/04-01-transactions-and-eos
+	./04-reliability/04-02-consume-process-produce
+	./04-reliability/04-03-outbox-pattern
+	./04-reliability/04-04-retry-and-dlq
+	./04-reliability/04-05-external-delivery
 	./internal
 )
 

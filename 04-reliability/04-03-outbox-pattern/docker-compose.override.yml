@@ -1,0 +1,23 @@
+name: lecture-04-03
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: lecture-04-03-postgres
+    hostname: lecture-04-03-postgres
+    ports:
+      - "127.0.0.1:15433:5432"
+    environment:
+      POSTGRES_DB: lecture_04_03
+      POSTGRES_USER: lecture
+      POSTGRES_PASSWORD: lecture
+    volumes:
+      - lecture-04-03-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lecture -d lecture_04_03"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  lecture-04-03-pgdata:
