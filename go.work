@@ -22,6 +22,10 @@ use (
 	./04-reliability/04-03-outbox-pattern
 	./04-reliability/04-04-retry-and-dlq
 	./04-reliability/04-05-external-delivery
+	./05-contracts/05-01-why-contracts-and-wire-formats
+	./05-contracts/05-02-protobuf-in-go
+	./05-contracts/05-03-schema-registry
+	./05-contracts/05-04-schema-evolution
 	./internal
 )
 

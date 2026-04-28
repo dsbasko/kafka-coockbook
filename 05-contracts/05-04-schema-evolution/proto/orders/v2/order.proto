@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package orders.v2;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/05-contracts/05-04-schema-evolution/gen/orders/v2;ordersv2";
+
+// Order v2 — добавлено поле currency (4). Это безопасное изменение для
+// Protobuf: новый номер поля, старые консьюмеры просто игнорируют байты
+// тэга 4 в payload'е, новые читают значение. SR с compat = BACKWARD
+// такое пропускает.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+}

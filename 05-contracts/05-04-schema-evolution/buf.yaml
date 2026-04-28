@@ -1,0 +1,11 @@
+version: v2
+modules:
+  - path: proto
+    excludes:
+      - proto/orders/v4_breaking
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

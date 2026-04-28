@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package orders.v3;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/05-contracts/05-04-schema-evolution/gen/orders/v3;ordersv3";
+
+// Address — вложенный тип, появляется в v3. Тоже совместимое расширение:
+// для старых клиентов поля 1..3 на верхнем Order остаются на тех же
+// номерах, а новый shipping_address (5) живёт в parallel-вселенной.
+message Address {
+  string country = 1;
+  string city = 2;
+  string street = 3;
+}
+
+// Order v3 — добавлены currency (4) из v2 и shipping_address (5) над
+// v1. Внутри одного proto-пакета это два совместимых шага. Старый
+// consumer-v1 продолжит читать сообщения, потому что Protobuf
+// forward-совместим на wire-уровне: тэги 4 и 5 уедут в unknown_fields,
+// а тэги 1..3 разберутся как раньше.
+//
+// Заметь: пакет тут другой (orders.v3), не orders.v1 — у нас отдельные
+// Go-типы, чтобы producer'ы и consumer-v1 были визуально разными
+// сборками. SR-совместимость демонстрируется в отдельном subject'е
+// `lecture-05-04-orders-v3-value`, в котором v3 уже сидит как версия 1,
+// а v4_breaking безуспешно пробует встать второй версией.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  Address shipping_address = 5;
+}

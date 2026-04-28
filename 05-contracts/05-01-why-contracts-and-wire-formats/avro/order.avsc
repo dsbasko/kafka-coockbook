@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "Order",
+  "namespace": "orders.v1",
+  "fields": [
+    { "name": "id",              "type": "string" },
+    { "name": "customer_id",     "type": "string" },
+    { "name": "amount_cents",    "type": "long"   },
+    { "name": "currency",        "type": "string" },
+    { "name": "created_at_unix", "type": "long"   },
+    {
+      "name": "items",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "OrderItem",
+          "fields": [
+            { "name": "sku",         "type": "string" },
+            { "name": "quantity",    "type": "int"    },
+            { "name": "price_cents", "type": "long"   }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+// ВНИМАНИЕ: пакет здесь специально совпадает с v3 — это сценарий «что
+// было бы, если бы кто-то попытался выкатить такую эволюцию v3 в
+// проде». Файл в основном buf-модуле исключён (см. buf.yaml), Go-код
+// для него не генерируется. Используется только для двух демонстраций:
+//
+//   - `make proto-breaking-check` — buf breaking сравнит этот образ с
+//     proto/orders/v3 и зарепортит несовместимость на уровне протокола;
+//   - `make try-register-v4` — отдаст эту схему в Schema Registry под
+//     subject'ом v3, SR применит правила совместимости и ответит 409
+//     Conflict.
+//
+// Что именно сломано:
+//
+//   - field 3 (amount_cents) поменял тип с int64 на string — это рушит
+//     wire-format (varint vs length-delimited);
+//   - field 4 (currency) поменял номер на 7 — старые сообщения с тэгом
+//     4 разъедутся, новые с тэгом 7 не прочтутся старым кодом.
+package orders.v3;
+
+// go_package специально совпадает с v3, чтобы `buf breaking` не выдал
+// шум на изменение Go-import'а — это не часть wire-контракта.
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/05-contracts/05-04-schema-evolution/gen/orders/v3;ordersv3";
+
+message Address {
+  string country = 1;
+  string city = 2;
+  string street = 3;
+}
+
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  string amount_cents = 3;
+  Address shipping_address = 5;
+  string currency = 7;
+}

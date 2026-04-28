@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package orders.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/05-contracts/05-02-protobuf-in-go/gen/orders/v1;ordersv1";
+
+// OrderStatus описывает жизненный цикл заказа.
+//
+// По конвенции proto3 первый элемент = 0 — это zero-value, который
+// получают сообщения, в которых поле не выставили явно. Он же служит
+// "unknown / not set" — добавлять пять, чтобы потом не путаться в
+// 0-as-default, не нужно.
+//
+// Reserved-секция ниже — место под удалённые когда-то значения. Это
+// не теоретическая защита: если в будущем кто-то решит переиспользовать
+// номер 5, парсер старых клиентов получит неожиданный enum и сломается
+// тихо. Reserved блокирует это на уровне линтера.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_CREATED = 1;
+  ORDER_STATUS_PAID = 2;
+  ORDER_STATUS_SHIPPED = 3;
+  ORDER_STATUS_DELIVERED = 4;
+  ORDER_STATUS_CANCELLED = 6;
+
+  reserved 5;
+  reserved "ORDER_STATUS_REFUNDED";
+}
+
+// OrderItem — позиция в заказе.
+//
+// snake_case в именах полей — это не личное предпочтение, а конвенция
+// Protobuf style guide. При генерации Go-кода поля автоматически
+// превращаются в CamelCase (sku → Sku, price_cents → PriceCents).
+message OrderItem {
+  string sku = 1;
+  int32 quantity = 2;
+  int64 price_cents = 3;
+}
+
+// Order — заказ целиком.
+//
+// Поля 1..6 — те же, что и в 05-01. Поля 7..9 — новое: статус
+// (enum), момент создания через well-known Timestamp, опциональное
+// время резерва склада через Duration. На этой схеме лекция показывает
+// well-known types и proto3 optional.
+//
+// Reserved 10 и customer_email — пример, как закрывают совместимость
+// при удалении поля. Если поле раньше использовалось, его номер
+// и имя резервируются навсегда.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  int64 created_at_unix = 5;
+  repeated OrderItem items = 6;
+
+  OrderStatus status = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Duration reservation_ttl = 9;
+
+  optional string note = 11;
+
+  reserved 10;
+  reserved "customer_email";
+}

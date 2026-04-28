@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package orders.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/05-contracts/05-03-schema-registry/gen/orders/v1;ordersv1";
+
+// OrderStatus описывает жизненный цикл заказа. Конвенции те же, что и в
+// 05-02: первый элемент = 0 — это "не выставлено", reserved блокирует
+// случайное переиспользование удалённых номеров.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_CREATED = 1;
+  ORDER_STATUS_PAID = 2;
+  ORDER_STATUS_SHIPPED = 3;
+  ORDER_STATUS_DELIVERED = 4;
+  ORDER_STATUS_CANCELLED = 5;
+}
+
+// OrderItem — позиция в заказе.
+message OrderItem {
+  string sku = 1;
+  int32 quantity = 2;
+  int64 price_cents = 3;
+}
+
+// Order — заказ целиком. По сравнению с 05-02 схема упрощена: тут важен
+// не зоопарк well-known types, а сам факт регистрации в Schema Registry
+// и wire-формат с magic byte + schema_id.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  repeated OrderItem items = 5;
+  OrderStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+}

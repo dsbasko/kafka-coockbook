@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/05-contracts/05-04-schema-evolution/gen/orders/v1;ordersv1";
+
+// Order v1 — стартовая версия. На ней начнёт жить subject в Schema
+// Registry. Дальше из v1 будет вырастать v2 и v3 — добавлением новых
+// полей. Старые поля никогда не двигаем по номерам и не меняем по типу
+// — это и есть дисциплина обратной совместимости в Protobuf.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+}

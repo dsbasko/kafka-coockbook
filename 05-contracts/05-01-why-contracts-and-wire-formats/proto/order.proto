@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/05-contracts/05-01-why-contracts-and-wire-formats/proto/orders/v1;orderspb";
+
+// Order — каноническая схема заказа для лекции 05-01.
+//
+// В этой лекции мы НЕ генерируем Go-код через protoc/buf. Файл лежит
+// тут как эталонный контракт: его читают люди и он же используется
+// как ТЗ для ручного wire-кодирования в cmd/format-bench/main.go
+// (через google.golang.org/protobuf/encoding/protowire).
+//
+// Полноценный buf-pipeline появится в лекции 05-02.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  int64 created_at_unix = 5;
+  repeated OrderItem items = 6;
+}
+
+message OrderItem {
+  string sku = 1;
+  int32 quantity = 2;
+  int64 price_cents = 3;
+}
