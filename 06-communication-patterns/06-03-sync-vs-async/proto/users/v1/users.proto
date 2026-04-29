@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package users.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/06-communication-patterns/06-03-sync-vs-async/gen/users/v1;usersv1";
+
+import "google/protobuf/timestamp.proto";
+
+// UserSignedUp — событие «пользователь зарегистрировался». Один и тот же
+// payload используется и для gRPC fan-out (sender знает список URL'ов
+// получателей и делает unary-call каждому), и для Kafka publish/subscribe
+// (sender пишет одно сообщение в топик user-events, подписчики сами
+// читают). Цель лекции — увидеть, как различается code path при одном
+// и том же бизнес-смысле.
+message UserSignedUp {
+  string user_id = 1;
+  string email = 2;
+  string country = 3;
+  google.protobuf.Timestamp signed_up_at = 4;
+}
+
+message NotifyRequest {
+  UserSignedUp event = 1;
+}
+
+message NotifyResponse {
+  // accepted — true если получатель успешно «обработал» событие.
+  // false с непустым reason — soft-rejection (например, пользователь
+  // в blacklist'е). Транспортные ошибки идут как gRPC error code,
+  // здесь не появляются.
+  bool accepted = 1;
+  string reason = 2;
+}
+
+// UserEventService — единственный unary RPC. Каждый получатель в
+// fan-out схеме реализует этот сервис; sender дёргает Notify по очереди
+// (или параллельно через goroutine'ы) для каждого URL из списка.
+service UserEventService {
+  rpc Notify(NotifyRequest) returns (NotifyResponse);
+}

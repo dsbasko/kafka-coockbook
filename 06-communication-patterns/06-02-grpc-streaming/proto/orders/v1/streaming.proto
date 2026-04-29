@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/06-communication-patterns/06-02-grpc-streaming/gen/orders/v1;ordersv1";
+
+import "google/protobuf/timestamp.proto";
+
+// OrderEvent — один тик в server-stream'е Subscribe. Сервер раз в секунду
+// эмитит событие про «новый заказ» (mock-данные), клиент сидит и слушает.
+// В реальной жизни такие server-stream'ы используют для дашбордов и live
+// price tickers; для durable-pub/sub берут Kafka.
+message OrderEvent {
+  string order_id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  google.protobuf.Timestamp emitted_at = 4;
+}
+
+message SubscribeRequest {
+  // customer_id — фильтр; пустая строка = подписка на всех.
+  string customer_id = 1;
+  // limit — мягкий лимит на число событий, после которых сервер закроет
+  // стрим. 0 значит «без лимита» (живёт пока клиент не отвалится).
+  int32 limit = 2;
+}
+
+// OrderInput — одна запись в client-stream'е UploadOrders. Клиент льёт
+// сколько хочет, сервер копит и в конце возвращает summary одной message.
+// Это типичный «batch upload» паттерн.
+message OrderInput {
+  string customer_id = 1;
+  int64 amount_cents = 2;
+  string currency = 3;
+}
+
+message UploadSummary {
+  int32 received = 1;
+  int32 accepted = 2;
+  int32 rejected = 3;
+  int64 total_cents = 4;
+}
+
+// ChatMessage — сообщение в bidi-стриме. Клиент шлёт, сервер шлёт обратно
+// (echo с throttling). Используется чтобы показать, что bidi — это два
+// независимых потока поверх одного HTTP/2 stream'а, не request-response.
+message ChatMessage {
+  string from = 1;
+  string text = 2;
+  google.protobuf.Timestamp sent_at = 3;
+}
+
+// StreamingService — три RPC, по одному на каждый тип стрима.
+// Unary тут нет — для них отдельная лекция (06-01).
+service StreamingService {
+  // Server-stream: один request → много response. Сервер тикает раз в
+  // секунду и шлёт OrderEvent, пока не закончится limit или клиент не
+  // закроет соединение.
+  rpc Subscribe(SubscribeRequest) returns (stream OrderEvent);
+
+  // Client-stream: много request → один response. Клиент льёт OrderInput,
+  // сервер копит, в конце (CloseSend на клиенте) возвращает UploadSummary.
+  rpc UploadOrders(stream OrderInput) returns (UploadSummary);
+
+  // Bidi: оба направления независимы. Клиент шлёт ChatMessage с любой
+  // частотой, сервер отвечает echo с задержкой (throttling), оба потока
+  // живут пока кто-то не закроет.
+  rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+}

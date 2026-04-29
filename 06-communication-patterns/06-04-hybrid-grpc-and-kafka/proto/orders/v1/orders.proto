@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/06-communication-patterns/06-04-hybrid-grpc-and-kafka/gen/orders/v1;ordersv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Order — сущность, которую мы пишем в orders на write-side и проецируем
+// в orders_view на read-side. Тот же id, тот же набор полей.
+// status в hybrid-сценарии меняют отдельные сервисы (inventory резервирует,
+// payments оплачивает) через свои события — write-side про это не знает.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  OrderStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_NEW = 1;
+  ORDER_STATUS_RESERVED = 2;
+  ORDER_STATUS_PAID = 3;
+  ORDER_STATUS_SHIPPED = 4;
+  ORDER_STATUS_CANCELLED = 5;
+}
+
+// CreateRequest принимается gRPC-сервером order-service.
+// trace_id и tenant_id — пример propagation сквозного контекста: мы кладём
+// их в outbox.payload, потом в headers Kafka-сообщения, потом consumer'ы
+// продолжают цепочку логов.
+message CreateRequest {
+  string customer_id = 1;
+  int64 amount_cents = 2;
+  string currency = 3;
+  string trace_id = 4;
+  string tenant_id = 5;
+}
+
+message CreateResponse {
+  Order order = 1;
+}
+
+// GetRequest идёт в order-query-service, который читает orders_view.
+// Сразу после Create этот Get может вернуть NotFound — между write-side
+// COMMIT и проекцией в read-side есть лаг.
+message GetRequest {
+  string id = 1;
+}
+
+message GetResponse {
+  Order order = 1;
+}
+
+// CommandService — write-side. Только Create.
+// Update/Delete намеренно нет: статус заказа меняют события, а не RPC.
+service CommandService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+}
+
+// QueryService — read-side. Только Get.
+// Это и есть CQRS на самом примитивном уровне: разные процессы, разные
+// API, разные схемы хранения, общая шина событий между ними.
+service QueryService {
+  rpc Get(GetRequest) returns (GetResponse);
+}

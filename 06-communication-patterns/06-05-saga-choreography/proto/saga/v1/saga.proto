@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+package saga.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/06-communication-patterns/06-05-saga-choreography/gen/saga/v1;sagav1";
+
+import "google/protobuf/timestamp.proto";
+
+// PlaceOrder — единственный вход в саге. В choreography публикуется в
+// saga-choreo.order.requested как OrderRequested. В orchestration публикуется
+// в saga-orch.place-order и подбирается оркестратором.
+message PlaceOrder {
+  string saga_id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+}
+
+// ===== Choreography events =====
+// Каждое событие живёт в собственном топике saga-choreo.<service>.<verb>.
+// Полем `cause_saga_id` сервисы продолжают одну и ту же сагу, не зная про
+// существование оркестратора.
+
+message OrderRequested {
+  string saga_id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  google.protobuf.Timestamp occurred_at = 5;
+}
+
+message PaymentCompleted {
+  string saga_id = 1;
+  string payment_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  google.protobuf.Timestamp occurred_at = 5;
+}
+
+message PaymentFailed {
+  string saga_id = 1;
+  string reason = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+}
+
+message PaymentRefunded {
+  string saga_id = 1;
+  string payment_id = 2;
+  string reason = 3;
+  google.protobuf.Timestamp occurred_at = 4;
+}
+
+message InventoryReserved {
+  string saga_id = 1;
+  string reservation_id = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+}
+
+message InventoryFailed {
+  string saga_id = 1;
+  string reason = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+}
+
+message InventoryReleased {
+  string saga_id = 1;
+  string reservation_id = 2;
+  string reason = 3;
+  google.protobuf.Timestamp occurred_at = 4;
+}
+
+message ShipmentScheduled {
+  string saga_id = 1;
+  string shipment_id = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+}
+
+message ShipmentFailed {
+  string saga_id = 1;
+  string reason = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+}
+
+// ===== Orchestration commands and replies =====
+// Каждый сервис в orchestration-режиме слушает saga-orch.<service>-cmd и
+// отвечает в saga-orch.<service>-reply. Оркестратор живёт в Postgres через
+// saga_state и решает куда слать следующий command.
+
+enum PaymentAction {
+  PAYMENT_ACTION_UNSPECIFIED = 0;
+  PAYMENT_ACTION_AUTHORIZE = 1;
+  PAYMENT_ACTION_REFUND = 2;
+}
+
+enum InventoryAction {
+  INVENTORY_ACTION_UNSPECIFIED = 0;
+  INVENTORY_ACTION_RESERVE = 1;
+  INVENTORY_ACTION_RELEASE = 2;
+}
+
+enum ShipmentAction {
+  SHIPMENT_ACTION_UNSPECIFIED = 0;
+  SHIPMENT_ACTION_SCHEDULE = 1;
+}
+
+message PaymentCommand {
+  string saga_id = 1;
+  PaymentAction action = 2;
+  string customer_id = 3;
+  int64 amount_cents = 4;
+  string currency = 5;
+}
+
+message PaymentReply {
+  string saga_id = 1;
+  PaymentAction action = 2;
+  bool ok = 3;
+  string payment_id = 4;
+  string reason = 5;
+}
+
+message InventoryCommand {
+  string saga_id = 1;
+  InventoryAction action = 2;
+  string customer_id = 3;
+  int64 amount_cents = 4;
+}
+
+message InventoryReply {
+  string saga_id = 1;
+  InventoryAction action = 2;
+  bool ok = 3;
+  string reservation_id = 4;
+  string reason = 5;
+}
+
+message ShipmentCommand {
+  string saga_id = 1;
+  ShipmentAction action = 2;
+  string customer_id = 3;
+}
+
+message ShipmentReply {
+  string saga_id = 1;
+  ShipmentAction action = 2;
+  bool ok = 3;
+  string shipment_id = 4;
+  string reason = 5;
+}

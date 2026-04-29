@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/06-communication-patterns/06-01-grpc-basics/gen/orders/v1;ordersv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Order — основная сущность сервиса. Имитация маленького «order management»:
+// id выдаёт сервер, customer_id и amount_cents приходят от клиента,
+// status хранится у нас и меняется отдельным RPC (в этой лекции —
+// только Create + Get, потом доберём в 06-04).
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  OrderStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_NEW = 1;
+  ORDER_STATUS_PAID = 2;
+  ORDER_STATUS_SHIPPED = 3;
+  ORDER_STATUS_CANCELLED = 4;
+}
+
+message CreateRequest {
+  string customer_id = 1;
+  int64 amount_cents = 2;
+  string currency = 3;
+}
+
+message CreateResponse {
+  Order order = 1;
+}
+
+message GetRequest {
+  string id = 1;
+}
+
+message GetResponse {
+  Order order = 1;
+}
+
+// OrderService — пара unary RPC: Create заводит запись в in-memory store,
+// Get отдаёт её по id. Достаточно, чтобы потрогать сервер, клиент,
+// generated types и interceptors. Stream'ы — отдельная лекция (06-02).
+service OrderService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+}

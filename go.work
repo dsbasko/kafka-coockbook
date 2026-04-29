@@ -26,6 +26,11 @@ use (
 	./05-contracts/05-02-protobuf-in-go
 	./05-contracts/05-03-schema-registry
 	./05-contracts/05-04-schema-evolution
+	./06-communication-patterns/06-01-grpc-basics
+	./06-communication-patterns/06-02-grpc-streaming
+	./06-communication-patterns/06-03-sync-vs-async
+	./06-communication-patterns/06-04-hybrid-grpc-and-kafka
+	./06-communication-patterns/06-05-saga-choreography
 	./internal
 )
 
