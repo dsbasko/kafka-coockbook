@@ -1,0 +1,46 @@
+name: lecture-07-04
+
+# Postgres подцепляем к сети sandbox-стенда — kafka-connect (там крутится
+# Debezium PostgresConnector) ходит до источника по hostname'у
+# `lecture-07-04-postgres`. Хост-порт 15437 — для psql/pgcli с твоей машины.
+#
+# Critical-параметры для Debezium:
+#   wal_level=logical            — без этого pgoutput не работает
+#   max_replication_slots>=1     — Debezium создаёт свой slot для каждого connector'а
+#   max_wal_senders>=1           — каждый slot читает поток через wal_sender
+#
+# Имя plugin'а Postgres'а — pgoutput (встроен в Postgres 10+, не требует установки).
+# Альтернатива — wal2json, его пришлось бы ставить отдельно. Debezium с 2.0+
+# умеет pgoutput by default.
+networks:
+  kafka-net:
+    name: sandbox-kafka_kafka-net
+    external: true
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: lecture-07-04-postgres
+    hostname: lecture-07-04-postgres
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:15437:5432"
+    environment:
+      POSTGRES_DB: lecture_07_04
+      POSTGRES_USER: lecture
+      POSTGRES_PASSWORD: lecture
+    command: >
+      postgres
+        -c wal_level=logical
+        -c max_replication_slots=4
+        -c max_wal_senders=4
+    volumes:
+      - lecture-07-04-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lecture -d lecture_07_04"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  lecture-07-04-pgdata:

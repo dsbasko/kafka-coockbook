@@ -1,0 +1,34 @@
+{
+  "name": "lecture-07-03-jdbc-sink-orders",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+
+    "topics": "lecture-07-03-orders",
+
+    "connection.url": "jdbc:postgresql://lecture-07-03-postgres:5432/lecture_07_03",
+    "connection.user": "lecture",
+    "connection.password": "lecture",
+
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "true",
+
+    "table.name.format": "orders",
+
+    "insert.mode": "upsert",
+    "pk.mode": "record_value",
+    "pk.fields": "id",
+
+    "auto.create": "false",
+    "auto.evolve": "false",
+
+    "batch.size": "100",
+    "max.retries": "3",
+    "retry.backoff.ms": "5000",
+
+    "errors.tolerance": "none",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+  }
+}

@@ -1,0 +1,33 @@
+name: lecture-07-03
+
+# Postgres подключаем в общую сеть со стендом, чтобы kafka-connect (который
+# крутится в корневом docker-compose) мог дотянуться до него по hostname'у
+# `lecture-07-03-postgres`. Хост-порт 15436 нужен для psql/pgcli с твоей машины
+# и для удобной отладки — connect ходит по internal-портам контейнерной сети.
+networks:
+  kafka-net:
+    name: sandbox-kafka_kafka-net
+    external: true
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: lecture-07-03-postgres
+    hostname: lecture-07-03-postgres
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:15436:5432"
+    environment:
+      POSTGRES_DB: lecture_07_03
+      POSTGRES_USER: lecture
+      POSTGRES_PASSWORD: lecture
+    volumes:
+      - lecture-07-03-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lecture -d lecture_07_03"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  lecture-07-03-pgdata:

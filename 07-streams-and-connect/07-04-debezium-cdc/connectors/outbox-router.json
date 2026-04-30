@@ -1,0 +1,40 @@
+{
+  "name": "lecture-07-04-debezium-outbox",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+
+    "database.hostname": "lecture-07-04-postgres",
+    "database.port": "5432",
+    "database.user": "lecture",
+    "database.password": "lecture",
+    "database.dbname": "lecture_07_04",
+
+    "topic.prefix": "outbox-cdc",
+    "table.include.list": "public.outbox",
+
+    "plugin.name": "pgoutput",
+    "publication.name": "dbz_publication",
+    "publication.autocreate.mode": "disabled",
+    "slot.name": "lecture_07_04_outbox_slot",
+
+    "snapshot.mode": "never",
+
+    "transforms": "outbox",
+    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+    "transforms.outbox.table.field.event.id": "id",
+    "transforms.outbox.table.field.event.key": "aggregate_id",
+    "transforms.outbox.table.field.event.type": "type",
+    "transforms.outbox.table.field.event.payload": "payload",
+    "transforms.outbox.route.by.field": "aggregate_type",
+    "transforms.outbox.route.topic.replacement": "events.${routedByValue}",
+    "transforms.outbox.table.fields.additional.placement": "type:header:eventType,aggregate_type:header:aggregateType",
+
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+
+    "tombstones.on.delete": "false"
+  }
+}

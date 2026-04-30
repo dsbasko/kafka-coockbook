@@ -31,6 +31,10 @@ use (
 	./06-communication-patterns/06-03-sync-vs-async
 	./06-communication-patterns/06-04-hybrid-grpc-and-kafka
 	./06-communication-patterns/06-05-saga-choreography
+	./07-streams-and-connect/07-01-stream-processing-concepts
+	./07-streams-and-connect/07-02-stream-processing-in-go
+	./07-streams-and-connect/07-03-kafka-connect
+	./07-streams-and-connect/07-04-debezium-cdc
 	./internal
 )
 

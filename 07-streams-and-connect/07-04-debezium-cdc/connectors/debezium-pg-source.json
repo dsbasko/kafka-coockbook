@@ -1,0 +1,31 @@
+{
+  "name": "lecture-07-04-debezium-pg-source",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+
+    "database.hostname": "lecture-07-04-postgres",
+    "database.port": "5432",
+    "database.user": "lecture",
+    "database.password": "lecture",
+    "database.dbname": "lecture_07_04",
+
+    "topic.prefix": "cdc",
+    "table.include.list": "public.users",
+
+    "plugin.name": "pgoutput",
+    "publication.name": "dbz_publication",
+    "publication.autocreate.mode": "disabled",
+    "slot.name": "lecture_07_04_users_slot",
+
+    "snapshot.mode": "initial",
+
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+
+    "tombstones.on.delete": "true",
+    "heartbeat.interval.ms": "10000"
+  }
+}
