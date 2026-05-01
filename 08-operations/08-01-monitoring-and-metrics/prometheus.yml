@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: lecture-08-01
+
+scrape_configs:
+  - job_name: kminion
+    static_configs:
+      - targets:
+          - lecture-08-01-kminion:8080
+
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090

@@ -1,0 +1,86 @@
+name: lecture-08-01
+
+# Prometheus + Grafana + kminion (Cloudhut Kafka Prometheus exporter).
+#
+# kminion цепляется к sandbox-стенду по INTERNAL listener'у (kafka-1:9092),
+# поэтому override садится в ту же сеть — sandbox-kafka_kafka-net.
+#
+# Порты на хосте:
+#   9090  — Prometheus UI
+#   3000  — Grafana UI (admin / admin)
+#   8088  — kminion /metrics
+#
+# Datasource Prometheus и dashboard kminion-overview прокидываются через
+# provisioning, дашборд видно сразу после старта Grafana.
+networks:
+  kafka-net:
+    name: sandbox-kafka_kafka-net
+    external: true
+
+services:
+  kminion:
+    image: redpandadata/kminion:v2.2.7
+    container_name: lecture-08-01-kminion
+    hostname: lecture-08-01-kminion
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:8088:8080"
+    environment:
+      KAFKA_BROKERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
+      EXPORTER_NAMESPACE: "kminion"
+      MINION_TOPICS_GRANULARITY: "partition"
+      MINION_CONSUMERGROUPS_ENABLED: "true"
+      MINION_CONSUMERGROUPS_GRANULARITY: "partition"
+      LOGGER_LEVEL: "info"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/metrics | head -1 >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: lecture-08-01-prometheus
+    hostname: lecture-08-01-prometheus
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - lecture-08-01-prom-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --storage.tsdb.retention.time=2h
+    depends_on:
+      kminion:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: lecture-08-01-grafana
+    hostname: lecture-08-01-grafana
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/kminion-overview.json:ro
+      - lecture-08-01-grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+
+volumes:
+  lecture-08-01-prom-data:
+  lecture-08-01-grafana-data:
