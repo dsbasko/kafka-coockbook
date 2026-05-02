@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/09-use-cases/01-microservices-comm/gen/inventory/v1;inventoryv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Reservation — локальная проекция inventory-сервиса. Один заказ — один
+// reservation. Создаётся при обработке OrderCreated, dedup по outbox-id.
+message Reservation {
+  string order_id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string reserved_by = 4;
+  google.protobuf.Timestamp reserved_at = 5;
+}

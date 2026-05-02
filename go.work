@@ -39,6 +39,7 @@ use (
 	./08-operations/08-02-retention-and-compaction
 	./08-operations/08-03-sizing-and-tuning
 	./08-operations/08-04-troubleshooting-runbook
+	./09-use-cases/01-microservices-comm
 	./internal
 )
 

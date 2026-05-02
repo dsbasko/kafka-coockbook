@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/09-use-cases/01-microservices-comm/gen/orders/v1;ordersv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Order — write-side сущность. Хранится в orders, проецируется в события
+// через outbox.
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  OrderStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_NEW = 1;
+  ORDER_STATUS_RESERVED = 2;
+  ORDER_STATUS_PAID = 3;
+  ORDER_STATUS_CANCELLED = 4;
+}
+
+message CreateRequest {
+  string customer_id = 1;
+  int64 amount_cents = 2;
+  string currency = 3;
+  string trace_id = 4;
+  string tenant_id = 5;
+}
+
+message CreateResponse {
+  Order order = 1;
+}
+
+// OrderCreated — событие, которое order-service кладёт в outbox и публикует
+// в Kafka. Все downstream-сервисы (inventory, notification, любой будущий)
+// слушают этот payload. trace_id и tenant_id попадают и в payload, и в
+// headers сообщения — для propagation сквозного контекста.
+message OrderCreated {
+  string id = 1;
+  string customer_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  google.protobuf.Timestamp created_at = 5;
+  string trace_id = 6;
+  string tenant_id = 7;
+}
+
+// OrderService — write-side gRPC API. Только Create.
+// Update/Delete намеренно нет: поведение downstream меняют события.
+service OrderService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+}

@@ -1,0 +1,23 @@
+name: usecase-09-01
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: usecase-09-01-postgres
+    hostname: usecase-09-01-postgres
+    ports:
+      - "127.0.0.1:15440:5432"
+    environment:
+      POSTGRES_DB: usecase_09_01
+      POSTGRES_USER: usecase
+      POSTGRES_PASSWORD: usecase
+    volumes:
+      - usecase-09-01-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usecase -d usecase_09_01"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  usecase-09-01-pgdata:
