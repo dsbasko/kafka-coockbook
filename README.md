@@ -2,7 +2,7 @@
 
 ## Что это
 
-Учебный курс по Apache Kafka на Go: от первого продьюсера до production-grade паттернов (transactions, outbox, CDC через Debezium, гибрид gRPC + Kafka). Поверх локального docker-compose стенда (Kafka 4.2.0 в KRaft mode, Schema Registry, Kafka Connect, Kafka UI) лежит 9 модулей и 38 единиц материала на Go и [twmb/franz-go](https://github.com/twmb/franz-go) — каждая лекция запускается на твоей машине через `make run` и оставляет наблюдаемый эффект на стенде.
+Учебный курс по Apache Kafka на Go: от первого продьюсера до production-grade паттернов (transactions, outbox, CDC через Debezium, гибрид gRPC + Kafka). Поверх локального docker-compose стенда (Kafka 4.2.0 в KRaft mode, Schema Registry, Kafka Connect, Kafka UI) лежит 9 модулей и 39 единиц материала на Go и [twmb/franz-go](https://github.com/twmb/franz-go) — каждая лекция запускается на твоей машине через `make run` и оставляет наблюдаемый эффект на стенде.
 
 ## Стек
 
@@ -167,7 +167,7 @@ Stream-processing концепции (event-time, windowing, watermark, late eve
 ## Структура репозитория
 
 ```
-kafka-coockbook/
+kafka-cookbook/
 ├── docker-compose.yml          # стенд: 3× Kafka + UI + Schema Registry + Connect
 ├── Makefile                    # точка входа: list / lecture / sync / build / connect-*
 ├── go.work                     # workspace, объединяет internal и все модули лекций
