@@ -1,0 +1,43 @@
+# Декларативный конфиг анонимизации. Анонимизатор читает CDC-события Debezium
+# из cdc.public.<table> и применяет правила к полю after (для INSERT/UPDATE)
+# или before (для DELETE — ставим _deleted=1 в ClickHouse).
+#
+# Правила:
+#   hash       — SHA-256 от строкового значения, сохраняем хекс. Стабильно
+#                между запусками (один и тот же email даёт один и тот же hash),
+#                нужно для join'ов в аналитике.
+#   drop       — поле вырезается из выходного события. В ClickHouse колонки
+#                для этого поля не должно быть; в схеме gen/analytics его тоже нет.
+#   truncate   — формат "{first}{lastInitial}.": "Иван Иванов" → "ИванИ.". Для
+#                low-cardinality хранения без раскрытия личности.
+#   passthrough — оставить значение как есть. Дефолт.
+#
+# Если правило не описано — поле копируется как passthrough. Это нужно для
+# системных полей вроде id и created_at: их явно прописывать не имеет смысла.
+#
+# salt — общий префикс для hash-функции. Без соли коллизии между разными
+# окружениями давали бы рассходимости в аналитике; с солью — уникально для
+# конкретной инсталляции. В sandbox держим прямо в репо, в проде — секрет.
+
+salt: "usecase-09-03-salt"
+
+tables:
+  users:
+    target_topic: analytics.users
+    fields:
+      email:      hash
+      phone:      hash
+      full_name:  truncate
+      birth_date: drop      # сырая дата рождения — PII
+      # id, country, created_at, updated_at — passthrough по умолчанию
+
+  orders:
+    target_topic: analytics.orders
+    fields:
+      notes: drop           # свободный текст пользователя — потенциально PII
+
+  events:
+    target_topic: analytics.events
+    fields:
+      ip_address: drop      # IP без бизнес-нужды → дроп
+      user_agent: drop      # пометка браузера → дроп

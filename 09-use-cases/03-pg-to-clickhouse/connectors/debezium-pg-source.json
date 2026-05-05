@@ -1,0 +1,31 @@
+{
+  "name": "usecase-09-03-debezium-pg-source",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+
+    "database.hostname": "usecase-09-03-postgres",
+    "database.port": "5432",
+    "database.user": "usecase",
+    "database.password": "usecase",
+    "database.dbname": "usecase_09_03",
+
+    "topic.prefix": "cdc",
+    "table.include.list": "public.users,public.orders,public.events",
+
+    "plugin.name": "pgoutput",
+    "publication.name": "dbz_publication",
+    "publication.autocreate.mode": "disabled",
+    "slot.name": "usecase_09_03_slot",
+
+    "snapshot.mode": "initial",
+
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+
+    "tombstones.on.delete": "true",
+    "heartbeat.interval.ms": "10000"
+  }
+}

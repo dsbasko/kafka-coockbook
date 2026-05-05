@@ -1,0 +1,72 @@
+name: usecase-09-04
+
+# Postgres + Elasticsearch для use case 09-04. Оба контейнера живут в той
+# же сети, что и kafka-connect (там Debezium PostgresConnector и ES Sink),
+# поэтому коннекторы ходят до них по hostname'у. Хост-порты проброшены
+# для локальной разработки — psql, curl, integration test.
+#
+# wal_level=logical обязателен для Debezium pgoutput. ES — single-node
+# discovery, security off (sandbox — не production).
+networks:
+  kafka-net:
+    # Имя сети совпадает с проектом корневого docker-compose.yml. Если
+    # стенд поднимается из другой директории — поправь имя ниже под
+    # реальное "<project>_kafka-net".
+    name: sandbox-kafka_kafka-net
+    external: true
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: usecase-09-04-postgres
+    hostname: usecase-09-04-postgres
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:15443:5432"
+    environment:
+      POSTGRES_DB: usecase_09_04
+      POSTGRES_USER: usecase
+      POSTGRES_PASSWORD: usecase
+    command: >
+      postgres
+        -c wal_level=logical
+        -c max_replication_slots=4
+        -c max_wal_senders=4
+    volumes:
+      - usecase-09-04-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usecase -d usecase_09_04"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: usecase-09-04-elasticsearch
+    hostname: usecase-09-04-elasticsearch
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:19200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      cluster.name: usecase-09-04
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - usecase-09-04-esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  usecase-09-04-pgdata:
+  usecase-09-04-esdata:

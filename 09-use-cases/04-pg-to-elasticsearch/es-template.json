@@ -1,0 +1,38 @@
+{
+  "index_patterns": ["products_*", "articles_*", "users_*"],
+  "priority": 100,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "analysis": {
+        "analyzer": {
+          "ru_en_text": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["lowercase", "asciifolding"]
+          }
+        }
+      }
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "id":          { "type": "long" },
+        "sku":         { "type": "keyword" },
+        "name":        { "type": "text", "analyzer": "ru_en_text" },
+        "description": { "type": "text", "analyzer": "ru_en_text" },
+        "category":    { "type": "keyword" },
+        "price_cents": { "type": "long" },
+        "stock":       { "type": "integer" },
+        "title":       { "type": "text", "analyzer": "ru_en_text" },
+        "body":        { "type": "text", "analyzer": "ru_en_text" },
+        "author":      { "type": "keyword" },
+        "tags":        { "type": "keyword" },
+        "username":    { "type": "keyword" },
+        "full_name":   { "type": "text", "analyzer": "ru_en_text" },
+        "bio":         { "type": "text", "analyzer": "ru_en_text" }
+      }
+    }
+  }
+}

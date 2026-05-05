@@ -1,0 +1,49 @@
+{
+  "name": "usecase-09-04-es-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+    "tasks.max": "1",
+
+    "topics.regex": "search\\.public\\.(products|articles|users)",
+
+    "connection.url": "http://usecase-09-04-elasticsearch:9200",
+    "type.name": "_doc",
+
+    "key.ignore": "false",
+    "schema.ignore": "true",
+
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+
+    "behavior.on.null.values": "delete",
+    "behavior.on.malformed.documents": "warn",
+    "drop.invalid.message": "true",
+
+    "write.method": "upsert",
+    "max.retries": "10",
+    "retry.backoff.ms": "1000",
+
+    "batch.size": "200",
+    "linger.ms": "200",
+    "flush.timeout.ms": "30000",
+
+    "transforms": "unwrap,extractKey,routeIndex",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.drop.tombstones": "false",
+    "transforms.unwrap.delete.handling.mode": "none",
+
+    "transforms.extractKey.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
+    "transforms.extractKey.field": "id",
+
+    "transforms.routeIndex.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.routeIndex.regex": "search\\.public\\.(.*)",
+    "transforms.routeIndex.replacement": "$1_v1",
+
+    "errors.tolerance": "all",
+    "errors.deadletterqueue.topic.name": "search-dlq",
+    "errors.deadletterqueue.topic.replication.factor": "3",
+    "errors.deadletterqueue.context.headers.enable": "true"
+  }
+}

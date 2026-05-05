@@ -1,0 +1,74 @@
+name: usecase-09-03
+
+# Подцепляем оба контейнера (Postgres + ClickHouse) к сети sandbox-стенда:
+# kafka-connect (там Debezium PostgresConnector и ClickHouse Sink) ходит до
+# обоих по hostname'у. Хост-порты проброшены для локальной разработки —
+# psql и clickhouse-client из терминала, для теста — go-клиенты.
+#
+# wal_level=logical обязателен для Debezium pgoutput. Без него slot не
+# открывается. max_replication_slots/max_wal_senders задаём щедро, чтобы
+# можно было одновременно держать source-connector и параллельный
+# отладочный slot, если нужно.
+networks:
+  kafka-net:
+    # Имя сети указано как у запущенного compose project'а корневого
+    # docker-compose.yml. По умолчанию docker compose именует сеть как
+    # "<project>_kafka-net". Если стенд поднят из этого репозитория
+    # (имя проекта по дефолту совпадает с именем директории), сеть будет
+    # "<dirname>_kafka-net" — поправь имя ниже под свою установку.
+    name: sandbox-kafka_kafka-net
+    external: true
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: usecase-09-03-postgres
+    hostname: usecase-09-03-postgres
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:15442:5432"
+    environment:
+      POSTGRES_DB: usecase_09_03
+      POSTGRES_USER: usecase
+      POSTGRES_PASSWORD: usecase
+    command: >
+      postgres
+        -c wal_level=logical
+        -c max_replication_slots=4
+        -c max_wal_senders=4
+    volumes:
+      - usecase-09-03-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usecase -d usecase_09_03"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.3-alpine
+    container_name: usecase-09-03-clickhouse
+    hostname: usecase-09-03-clickhouse
+    networks: [kafka-net]
+    ports:
+      - "127.0.0.1:18123:8123"   # HTTP interface
+      - "127.0.0.1:19000:9000"   # native interface
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_USER: analytics
+      CLICKHOUSE_PASSWORD: analytics
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - usecase-09-03-chdata:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  usecase-09-03-pgdata:
+  usecase-09-03-chdata:

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package notifications.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/09-use-cases/02-push-notifications/gen/notifications/v1;notificationsv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Notification — payload, который кладёт продьюсер в notification-events.
+// Дальше router читает channel и кладёт payload as-is в notification-{channel}.
+// Каналы — отдельные топики, чтобы их consumer-группы скейлились независимо
+// и retry-пайплайны не пересекались.
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  Channel channel = 3;
+  string title = 4;
+  string body = 5;
+  string payload_json = 6;
+  string trace_id = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+enum Channel {
+  CHANNEL_UNSPECIFIED = 0;
+  CHANNEL_FIREBASE = 1;
+  CHANNEL_APNS = 2;
+  CHANNEL_WEBHOOK = 3;
+}

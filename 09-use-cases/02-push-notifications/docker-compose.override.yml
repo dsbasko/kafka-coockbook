@@ -1,0 +1,86 @@
+name: usecase-09-02
+
+# Postgres + три HTTP-mock'а каналов доставки. Mock'и собираются на лету
+# из cmd/mock-{firebase,apns,webhook}/Dockerfile — каждый stdlib-only.
+# Уровень фейлов настраивается через переменные окружения FAIL_RATE_*.
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: usecase-09-02-postgres
+    hostname: usecase-09-02-postgres
+    ports:
+      - "127.0.0.1:15441:5432"
+    environment:
+      POSTGRES_DB: usecase_09_02
+      POSTGRES_USER: usecase
+      POSTGRES_PASSWORD: usecase
+    volumes:
+      - usecase-09-02-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usecase -d usecase_09_02"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mock-firebase:
+    build:
+      context: ./cmd/mock-firebase
+      dockerfile: Dockerfile
+    image: usecase-09-02-mock-firebase
+    container_name: usecase-09-02-mock-firebase
+    hostname: usecase-09-02-mock-firebase
+    ports:
+      - "127.0.0.1:8091:8091"
+    environment:
+      LISTEN_ADDR: ":8091"
+      FAIL_RATE_503: "${FAIL_RATE_503:-0}"
+      FAIL_RATE_TIMEOUT: "${FAIL_RATE_TIMEOUT:-0}"
+      LATENCY_MS: "${LATENCY_MS:-5}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8091/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mock-apns:
+    build:
+      context: ./cmd/mock-apns
+      dockerfile: Dockerfile
+    image: usecase-09-02-mock-apns
+    container_name: usecase-09-02-mock-apns
+    hostname: usecase-09-02-mock-apns
+    ports:
+      - "127.0.0.1:8092:8092"
+    environment:
+      LISTEN_ADDR: ":8092"
+      FAIL_RATE_503: "${FAIL_RATE_503:-0}"
+      FAIL_RATE_TIMEOUT: "${FAIL_RATE_TIMEOUT:-0}"
+      LATENCY_MS: "${LATENCY_MS:-5}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8092/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mock-webhook:
+    build:
+      context: ./cmd/mock-webhook
+      dockerfile: Dockerfile
+    image: usecase-09-02-mock-webhook
+    container_name: usecase-09-02-mock-webhook
+    hostname: usecase-09-02-mock-webhook
+    ports:
+      - "127.0.0.1:8093:8093"
+    environment:
+      LISTEN_ADDR: ":8093"
+      FAIL_RATE_503: "${FAIL_RATE_503:-0}"
+      FAIL_RATE_TIMEOUT: "${FAIL_RATE_TIMEOUT:-0}"
+      LATENCY_MS: "${LATENCY_MS:-5}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8093/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  usecase-09-02-pgdata:

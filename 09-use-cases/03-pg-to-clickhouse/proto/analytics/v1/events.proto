@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package analytics.v1;
+
+option go_package = "github.com/dsbasko/kafka-sandbox/lectures/09-use-cases/03-pg-to-clickhouse/gen/analytics/v1;analyticsv1";
+
+// События clean-топиков analytics.users / analytics.orders / analytics.events.
+//
+// На wire эти сообщения идут как JSON (через protojson.Marshal): ClickHouse
+// Sink connector читает analytics.* как JsonConverter. Proto-схемы здесь —
+// явный контракт между анонимизатором и ClickHouse'ом, а не обязательный
+// двоичный формат.
+//
+// Поле cdc_lsn — версия записи для ReplacingMergeTree. Берём pg_lsn из
+// поля Debezium event.source.lsn и парсим в UInt64. Монотонность даёт
+// корректное схлопывание при дубле.
+
+message UserEvent {
+  int64 id = 1;
+  // email / phone — после анонимизации содержат SHA-256-hex, имена колонок
+  // одинаковы с исходными полями Postgres'а (правило hash меняет значение,
+  // не название).
+  string email = 2;
+  string phone = 3;
+  string full_name = 4;
+  string country = 5;
+  // Время в RFC3339 как String. ClickHouse-таблица хранит как String,
+  // потому что Debezium шлёт ISO-формат для TIMESTAMPTZ — без best_effort
+  // settings JSONEachRow падает на нём с code 27.
+  string created_at = 6;
+  string updated_at = 7;
+  uint64 cdc_lsn = 8;
+  uint32 deleted = 9;
+}
+
+message OrderEvent {
+  int64 id = 1;
+  int64 user_id = 2;
+  int64 amount_cents = 3;
+  string currency = 4;
+  string status = 5;
+  string created_at = 6;
+  uint64 cdc_lsn = 7;
+  uint32 deleted = 8;
+}
+
+message Event {
+  int64 id = 1;
+  int64 user_id = 2;
+  string event_type = 3;
+  string created_at = 4;
+  uint64 cdc_lsn = 5;
+  uint32 deleted = 6;
+}

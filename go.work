@@ -40,6 +40,9 @@ use (
 	./08-operations/08-03-sizing-and-tuning
 	./08-operations/08-04-troubleshooting-runbook
 	./09-use-cases/01-microservices-comm
+	./09-use-cases/02-push-notifications
+	./09-use-cases/03-pg-to-clickhouse
+	./09-use-cases/04-pg-to-elasticsearch
 	./internal
 )
 
