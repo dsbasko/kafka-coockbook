@@ -13,11 +13,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "js-yaml": "4.1.0",
     "next": "14.2.18",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@types/js-yaml": "4.0.9",
     "@types/node": "20.17.9",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
@@ -28,6 +30,7 @@
     "eslint-config-prettier": "9.1.0",
     "jsdom": "25.0.1",
     "prettier": "3.4.2",
+    "tsx": "4.19.2",
     "typescript": "5.7.2",
     "vitest": "2.1.8"
   },

@@ -1,4 +1,4 @@
-.PHONY: help list lecture sync build connect-install-plugins connect-verify-plugins web-dev web-build web-lint web-typecheck web-test web-clean web-install
+.PHONY: help list lecture sync build connect-install-plugins connect-verify-plugins web-dev web-build web-lint web-typecheck web-test web-clean web-install web-check-coverage
 
 # Корневой Makefile тонкий: владеет только connect-* целями
 # (потому что connect-plugins/ остаётся в корне).
@@ -26,6 +26,7 @@ help:
 	@echo "make web-lint                               - eslint проверка web/"
 	@echo "make web-typecheck                          - tsc --noEmit в web/"
 	@echo "make web-test                               - vitest run в web/"
+	@echo "make web-check-coverage                     - сверить course.yaml с lectures/"
 	@echo "make web-clean                              - удалить web/.next и web/out"
 
 list:
@@ -63,6 +64,9 @@ web-typecheck:
 
 web-test:
 	@cd "$(WEB_DIR)" && pnpm test
+
+web-check-coverage:
+	@cd "$(WEB_DIR)" && pnpm exec tsx scripts/check-course-coverage.ts
 
 web-clean:
 	@rm -rf "$(WEB_DIR)/.next" "$(WEB_DIR)/out"
