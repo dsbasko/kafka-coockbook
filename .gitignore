@@ -30,3 +30,10 @@ lectures/*/*/load-generator
 lectures/*/*/topic-profiles
 lectures/*/*/courier
 lectures/*/*/mock-webhook
+
+# Web app build artefacts (also covered by web/.gitignore, listed here
+# so a stray `git add web/.next` from repo root is ignored).
+web/node_modules/
+web/.next/
+web/out/
+web/public/static/lectures/

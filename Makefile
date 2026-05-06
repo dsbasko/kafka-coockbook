@@ -1,4 +1,4 @@
-.PHONY: help list lecture sync build connect-install-plugins connect-verify-plugins
+.PHONY: help list lecture sync build connect-install-plugins connect-verify-plugins web-dev web-build web-lint web-typecheck web-test web-clean web-install
 
 # Корневой Makefile тонкий: владеет только connect-* целями
 # (потому что connect-plugins/ остаётся в корне).
@@ -20,6 +20,13 @@ help:
 	@echo "make build                                  - собрать все workspace-модули"
 	@echo "make connect-install-plugins                - скачать и установить Connect plugins (Debezium, ClickHouse, ES)"
 	@echo "make connect-verify-plugins                 - убедиться, что Connect видит установленные plugins"
+	@echo "make web-install                            - pnpm install в web/"
+	@echo "make web-dev                                - запустить Next.js dev-сервер (http://localhost:3000)"
+	@echo "make web-build                              - собрать статический сайт в web/out/"
+	@echo "make web-lint                               - eslint проверка web/"
+	@echo "make web-typecheck                          - tsc --noEmit в web/"
+	@echo "make web-test                               - vitest run в web/"
+	@echo "make web-clean                              - удалить web/.next и web/out"
 
 list:
 	@$(MAKE) --no-print-directory -C lectures list
@@ -35,6 +42,30 @@ sync:
 
 build:
 	@$(MAKE) --no-print-directory -C lectures build
+
+# --- web targets ----------------------------------------------------------
+WEB_DIR := $(CURDIR)/web
+
+web-install:
+	@cd "$(WEB_DIR)" && pnpm install
+
+web-dev:
+	@cd "$(WEB_DIR)" && pnpm dev
+
+web-build:
+	@cd "$(WEB_DIR)" && pnpm build
+
+web-lint:
+	@cd "$(WEB_DIR)" && pnpm lint
+
+web-typecheck:
+	@cd "$(WEB_DIR)" && pnpm typecheck
+
+web-test:
+	@cd "$(WEB_DIR)" && pnpm test
+
+web-clean:
+	@rm -rf "$(WEB_DIR)/.next" "$(WEB_DIR)/out"
 
 # Скачать и распаковать три connector plugin'а в connect-plugins/.
 # Перезапустить kafka-connect и проверить, что классы видны через REST.

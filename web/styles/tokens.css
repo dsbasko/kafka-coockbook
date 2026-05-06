@@ -1,0 +1,130 @@
+/* Design tokens — Kafka Cookbook
+ * Light: warm paper palette (cream + warm grays).
+ * Dark:  deep ink with the same terracotta/amber accent for continuity.
+ *
+ * Naming (BEM-friendly): --<category>-<role>.
+ *   bg-*       — surface fills
+ *   content-*  — text/icon foregrounds
+ *   accent-*   — semantic accents (action, success, notice, critical)
+ *   font-*     — font-family stacks (set in app/layout.tsx)
+ *   space-*    — spacing scale
+ *   radius-*   — corner radii
+ *   shadow-*   — elevation shadows
+ *   z-*        — z-index scale
+ */
+
+:root {
+  /* Spacing scale (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Type scale */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 36px;
+  --font-size-4xl: 44px;
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.4;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.75;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* Layout */
+  --layout-sidebar-width: 64px;
+  --layout-content-max: 720px;
+  --layout-toc-width: 280px;
+
+  /* Z-index */
+  --z-drawer: 100;
+  --z-overlay: 90;
+  --z-header: 80;
+  --z-popover: 110;
+}
+
+/* Light theme — warm paper.
+ * Background tones from cream/sand. Accent: terracotta. */
+[data-theme='light'] {
+  --bg-default: #faf6ef;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1ead8;
+  --bg-muted: #ebe2cc;
+  --bg-stroke: #e0d4b6;
+  --bg-stroke-strong: #c8b88f;
+
+  --content-primary: #1c1a16;
+  --content-secondary: #5b544a;
+  --content-tertiary: #847b6d;
+  --content-inverse: #faf6ef;
+  --content-link: #b03a1a;
+  --content-link-hover: #8a2c12;
+
+  --accent-main: #c14a1f;
+  --accent-main-hover: #a23d18;
+  --accent-main-soft: #f3d9cc;
+  --accent-success: #2f7a45;
+  --accent-success-soft: #d6ecdc;
+  --accent-notice: #b88018;
+  --accent-notice-soft: #f4e4c2;
+  --accent-critical: #b53120;
+  --accent-critical-soft: #f4d2cc;
+
+  --shadow-sm: 0 1px 2px rgba(28, 26, 22, 0.06);
+  --shadow-md: 0 4px 12px rgba(28, 26, 22, 0.08);
+  --shadow-lg: 0 12px 32px rgba(28, 26, 22, 0.12);
+}
+
+/* Dark theme — deep ink with the same accent. */
+[data-theme='dark'] {
+  --bg-default: #14130f;
+  --bg-surface: #1d1c18;
+  --bg-subtle: #232118;
+  --bg-muted: #2a2820;
+  --bg-stroke: #38342a;
+  --bg-stroke-strong: #534d3f;
+
+  --content-primary: #f1ebde;
+  --content-secondary: #a8a08e;
+  --content-tertiary: #756f5f;
+  --content-inverse: #14130f;
+  --content-link: #e87a4a;
+  --content-link-hover: #f0916a;
+
+  --accent-main: #e87a4a;
+  --accent-main-hover: #f0916a;
+  --accent-main-soft: #3a2418;
+  --accent-success: #6cb87a;
+  --accent-success-soft: #1c2a1f;
+  --accent-notice: #d8a544;
+  --accent-notice-soft: #2e2516;
+  --accent-critical: #e25c48;
+  --accent-critical-soft: #2f1814;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+}

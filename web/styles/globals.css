@@ -1,0 +1,49 @@
+@import './tokens.css';
+@import './reset.css';
+
+html {
+  font-family: var(--font-ui), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
+  font-size: var(--font-size-md);
+  color-scheme: light dark;
+}
+
+body {
+  background-color: var(--bg-default);
+  color: var(--content-primary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+a {
+  color: var(--content-link);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+
+a:hover {
+  color: var(--content-link-hover);
+}
+
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-main);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background-color: var(--accent-main-soft);
+  color: var(--content-primary);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
