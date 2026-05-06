@@ -1,0 +1,118 @@
+.sidebar {
+  width: var(--layout-sidebar-width);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--bg-stroke);
+  position: sticky;
+  top: 0;
+}
+
+.brand {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-main);
+  color: var(--content-inverse);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-2);
+}
+
+.brandMark {
+  line-height: 1;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  align-items: center;
+}
+
+.footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  align-items: center;
+}
+
+.button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--content-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.button:hover {
+  background-color: var(--bg-subtle);
+  color: var(--content-primary);
+}
+
+.button[aria-current='page'] {
+  color: var(--accent-main);
+  background-color: var(--accent-main-soft);
+}
+
+@media (max-width: 1023px) {
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    height: 56px;
+    flex-direction: row;
+    padding: 0 var(--space-3);
+    border-right: none;
+    border-bottom: 1px solid var(--bg-stroke);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-header);
+  }
+
+  .brand {
+    margin-bottom: 0;
+    margin-right: var(--space-2);
+    width: 36px;
+    height: 36px;
+    font-size: var(--font-size-md);
+  }
+
+  .nav,
+  .footer {
+    flex-direction: row;
+    width: auto;
+  }
+
+  .footer {
+    margin-top: 0;
+    margin-left: auto;
+  }
+
+  .button {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .button {
+    width: 44px;
+    height: 44px;
+  }
+}

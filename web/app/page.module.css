@@ -1,0 +1,24 @@
+.wrapper {
+  max-width: var(--layout-content-max);
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-4);
+}
+
+.lead {
+  font-size: var(--font-size-lg);
+  color: var(--content-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+@media (max-width: 767px) {
+  .wrapper {
+    padding: var(--space-8) var(--space-4);
+  }
+}

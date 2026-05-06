@@ -1,0 +1,27 @@
+.shell {
+  display: flex;
+  flex-direction: row;
+  min-height: 100dvh;
+  background-color: var(--bg-default);
+  color: var(--content-primary);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .shell {
+    flex-direction: column;
+  }
+}
