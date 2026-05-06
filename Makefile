@@ -1,9 +1,8 @@
 .PHONY: help list lecture sync build connect-install-plugins connect-verify-plugins
 
-# Точка входа: make lecture L=01-foundations/01-01-architecture-and-kraft
-# делегирует в Makefile конкретной лекции.
-LECTURES_DIR := $(CURDIR)
-REPO_ROOT := $(CURDIR)
+# Корневой Makefile тонкий: владеет только connect-* целями
+# (потому что connect-plugins/ остаётся в корне).
+# Всё остальное делегируется в lectures/Makefile.
 
 # Версии Kafka Connect plugins (нужны для лекции 07-04 и use cases 09-03/09-04).
 # Обновляются вручную при апгрейде; смотри connect-plugins/README.md.
@@ -11,39 +10,31 @@ DEBEZIUM_VERSION   ?= 3.5.0.Final
 CLICKHOUSE_VERSION ?= v1.3.7
 ES_VERSION         ?= 15.1.1
 
-CONNECT_PLUGINS_DIR := $(REPO_ROOT)/connect-plugins
+CONNECT_PLUGINS_DIR := $(CURDIR)/connect-plugins
 
 help:
 	@echo "make list                                   - вывести дерево лекций"
 	@echo "make lecture L=<path>                       - запустить make в директории лекции"
 	@echo "  пример: make lecture L=01-foundations/01-01-architecture-and-kraft"
-	@echo "make sync                                   - go work sync"
+	@echo "make sync                                   - go work sync (внутри lectures/)"
 	@echo "make build                                  - собрать все workspace-модули"
 	@echo "make connect-install-plugins                - скачать и установить Connect plugins (Debezium, ClickHouse, ES)"
 	@echo "make connect-verify-plugins                 - убедиться, что Connect видит установленные plugins"
 
 list:
-	@find . -mindepth 2 -maxdepth 3 -name 'README.md' -not -path './internal/*' \
-	  | sed -e 's|^./||' -e 's|/README.md$$||' \
-	  | sort
+	@$(MAKE) --no-print-directory -C lectures list
 
 lecture:
 ifndef L
 	$(error L is required: make lecture L=01-foundations/01-01-architecture-and-kraft)
 endif
-	@test -d "$(LECTURES_DIR)/$(L)" || (echo "lecture not found: $(L)"; exit 1)
-	$(MAKE) -C "$(LECTURES_DIR)/$(L)"
+	@$(MAKE) --no-print-directory -C lectures lecture L=$(L)
 
 sync:
-	go work sync
+	@$(MAKE) --no-print-directory -C lectures sync
 
-# Собирает каждый модуль из go.work отдельно — `go build ./...` из workspace
-# root в Go 1.26 ругается «directory prefix . does not contain modules».
 build:
-	@for d in $$(go list -f '{{.Dir}}' -m); do \
-	  echo "==> $$d"; \
-	  (cd "$$d" && go build ./...) || exit 1; \
-	done
+	@$(MAKE) --no-print-directory -C lectures build
 
 # Скачать и распаковать три connector plugin'а в connect-plugins/.
 # Перезапустить kafka-connect и проверить, что классы видны через REST.

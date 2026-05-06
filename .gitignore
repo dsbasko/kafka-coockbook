@@ -12,21 +12,21 @@ connect-plugins/*
 
 # Скомпилированные бинарники лекций — запускаются через `go run` или `make run`.
 # Каждый bin лежит рядом с `cmd/<name>/main.go` либо в корне лекции.
-*/*/quorum-status
-*/*/inspect
-*/*/watch-isr
-*/*/load-and-watch
-*/*/producer
-*/*/consumer
-*/*/bench-acks
-*/*/forced-retry
-*/*/bench
-*/*/loud-member
-*/*/idempotent-pg
-*/*/format-bench
-*/*/event-time-vs-processing-time
-*/*/orders-producer
-*/*/load-generator
-*/*/topic-profiles
-*/*/courier
-*/*/mock-webhook
+lectures/*/*/quorum-status
+lectures/*/*/inspect
+lectures/*/*/watch-isr
+lectures/*/*/load-and-watch
+lectures/*/*/producer
+lectures/*/*/consumer
+lectures/*/*/bench-acks
+lectures/*/*/forced-retry
+lectures/*/*/bench
+lectures/*/*/loud-member
+lectures/*/*/idempotent-pg
+lectures/*/*/format-bench
+lectures/*/*/event-time-vs-processing-time
+lectures/*/*/orders-producer
+lectures/*/*/load-generator
+lectures/*/*/topic-profiles
+lectures/*/*/courier
+lectures/*/*/mock-webhook
