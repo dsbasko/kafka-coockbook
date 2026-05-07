@@ -1,5 +1,6 @@
 @import './tokens.css';
 @import './reset.css';
+@import './markdown.css';
 
 html {
   font-family: var(--font-ui), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
