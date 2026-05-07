@@ -1,0 +1,183 @@
+import { describe, expect, it } from 'vitest';
+import remarkLessonImages, {
+  rewriteLessonImageUrl,
+  type RemarkLessonImagesOptions,
+} from './remark-lesson-images';
+
+const OPTIONS: RemarkLessonImagesOptions = {
+  moduleId: '02-producer',
+  slug: '02-04-batching-and-throughput',
+  basePath: '/kafka-cookbook',
+};
+
+describe('rewriteLessonImageUrl', () => {
+  it('rewrites ./images/ paths with the module/slug prefix', () => {
+    const out = rewriteLessonImageUrl('./images/diagram.png', OPTIONS, {
+      nodeKind: 'image',
+    });
+    expect(out).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/diagram.png',
+    );
+  });
+
+  it('preserves nested paths under ./images/', () => {
+    const out = rewriteLessonImageUrl('./images/sub/dir/file.svg', OPTIONS, {
+      nodeKind: 'image',
+    });
+    expect(out).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/sub/dir/file.svg',
+    );
+  });
+
+  it('strips trailing slash from basePath', () => {
+    const out = rewriteLessonImageUrl(
+      './images/x.png',
+      { ...OPTIONS, basePath: '/kafka-cookbook/' },
+      { nodeKind: 'image' },
+    );
+    expect(out).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/x.png',
+    );
+  });
+
+  it('passes through https://, http://, data:, mailto:, tel:', () => {
+    for (const url of [
+      'https://example.com/x.png',
+      'http://example.com/x.png',
+      'data:image/png;base64,iVBORw0KGgo=',
+      'mailto:nobody@example.com',
+      'tel:+1234567890',
+    ]) {
+      expect(
+        rewriteLessonImageUrl(url, OPTIONS, { nodeKind: 'image' }),
+      ).toBe(url);
+    }
+  });
+
+  it('throws on parent-relative paths (../...)', () => {
+    expect(() =>
+      rewriteLessonImageUrl('../shared/x.png', OPTIONS, { nodeKind: 'image' }),
+    ).toThrow(/not allowed/);
+  });
+
+  it('throws on absolute local paths (/...)', () => {
+    expect(() =>
+      rewriteLessonImageUrl('/abs/foo.png', OPTIONS, { nodeKind: 'image' }),
+    ).toThrow(/not allowed/);
+  });
+
+  it('throws when image file name is missing', () => {
+    expect(() =>
+      rewriteLessonImageUrl('./images/', OPTIONS, { nodeKind: 'image' }),
+    ).toThrow(/empty image filename/);
+  });
+
+  it('throws when path contains .. segment after ./images/', () => {
+    expect(() =>
+      rewriteLessonImageUrl('./images/../escape.png', OPTIONS, {
+        nodeKind: 'image',
+      }),
+    ).toThrow(/".."/);
+  });
+
+  it('reports lesson id and node kind in error messages', () => {
+    expect(() =>
+      rewriteLessonImageUrl('weird.png', OPTIONS, { nodeKind: 'image' }),
+    ).toThrow(/02-producer\/02-04-batching-and-throughput/);
+  });
+});
+
+describe('remarkLessonImages plugin', () => {
+  it('rewrites image nodes anywhere in the tree', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'image',
+              url: './images/foo.png',
+              alt: 'Foo',
+            },
+          ],
+        },
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'image',
+              url: 'https://kafka.apache.org/logo.png',
+              alt: 'External',
+            },
+          ],
+        },
+      ],
+    };
+
+    const transform = remarkLessonImages(OPTIONS);
+    transform(tree as never);
+
+    const firstImage = (
+      (tree.children[0] as { children: Array<{ url: string }> }).children[0]
+    );
+    expect(firstImage.url).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/foo.png',
+    );
+
+    const secondImage = (
+      (tree.children[1] as { children: Array<{ url: string }> }).children[0]
+    );
+    expect(secondImage.url).toBe('https://kafka.apache.org/logo.png');
+  });
+
+  it('rewrites definition nodes (reference-style images)', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'definition',
+          identifier: 'fig1',
+          url: './images/fig1.png',
+        },
+      ],
+    };
+
+    const transform = remarkLessonImages(OPTIONS);
+    transform(tree as never);
+
+    const def = tree.children[0] as { url: string };
+    expect(def.url).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/fig1.png',
+    );
+  });
+
+  it('throws when an image node has a forbidden url', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'image',
+              url: '../escape/x.png',
+            },
+          ],
+        },
+      ],
+    };
+
+    const transform = remarkLessonImages(OPTIONS);
+    expect(() => transform(tree as never)).toThrow(/not allowed/);
+  });
+
+  it('throws when required options are missing', () => {
+    expect(() =>
+      remarkLessonImages({ moduleId: '', slug: 's', basePath: '/x' } as never),
+    ).toThrow(/options/);
+    expect(() =>
+      remarkLessonImages({ moduleId: 'm', slug: '', basePath: '/x' } as never),
+    ).toThrow(/options/);
+  });
+});
