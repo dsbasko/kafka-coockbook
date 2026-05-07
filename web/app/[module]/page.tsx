@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { LessonLayout } from '@/components/LessonLayout';
-import { loadCourse } from '@/lib/course';
+import { loadCourse } from '@/lib/course-loader';
 import styles from './module.module.css';
 
 type ModulePageProps = {

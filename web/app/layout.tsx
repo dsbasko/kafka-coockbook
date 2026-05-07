@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Manrope, JetBrains_Mono } from 'next/font/google';
 import { AppShell } from '@/components/AppShell';
+import { loadCourse } from '@/lib/course-loader';
 import '@/styles/globals.css';
 
 const manrope = Manrope({
@@ -22,10 +23,11 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const course = loadCourse();
   return (
     <html lang="ru" data-theme="light" className={`${manrope.variable} ${jetbrains.variable}`}>
       <body>
-        <AppShell>{children}</AppShell>
+        <AppShell course={course}>{children}</AppShell>
       </body>
     </html>
   );

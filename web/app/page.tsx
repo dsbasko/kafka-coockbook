@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { loadCourse } from '@/lib/course';
+import { loadCourse } from '@/lib/course-loader';
 import styles from './page.module.css';
 
 export default function HomePage() {

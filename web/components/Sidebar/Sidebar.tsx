@@ -1,24 +1,34 @@
+'use client';
+
+import Link from 'next/link';
 import { HomeIcon, ProgramIcon, ThemeIcon, GitHubIcon } from './icons';
 import styles from './Sidebar.module.css';
 
 const REPO_URL = 'https://github.com/dsbasko/kafka-cookbook';
 
-export function Sidebar() {
+type SidebarProps = {
+  onProgramClick: () => void;
+};
+
+export function Sidebar({ onProgramClick }: SidebarProps) {
   return (
     <aside className={styles.sidebar} aria-label="Боковая навигация">
-      <div className={styles.brand} aria-hidden="true">
-        <span className={styles.brandMark}>K</span>
-      </div>
+      <Link href="/" className={styles.brand} aria-label="Kafka Cookbook — главная">
+        <span className={styles.brandMark} aria-hidden="true">
+          K
+        </span>
+      </Link>
 
       <nav className={styles.nav} aria-label="Основная навигация">
-        <button type="button" className={styles.button} aria-label="Главная" title="Главная">
+        <Link href="/" className={styles.button} aria-label="Главная" title="Главная">
           <HomeIcon />
-        </button>
+        </Link>
         <button
           type="button"
           className={styles.button}
           aria-label="Программа курса"
           title="Программа курса"
+          onClick={onProgramClick}
         >
           <ProgramIcon />
         </button>

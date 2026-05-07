@@ -1,0 +1,112 @@
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-10);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--bg-stroke);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--bg-stroke);
+  background-color: var(--bg-surface);
+  text-decoration: none;
+  color: var(--content-primary);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.link:hover {
+  border-color: var(--accent-main);
+  background-color: var(--bg-subtle);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--accent-main);
+  outline-offset: 2px;
+}
+
+.next {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--content-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.placeholder {
+  display: block;
+  min-height: 80px;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+.markButton {
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--bg-stroke);
+  background-color: var(--bg-surface);
+  color: var(--content-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.markButton:hover:not(:disabled) {
+  background-color: var(--accent-main);
+  border-color: var(--accent-main);
+  color: var(--content-inverse);
+}
+
+.markButton:focus-visible {
+  outline: 2px solid var(--accent-main);
+  outline-offset: 2px;
+}
+
+.markButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .next {
+    text-align: left;
+    align-items: flex-start;
+  }
+}

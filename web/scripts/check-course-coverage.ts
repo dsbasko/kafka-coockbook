@@ -2,7 +2,8 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadCourse, type Course } from '../lib/course';
+import { type Course } from '../lib/course';
+import { loadCourse } from '../lib/course-loader';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

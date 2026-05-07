@@ -2,7 +2,14 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LessonLayout } from '@/components/LessonLayout';
 import { LessonMeta } from '@/components/LessonMeta';
-import { findLesson, flattenLessons, loadCourse } from '@/lib/course';
+import { LessonNav } from '@/components/LessonNav';
+import {
+  findLesson,
+  flattenLessons,
+  getNextLesson,
+  getPrevLesson,
+} from '@/lib/course';
+import { loadCourse } from '@/lib/course-loader';
 import { getLessonContent } from '@/lib/lesson';
 import { renderLessonMarkdown } from '@/lib/markdown';
 import { extractDescription } from '@/lib/description';
@@ -52,12 +59,16 @@ export default async function LessonPage({ params }: LessonPageProps) {
     basePath: course.basePath,
   });
 
+  const prev = getPrevLesson(course, params.module, params.lesson);
+  const next = getNextLesson(course, params.module, params.lesson);
+
   return (
     <LessonLayout
       title={lesson.title}
       meta={<LessonMeta duration={lesson.duration} tags={lesson.tags} />}
     >
       <article className="markdown">{content}</article>
+      <LessonNav prev={prev} next={next} />
     </LessonLayout>
   );
 }
