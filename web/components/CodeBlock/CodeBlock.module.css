@@ -1,0 +1,58 @@
+.figure {
+  margin: 0;
+  border: 1px solid var(--bg-stroke);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  height: 36px;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--bg-stroke);
+  background-color: var(--bg-subtle);
+}
+
+.language {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--content-secondary);
+}
+
+.copy {
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--content-secondary);
+  background-color: transparent;
+  border: 1px solid var(--bg-stroke);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.copy:hover {
+  color: var(--content-primary);
+  border-color: var(--bg-stroke-strong);
+  background-color: var(--bg-default);
+}
+
+.copy:focus-visible {
+  outline: 2px solid var(--accent-main);
+  outline-offset: 2px;
+}
+
+.body {
+  /* let the inner <pre> own padding/scroll; we just provide a min-width container */
+  display: block;
+}

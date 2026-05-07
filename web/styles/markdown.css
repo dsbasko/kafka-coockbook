@@ -1,9 +1,10 @@
 /* Markdown rendering styles for lesson pages.
  * Scope: `.markdown` wrapper around the rendered article body.
- * Code blocks come from rehype-pretty-code as
- *   <figure data-rehype-pretty-code-figure><pre data-theme="github-light night-owl"><code>...</code></pre></figure>
- * Each token <span> carries inline CSS vars `--shiki-light` / `--shiki-dark`;
- * we map them to `color` based on the root `data-theme` below.
+ * Code blocks come from rehype-pretty-code wrapped in our CodeBlock component:
+ *   <figure data-rehype-pretty-code-figure><header>…</header><div><pre data-theme="github-light night-owl"><code>…</code></pre></div></figure>
+ * The figure chrome (border, radius, header) is owned by CodeBlock.module.css.
+ * This file styles the inner pre/code and maps shiki dual-theme CSS vars
+ * (--shiki-light / --shiki-dark) onto `color` based on the root `data-theme`.
  */
 
 .markdown {
@@ -131,15 +132,7 @@
   margin: var(--space-8) 0;
 }
 
-/* rehype-pretty-code figure wrapper. */
-.markdown figure[data-rehype-pretty-code-figure] {
-  margin: 0;
-  border: 1px solid var(--bg-stroke);
-  border-radius: var(--radius-md);
-  background-color: var(--bg-surface);
-  overflow: hidden;
-}
-
+/* rehype-pretty-code inner pre/code (wrapper styled by CodeBlock.module.css). */
 .markdown figure[data-rehype-pretty-code-figure] pre {
   margin: 0;
   padding: var(--space-4);

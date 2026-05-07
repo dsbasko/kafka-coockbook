@@ -58,6 +58,26 @@ describe('renderLessonMarkdown', () => {
     expect(html).toContain('--shiki-dark');
   });
 
+  it('wraps code blocks with CodeBlock header (language label + copy button)', async () => {
+    const source = ['```ts', 'const x: number = 1;', '```'].join('\n');
+    const html = await renderHtml(source);
+    expect(html).toContain('Скопировать');
+    // language label appears in the header
+    expect(html.toLowerCase()).toContain('>ts<');
+    // wrapper figure preserves rehype-pretty-code marker for CSS hooks
+    expect(html).toContain('data-rehype-pretty-code-figure');
+    // inner <pre> still rendered with dual-theme attribute
+    expect(html).toContain('<pre');
+    expect(html).toContain('data-theme="github-light night-owl"');
+  });
+
+  it('falls back to "plaintext" language label when fence has no info string', async () => {
+    const source = ['```', 'just text', '```'].join('\n');
+    const html = await renderHtml(source);
+    expect(html).toContain('Скопировать');
+    expect(html.toLowerCase()).toContain('plaintext');
+  });
+
   it('rewrites lesson images to /static/lectures/<module>/<slug>/images/<file>', async () => {
     const html = await renderHtml('![alt](./images/diagram.png)');
     expect(html).toContain(
