@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { LessonLayout } from '@/components/LessonLayout';
 import { LessonMeta } from '@/components/LessonMeta';
 import { LessonNav } from '@/components/LessonNav';
+import { Toc } from '@/components/Toc';
 import {
   findLesson,
   flattenLessons,
@@ -53,7 +54,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
   }
 
   const { markdown } = await getLessonContent(params.module, params.lesson);
-  const { content } = await renderLessonMarkdown(markdown, {
+  const { content, toc } = await renderLessonMarkdown(markdown, {
     moduleId: params.module,
     slug: params.lesson,
     basePath: course.basePath,
@@ -66,6 +67,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
     <LessonLayout
       title={lesson.title}
       meta={<LessonMeta duration={lesson.duration} tags={lesson.tags} />}
+      tocSlot={<Toc entries={toc} />}
     >
       <article className="markdown">{content}</article>
       <LessonNav prev={prev} next={next} />

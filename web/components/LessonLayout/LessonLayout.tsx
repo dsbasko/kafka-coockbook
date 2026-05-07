@@ -26,9 +26,7 @@ export function LessonLayout({
         {meta}
         {children}
       </div>
-      <aside className={styles.tocSlot} aria-label="Содержание">
-        {tocSlot}
-      </aside>
+      {tocSlot && <div className={styles.tocSlot}>{tocSlot}</div>}
     </div>
   );
 }

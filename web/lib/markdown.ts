@@ -11,6 +11,7 @@ import { toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import type { Element, Root as HastRoot } from 'hast';
 import remarkLessonImages from './mdx-plugins/remark-lesson-images';
 import { MarkdownFigure } from './markdown-components';
+import { extractToc, type TocEntry } from './extract-toc';
 
 export interface RenderLessonMarkdownOptions {
   moduleId: string;
@@ -20,6 +21,7 @@ export interface RenderLessonMarkdownOptions {
 
 export interface RenderLessonMarkdownResult {
   content: ReactElement;
+  toc: TocEntry[];
 }
 
 const PRETTY_CODE_OPTIONS = {
@@ -84,6 +86,8 @@ export async function renderLessonMarkdown(
   const mdast = processor.parse(source);
   const hast = (await processor.run(mdast)) as HastRoot;
 
+  const toc = extractToc(hast);
+
   const content = toJsxRuntime(hast, {
     Fragment,
     jsx: jsx as never,
@@ -91,5 +95,5 @@ export async function renderLessonMarkdown(
     components: { figure: MarkdownFigure as never },
   }) as ReactElement;
 
-  return { content };
+  return { content, toc };
 }
