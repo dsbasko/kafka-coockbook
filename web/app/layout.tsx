@@ -3,6 +3,7 @@ import { Manrope, JetBrains_Mono } from 'next/font/google';
 import { AppShell } from '@/components/AppShell';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { loadCourse } from '@/lib/course-loader';
+import { buildSiteUrl, getSiteUrl } from '@/lib/site-url';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import '@/styles/globals.css';
 
@@ -18,11 +19,31 @@ const jetbrains = JetBrains_Mono({
   variable: '--font-mono',
 });
 
-export const metadata: Metadata = {
-  title: 'Kafka Cookbook',
-  description:
-    'Курс по Apache Kafka на Go: продюсеры, консьюмеры, надёжность, контракты, стримы, эксплуатация и use cases.',
-};
+export function generateMetadata(): Metadata {
+  const course = loadCourse();
+  const description =
+    'Курс по Apache Kafka на Go: продюсеры, консьюмеры, надёжность, контракты, стримы, эксплуатация и use cases.';
+  const url = buildSiteUrl(course.basePath);
+  return {
+    metadataBase: new URL(getSiteUrl()),
+    title: course.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      siteName: course.title,
+      title: course.title,
+      description,
+      url,
+      locale: 'ru_RU',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: course.title,
+      description,
+    },
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const course = loadCourse();

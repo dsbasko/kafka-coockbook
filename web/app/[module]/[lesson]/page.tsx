@@ -14,6 +14,7 @@ import { loadCourse } from '@/lib/course-loader';
 import { getLessonContent } from '@/lib/lesson';
 import { renderLessonMarkdown } from '@/lib/markdown';
 import { extractDescription } from '@/lib/description';
+import { buildAssetUrl, buildSiteUrl } from '@/lib/site-url';
 
 type LessonPageProps = {
   params: { module: string; lesson: string };
@@ -33,16 +34,40 @@ export async function generateMetadata({ params }: LessonPageProps): Promise<Met
   if (!lesson) {
     return { title: 'Страница не найдена · Kafka Cookbook' };
   }
-  let description = course.description;
+  let description = course.description.replace(/\s+/g, ' ').trim();
   try {
     const { markdown } = await getLessonContent(params.module, params.lesson);
     description = extractDescription(markdown) ?? description;
   } catch {
     // metadata is best-effort; build will fail in the page render anyway
   }
+  const title = `${lesson.title} · ${course.title}`;
+  const url = buildSiteUrl(course.basePath, [params.module, params.lesson]);
+  const ogImage = {
+    url: buildAssetUrl(course.basePath, '/opengraph-image'),
+    width: 1200,
+    height: 630,
+    alt: `${course.title} — курс по Apache Kafka на Go`,
+  };
   return {
-    title: `${lesson.title} · ${course.title}`,
+    title,
     description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'article',
+      siteName: course.title,
+      title,
+      description,
+      url,
+      locale: 'ru_RU',
+      images: [ogImage],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage.url],
+    },
   };
 }
 
