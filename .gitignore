@@ -3,6 +3,7 @@
 Thumbs.db
 
 !.gitignore
+!.github/
 
 # Kafka Connect plugins — устанавливаются через `make connect-install-plugins`,
 # распакованные jar'ы не коммитим (большие, ~150MB+).
