@@ -179,3 +179,20 @@
 .lessonTitle {
   flex: 1 1 auto;
 }
+
+.checkSlot {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-success);
+}
+
+.lessonLink[data-completed='true'] {
+  color: var(--content-primary);
+}
+
+.lessonLink[data-completed='true'] .lessonIndex {
+  color: var(--accent-success);
+}

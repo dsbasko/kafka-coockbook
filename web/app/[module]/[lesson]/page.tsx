@@ -71,7 +71,12 @@ export default async function LessonPage({ params }: LessonPageProps) {
       tocSlot={<Toc entries={toc} />}
     >
       <article className="markdown">{content}</article>
-      <LessonNav prev={prev} next={next} />
+      <LessonNav
+        moduleId={params.module}
+        slug={params.lesson}
+        prev={prev}
+        next={next}
+      />
     </LessonLayout>
   );
 }

@@ -1,0 +1,67 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { TOTAL_LESSONS } from '@/lib/course';
+import {
+  getCompletedCount,
+  getCompletedPercent,
+  getProgress,
+  PROGRESS_STORAGE_KEY,
+  type ProgressMap,
+} from '@/lib/progress';
+import styles from './ProgressBar.module.css';
+
+export function ProgressBar() {
+  const [map, setMap] = useState<ProgressMap | null>(null);
+
+  useEffect(() => {
+    setMap(getProgress());
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== PROGRESS_STORAGE_KEY) return;
+      setMap(getProgress());
+    }
+    function handleLocal() {
+      setMap(getProgress());
+    }
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('kafka-cookbook:progress-change', handleLocal);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('kafka-cookbook:progress-change', handleLocal);
+    };
+  }, []);
+
+  // Server / pre-hydration: render fixed-width placeholder to avoid CLS.
+  if (map === null) {
+    return (
+      <div className={styles.bar} aria-hidden="true">
+        <span className={styles.label}>— / {TOTAL_LESSONS}</span>
+        <span className={styles.track}>
+          <span className={styles.fill} style={{ width: '0%' }} />
+        </span>
+      </div>
+    );
+  }
+
+  const count = getCompletedCount(map);
+  const percent = getCompletedPercent(map);
+
+  return (
+    <div
+      className={styles.bar}
+      role="progressbar"
+      aria-label="Прогресс прохождения курса"
+      aria-valuemin={0}
+      aria-valuemax={TOTAL_LESSONS}
+      aria-valuenow={count}
+      aria-valuetext={`${count} из ${TOTAL_LESSONS} (${percent}%)`}
+    >
+      <span className={styles.label}>
+        {count} / {TOTAL_LESSONS} ({percent}%)
+      </span>
+      <span className={styles.track} aria-hidden="true">
+        <span className={styles.fill} style={{ width: `${percent}%` }} />
+      </span>
+    </div>
+  );
+}

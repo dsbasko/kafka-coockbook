@@ -66,6 +66,10 @@
   flex: 0 0 auto;
 }
 
+.actions > :first-child:not(.navButton):not(.navButtonDisabled) {
+  margin-right: var(--space-3);
+}
+
 .navButton,
 .navButtonDisabled {
   width: 36px;

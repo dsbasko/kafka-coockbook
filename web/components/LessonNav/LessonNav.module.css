@@ -100,6 +100,18 @@
   cursor: not-allowed;
 }
 
+.markButton[data-completed='true'] {
+  background-color: var(--accent-success-soft);
+  border-color: var(--accent-success);
+  color: var(--accent-success);
+}
+
+.markButton[data-completed='true']:hover:not(:disabled) {
+  background-color: var(--accent-success);
+  border-color: var(--accent-success);
+  color: var(--content-inverse);
+}
+
 @media (max-width: 767px) {
   .row {
     grid-template-columns: 1fr;
