@@ -1,11 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { renderLessonMarkdown } from './markdown';
+import type { Course } from './course';
+
+const COURSE: Course = {
+  title: 'Kafka Cookbook',
+  description: 'desc',
+  basePath: '/kafka-cookbook',
+  repoUrl: 'https://github.com/dsbasko/kafka-cookbook',
+  modules: [
+    {
+      id: '02-producer',
+      title: 'Producer',
+      description: 'desc',
+      lessons: [
+        { slug: '02-03-idempotent-producer', title: 'Idempotent', duration: '30m', tags: [] },
+        { slug: '02-04-batching-and-throughput', title: 'Batching', duration: '30m', tags: [] },
+      ],
+    },
+    {
+      id: '03-consumer',
+      title: 'Consumer',
+      description: 'desc',
+      lessons: [
+        { slug: '03-01-groups-and-rebalance', title: 'Groups', duration: '30m', tags: [] },
+      ],
+    },
+  ],
+};
 
 const baseOpts = {
   moduleId: '02-producer',
   slug: '02-03-idempotent-producer',
   basePath: '/kafka-cookbook',
+  course: COURSE,
 };
 
 async function renderHtml(source: string): Promise<string> {

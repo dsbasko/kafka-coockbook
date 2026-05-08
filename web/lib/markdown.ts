@@ -11,7 +11,9 @@ import { toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import type { Element, Root as HastRoot } from 'hast';
 import { remarkAlert } from 'remark-github-blockquote-alert';
 import remarkLessonImages from './mdx-plugins/remark-lesson-images';
+import remarkLinkRewrite from './mdx-plugins/remark-link-rewrite';
 import rehypeCallout from './mdx-plugins/rehype-callout';
+import type { Course } from './course';
 import { MarkdownAside, MarkdownFigure } from './markdown-components';
 import { extractToc, type TocEntry } from './extract-toc';
 
@@ -19,6 +21,7 @@ export interface RenderLessonMarkdownOptions {
   moduleId: string;
   slug: string;
   basePath: string;
+  course: Course;
 }
 
 export interface RenderLessonMarkdownResult {
@@ -76,6 +79,12 @@ export async function renderLessonMarkdown(
       moduleId: options.moduleId,
       slug: options.slug,
       basePath: options.basePath,
+    })
+    .use(remarkLinkRewrite, {
+      moduleId: options.moduleId,
+      slug: options.slug,
+      basePath: options.basePath,
+      course: options.course,
     })
     .use(remarkRehype, { allowDangerousHtml: false })
     .use(rehypeCallout)

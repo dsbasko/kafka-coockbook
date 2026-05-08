@@ -58,6 +58,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
     moduleId: params.module,
     slug: params.lesson,
     basePath: course.basePath,
+    course,
   });
 
   const prev = getPrevLesson(course, params.module, params.lesson);
