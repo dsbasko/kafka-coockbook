@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { CodeBlock } from '@/components/CodeBlock';
+import { Callout, isCalloutType } from '@/components/Callout';
 
 type FigureProps = {
   children?: ReactNode;
@@ -12,6 +13,19 @@ export function MarkdownFigure(props: FigureProps) {
   }
   const language = readLanguage(props);
   return <CodeBlock language={language}>{props.children}</CodeBlock>;
+}
+
+type AsideProps = {
+  children?: ReactNode;
+} & Record<string, unknown>;
+
+export function MarkdownAside(props: AsideProps) {
+  const calloutType = props['data-callout-type'];
+  if (isCalloutType(calloutType)) {
+    return <Callout type={calloutType}>{props.children}</Callout>;
+  }
+  const { children, ...rest } = props;
+  return <aside {...(rest as Record<string, string>)}>{children}</aside>;
 }
 
 function readLanguage(props: Record<string, unknown>): string {

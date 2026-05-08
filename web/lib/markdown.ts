@@ -9,8 +9,10 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypePrettyCode from 'rehype-pretty-code';
 import { toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import type { Element, Root as HastRoot } from 'hast';
+import { remarkAlert } from 'remark-github-blockquote-alert';
 import remarkLessonImages from './mdx-plugins/remark-lesson-images';
-import { MarkdownFigure } from './markdown-components';
+import rehypeCallout from './mdx-plugins/rehype-callout';
+import { MarkdownAside, MarkdownFigure } from './markdown-components';
 import { extractToc, type TocEntry } from './extract-toc';
 
 export interface RenderLessonMarkdownOptions {
@@ -69,12 +71,14 @@ export async function renderLessonMarkdown(
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkAlert)
     .use(remarkLessonImages, {
       moduleId: options.moduleId,
       slug: options.slug,
       basePath: options.basePath,
     })
     .use(remarkRehype, { allowDangerousHtml: false })
+    .use(rehypeCallout)
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, {
       behavior: 'wrap',
@@ -92,7 +96,10 @@ export async function renderLessonMarkdown(
     Fragment,
     jsx: jsx as never,
     jsxs: jsxs as never,
-    components: { figure: MarkdownFigure as never },
+    components: {
+      figure: MarkdownFigure as never,
+      aside: MarkdownAside as never,
+    },
   }) as ReactElement;
 
   return { content, toc };

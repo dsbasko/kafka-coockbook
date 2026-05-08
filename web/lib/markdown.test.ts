@@ -97,9 +97,35 @@ describe('renderLessonMarkdown', () => {
     expect(html).toContain('KAFKA_BOOTSTRAP');
   });
 
-  it('renders blockquotes (callouts deferred to Task 12)', async () => {
+  it('renders plain blockquotes without alert markup', async () => {
     const html = await renderHtml('> Просто блок цитаты.');
     expect(html).toContain('<blockquote');
     expect(html).toContain('Просто блок цитаты.');
+    expect(html).not.toContain('data-callout-type');
+  });
+
+  it('renders GitHub-alert blockquotes as Callout asides with Russian titles', async () => {
+    const html = await renderHtml('> [!NOTE]\n> Это заметка.');
+    expect(html).toContain('data-callout-type="note"');
+    expect(html).toContain('Заметка');
+    expect(html).toContain('Это заметка.');
+    // upstream auto-title (uppercase NOTE) must be stripped by rehype-callout
+    expect(html).not.toContain('>NOTE<');
+    expect(html).not.toContain('markdown-alert-title');
+  });
+
+  it('supports every callout type with the correct Russian label', async () => {
+    const cases: Array<[string, string, string]> = [
+      ['NOTE', 'note', 'Заметка'],
+      ['TIP', 'tip', 'Подсказка'],
+      ['WARNING', 'warning', 'Внимание'],
+      ['IMPORTANT', 'important', 'Важно'],
+      ['CAUTION', 'caution', 'Осторожно'],
+    ];
+    for (const [marker, type, label] of cases) {
+      const html = await renderHtml(`> [!${marker}]\n> текст`);
+      expect(html).toContain(`data-callout-type="${type}"`);
+      expect(html).toContain(label);
+    }
   });
 });
