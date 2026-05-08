@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { HomeIcon, ProgramIcon, ThemeIcon, GitHubIcon } from './icons';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { HomeIcon, ProgramIcon, GitHubIcon } from './icons';
 import styles from './Sidebar.module.css';
 
 const REPO_URL = 'https://github.com/dsbasko/kafka-cookbook';
@@ -35,14 +36,7 @@ export function Sidebar({ onProgramClick }: SidebarProps) {
       </nav>
 
       <div className={styles.footer}>
-        <button
-          type="button"
-          className={styles.button}
-          aria-label="Тема оформления"
-          title="Тема оформления"
-        >
-          <ThemeIcon />
-        </button>
+        <ThemeToggle />
         <a
           className={styles.button}
           href={REPO_URL}
