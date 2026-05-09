@@ -4,6 +4,22 @@
 
 Цель — пройти путь от «что такое топик и партиция» до production-grade паттернов: транзакции, outbox, CDC через Debezium, гибрид gRPC + Kafka. Без сахара. С реальным кодом, который запускается на твоей машине через `make run` и оставляет наблюдаемый эффект на стенде.
 
+## Сайт
+
+Тот же материал в виде статического сайта с навигацией по программе, подсветкой кода и переключением темы:
+
+**https://dsbasko.github.io/kafka-cookbook/**
+
+Локальный запуск:
+
+```sh
+make web-install   # один раз — pnpm install в web/
+make web-dev       # http://localhost:3000
+make web-build     # статика в web/out/ (то же самое собирает GitHub Action на push в main)
+```
+
+Подробности про устройство и скрипты — в [web/README.md](web/README.md).
+
 ## Стек
 
 - Go 1.26
