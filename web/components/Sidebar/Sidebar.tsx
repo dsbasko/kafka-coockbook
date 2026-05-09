@@ -5,13 +5,12 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { HomeIcon, ProgramIcon, GitHubIcon } from './icons';
 import styles from './Sidebar.module.css';
 
-const REPO_URL = 'https://github.com/dsbasko/kafka-cookbook';
-
 type SidebarProps = {
   onProgramClick: () => void;
+  repoUrl: string;
 };
 
-export function Sidebar({ onProgramClick }: SidebarProps) {
+export function Sidebar({ onProgramClick, repoUrl }: SidebarProps) {
   return (
     <aside className={styles.sidebar} aria-label="Боковая навигация">
       <Link href="/" className={styles.brand} aria-label="Kafka Cookbook — главная">
@@ -39,7 +38,7 @@ export function Sidebar({ onProgramClick }: SidebarProps) {
         <ThemeToggle />
         <a
           className={styles.button}
-          href={REPO_URL}
+          href={repoUrl}
           target="_blank"
           rel="noreferrer noopener"
           aria-label="Репозиторий на GitHub"

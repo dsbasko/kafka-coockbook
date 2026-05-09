@@ -63,7 +63,7 @@ export function AppShell({ children, course }: AppShellProps) {
 
   return (
     <div className={styles.shell}>
-      <Sidebar onProgramClick={() => setIsDrawerOpen(true)} />
+      <Sidebar onProgramClick={() => setIsDrawerOpen(true)} repoUrl={course.repoUrl} />
       <ProgramDrawer
         course={course}
         currentModuleId={currentModule?.id}
