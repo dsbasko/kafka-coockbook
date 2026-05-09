@@ -63,11 +63,23 @@ export default function remarkLessonImages(options: RemarkLessonImagesOptions) {
 
   return function transformer(tree: AstNode): void {
     walk(tree, (node) => {
-      if (node.type === 'image' || node.type === 'definition') {
+      if (node.type === 'image') {
         const img = node as ImageLikeNode;
         img.url = rewriteLessonImageUrl(img.url, options, {
-          nodeKind: node.type,
+          nodeKind: 'image',
         });
+        return;
+      }
+      // mdast `definition` nodes are shared between image and link references.
+      // Only claim ones that clearly point to a lesson image; let
+      // remark-link-rewrite handle the rest.
+      if (node.type === 'definition') {
+        const def = node as ImageLikeNode;
+        if (typeof def.url === 'string' && def.url.startsWith('./images/')) {
+          def.url = rewriteLessonImageUrl(def.url, options, {
+            nodeKind: 'definition',
+          });
+        }
       }
     });
   };

@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildAssetUrl, buildSiteUrl, getSiteUrl } from './site-url';
+import {
+  buildAssetUrl,
+  buildSiteUrl,
+  getRuntimeBasePath,
+  getSiteUrl,
+} from './site-url';
 
 const ENV_KEY = 'NEXT_PUBLIC_SITE_URL';
 
@@ -80,6 +85,33 @@ describe('site-url', () => {
       expect(buildSiteUrl('/kafka-cookbook/')).toBe(
         'https://dsbasko.github.io/kafka-cookbook/',
       );
+    });
+  });
+
+  describe('getRuntimeBasePath', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+
+    afterEach(() => {
+      if (originalNodeEnv === undefined) {
+        delete (process.env as Record<string, string | undefined>).NODE_ENV;
+      } else {
+        (process.env as Record<string, string | undefined>).NODE_ENV = originalNodeEnv;
+      }
+    });
+
+    it('returns the configured course basePath in production', () => {
+      (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+      expect(getRuntimeBasePath('/kafka-cookbook')).toBe('/kafka-cookbook');
+    });
+
+    it('returns empty basePath in development to match next.config dev mode', () => {
+      (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
+      expect(getRuntimeBasePath('/kafka-cookbook')).toBe('');
+    });
+
+    it('treats test/unset NODE_ENV as production (basePath preserved)', () => {
+      (process.env as Record<string, string | undefined>).NODE_ENV = 'test';
+      expect(getRuntimeBasePath('/kafka-cookbook')).toBe('/kafka-cookbook');
     });
   });
 

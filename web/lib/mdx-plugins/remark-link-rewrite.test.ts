@@ -255,6 +255,98 @@ describe('remarkLinkRewrite plugin', () => {
     );
   });
 
+  it('skips definition nodes whose URL already points at an image asset', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'definition',
+          identifier: 'fig1',
+          url: '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/fig1.png',
+        },
+      ],
+    };
+
+    const transform = remarkLinkRewrite(OPTIONS);
+    expect(() => transform(tree as never)).not.toThrow();
+
+    const def = tree.children[0] as { url: string };
+    expect(def.url).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/fig1.png',
+    );
+  });
+
+  it('skips definition nodes whose rewritten image URL has query or fragment', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'definition',
+          identifier: 'fig2',
+          url: '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/fig2.png?v=1',
+        },
+      ],
+    };
+
+    const transform = remarkLinkRewrite(OPTIONS);
+    expect(() => transform(tree as never)).not.toThrow();
+
+    const def = tree.children[0] as { url: string };
+    expect(def.url).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/fig2.png?v=1',
+    );
+  });
+
+  it('still validates link nodes with absolute image-suffixed URLs', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'link',
+              url: '/abs/foo.png',
+              children: [{ type: 'text', value: 'bad' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const transform = remarkLinkRewrite(OPTIONS);
+    expect(() => transform(tree as never)).toThrow(/is not allowed/);
+  });
+
+  it('marks https://...png link nodes as external (image extension does not bypass external check)', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'link',
+              url: 'https://example.com/diagram.png',
+              children: [{ type: 'text', value: 'diagram' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const transform = remarkLinkRewrite(OPTIONS);
+    transform(tree as never);
+
+    const link = (
+      tree.children[0] as {
+        children: Array<{ url: string; data?: { hProperties?: Record<string, unknown> } }>;
+      }
+    ).children[0];
+    expect(link.url).toBe('https://example.com/diagram.png');
+    expect(link.data?.hProperties?.['data-external']).toBe('true');
+  });
+
   it('throws when a link points to a missing lesson', () => {
     const tree = {
       type: 'root',

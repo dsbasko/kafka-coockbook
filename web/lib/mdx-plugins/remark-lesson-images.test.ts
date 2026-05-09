@@ -152,6 +152,32 @@ describe('remarkLessonImages plugin', () => {
     );
   });
 
+  it('leaves non-image link reference definitions untouched (link plugin owns them)', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'definition',
+          identifier: 'next',
+          url: '../02-04-batching-and-throughput/README.md',
+        },
+        {
+          type: 'definition',
+          identifier: 'gh',
+          url: 'https://github.com/dsbasko/kafka-cookbook',
+        },
+      ],
+    };
+
+    const transform = remarkLessonImages(OPTIONS);
+    expect(() => transform(tree as never)).not.toThrow();
+
+    const internal = tree.children[0] as { url: string };
+    const external = tree.children[1] as { url: string };
+    expect(internal.url).toBe('../02-04-batching-and-throughput/README.md');
+    expect(external.url).toBe('https://github.com/dsbasko/kafka-cookbook');
+  });
+
   it('throws when an image node has a forbidden url', () => {
     const tree = {
       type: 'root',

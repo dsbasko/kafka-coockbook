@@ -14,7 +14,7 @@ import { loadCourse } from '@/lib/course-loader';
 import { getLessonContent } from '@/lib/lesson';
 import { renderLessonMarkdown } from '@/lib/markdown';
 import { extractDescription } from '@/lib/description';
-import { buildAssetUrl, buildSiteUrl } from '@/lib/site-url';
+import { buildAssetUrl, buildSiteUrl, getRuntimeBasePath } from '@/lib/site-url';
 
 type LessonPageProps = {
   params: { module: string; lesson: string };
@@ -82,7 +82,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const { content, toc } = await renderLessonMarkdown(markdown, {
     moduleId: params.module,
     slug: params.lesson,
-    basePath: course.basePath,
+    basePath: getRuntimeBasePath(course.basePath),
     course,
   });
 

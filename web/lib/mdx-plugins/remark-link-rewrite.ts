@@ -32,7 +32,7 @@ type AstNode = LinkNode | ParentNode;
 
 const EXTERNAL_PROTOCOL_RE = /^[a-z][a-z0-9+.-]*:\/\//i;
 const PASS_THROUGH_PROTOCOL_RE = /^(?:mailto:|tel:|data:)/i;
-const IMAGE_EXT_RE = /\.(?:png|jpe?g|gif|svg|webp|avif|ico)$/i;
+const IMAGE_EXT_RE = /\.(?:png|jpe?g|gif|svg|webp|avif|ico)(?:[?#]|$)/i;
 
 /**
  * Pure rewrite logic, exported for unit tests. Returns the new url plus a flag
@@ -156,6 +156,20 @@ export default function remarkLinkRewrite(options: RemarkLinkRewriteOptions) {
       if (node.type !== 'link' && node.type !== 'definition') return;
       const link = node as LinkNode;
       if (typeof link.url !== 'string') return;
+
+      // mdast `definition` nodes are shared by image and link references.
+      // remark-lesson-images already rewrites image-targeted definitions to
+      // absolute asset paths (e.g. `/kafka-cookbook/static/lectures/.../foo.png`);
+      // those would fail rewriteLessonLink's relative-only check, so skip them.
+      // Link nodes still go through full validation — rewriteLessonLink handles
+      // relative image URLs internally and preserves protocol/allowlist checks.
+      if (
+        node.type === 'definition' &&
+        link.url.startsWith('/') &&
+        IMAGE_EXT_RE.test(link.url)
+      ) {
+        return;
+      }
 
       const { url, external } = rewriteLessonLink(link.url, options);
       link.url = url;
