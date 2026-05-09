@@ -44,10 +44,23 @@ async function renderHtml(source: string): Promise<string> {
 describe('renderLessonMarkdown', () => {
   it('renders headings with anchor links via rehype-slug + autolink-headings', async () => {
     const html = await renderHtml('# Главное\n\n## Подробности\n\nтекст.');
-    expect(html).toContain('<h1');
+    // Leading H1 is stripped: the page H1 comes from course.yaml via LessonLayout,
+    // so the README's own H1 is removed to avoid duplicate top-level headings.
+    expect(html).not.toContain('<h1');
     expect(html).toContain('<h2');
     expect(html).toContain('id="подробности"');
     expect(html).toContain('class="heading-anchor"');
+  });
+
+  it('strips only the leading H1, leaving deeper headings and inline content intact', async () => {
+    const html = await renderHtml(
+      '# Заголовок урока\n\n## Раздел\n\nабзац.\n\n# Поздний H1 в теле',
+    );
+    // The leading H1 is dropped, but a non-leading H1 inside the body stays —
+    // we don't blanket-remove every H1, only the first content node.
+    expect(html).toContain('<h1');
+    expect(html).toContain('Поздний H1 в теле');
+    expect(html).not.toContain('Заголовок урока');
   });
 
   it('renders GFM tables', async () => {

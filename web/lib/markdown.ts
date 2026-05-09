@@ -36,6 +36,27 @@ const PRETTY_CODE_OPTIONS = {
 } as const;
 
 /**
+ * The lesson page already renders the `course.yaml` title as the page-level
+ * `<h1>` via `LessonLayout`. Lecture READMEs also start with their own `# Title`
+ * heading, which would produce a second `<h1>` in the article body — bad for
+ * the document outline, screen-reader navigation and SEO. Strip the leading
+ * `<h1>` from the lesson-content tree so the remaining `h2`/`h3` headings sit
+ * beneath the page H1 cleanly.
+ */
+const rehypeStripLeadingH1: Plugin<[], HastRoot> = () => {
+  return (tree) => {
+    for (let i = 0; i < tree.children.length; i += 1) {
+      const child = tree.children[i];
+      if (child.type !== 'element') continue;
+      if (child.tagName === 'h1') {
+        tree.children.splice(i, 1);
+      }
+      return;
+    }
+  };
+};
+
+/**
  * rehype-pretty-code stamps `data-language` on the inner <pre>/<code>, but our
  * CodeBlock wrapper renders at the <figure> level. Lift the language up so the
  * figure component can show it without inspecting children.
@@ -87,6 +108,7 @@ export async function renderLessonMarkdown(
       course: options.course,
     })
     .use(remarkRehype, { allowDangerousHtml: false })
+    .use(rehypeStripLeadingH1)
     .use(rehypeCallout)
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, {

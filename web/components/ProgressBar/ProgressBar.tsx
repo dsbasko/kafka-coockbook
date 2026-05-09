@@ -47,7 +47,11 @@ export function ProgressBar({ total }: ProgressBarProps) {
     );
   }
 
-  const count = getCompletedCount(map);
+  // Clamp to `total` so stale localStorage entries (lessons removed from
+  // course.yaml after a user marked them complete) cannot push the visible
+  // numerator above the denominator or break the ARIA contract
+  // (`aria-valuenow` must not exceed `aria-valuemax`).
+  const count = Math.min(getCompletedCount(map), total);
   const percent = getCompletedPercent(map, total);
 
   return (
