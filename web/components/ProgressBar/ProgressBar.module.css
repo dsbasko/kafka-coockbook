@@ -11,8 +11,9 @@
   color: var(--content-secondary);
   letter-spacing: 0.02em;
   white-space: nowrap;
-  min-width: 9ch;
+  min-width: 14ch;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .track {

@@ -148,6 +148,12 @@ describe('rewriteLessonLink', () => {
     ).toThrow(/is not allowed/);
   });
 
+  it('throws on bare relative paths without "./" or "../" (clear error vs CommonMark misinterpretation)', () => {
+    expect(() =>
+      rewriteLessonLink('02-04-batching-and-throughput/README.md', OPTIONS),
+    ).toThrow(/Only relative links/);
+  });
+
   it('passes through image links unchanged (image plugin owns them)', () => {
     const out = rewriteLessonLink('./images/diagram.png', OPTIONS);
     expect(out).toEqual({ url: './images/diagram.png', external: false });

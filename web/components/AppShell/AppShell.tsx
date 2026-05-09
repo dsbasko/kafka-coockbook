@@ -8,7 +8,12 @@ import { Breadcrumbs } from '@/components/Header/Breadcrumbs';
 import { HeaderLessonNav } from '@/components/Header/HeaderLessonNav';
 import { ProgramDrawer } from '@/components/ProgramDrawer';
 import { ProgressBar } from '@/components/ProgressBar';
-import { type Course, getNextLesson, getPrevLesson } from '@/lib/course';
+import {
+  type Course,
+  getNextLesson,
+  getPrevLesson,
+  getTotalLessons,
+} from '@/lib/course';
 import styles from './AppShell.module.css';
 
 type AppShellProps = {
@@ -51,7 +56,7 @@ export function AppShell({ children, course }: AppShellProps) {
 
   const actions = (
     <>
-      <ProgressBar />
+      <ProgressBar total={getTotalLessons(course)} />
       {currentLesson ? <HeaderLessonNav prev={prev} next={next} /> : null}
     </>
   );

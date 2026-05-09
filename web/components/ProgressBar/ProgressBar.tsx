@@ -1,17 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TOTAL_LESSONS } from '@/lib/course';
 import {
   getCompletedCount,
   getCompletedPercent,
   getProgress,
+  PROGRESS_CHANGE_EVENT,
   PROGRESS_STORAGE_KEY,
   type ProgressMap,
 } from '@/lib/progress';
 import styles from './ProgressBar.module.css';
 
-export function ProgressBar() {
+type ProgressBarProps = {
+  total: number;
+};
+
+export function ProgressBar({ total }: ProgressBarProps) {
   const [map, setMap] = useState<ProgressMap | null>(null);
 
   useEffect(() => {
@@ -24,10 +28,10 @@ export function ProgressBar() {
       setMap(getProgress());
     }
     window.addEventListener('storage', handleStorage);
-    window.addEventListener('kafka-cookbook:progress-change', handleLocal);
+    window.addEventListener(PROGRESS_CHANGE_EVENT, handleLocal);
     return () => {
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('kafka-cookbook:progress-change', handleLocal);
+      window.removeEventListener(PROGRESS_CHANGE_EVENT, handleLocal);
     };
   }, []);
 
@@ -35,7 +39,7 @@ export function ProgressBar() {
   if (map === null) {
     return (
       <div className={styles.bar} aria-hidden="true">
-        <span className={styles.label}>— / {TOTAL_LESSONS}</span>
+        <span className={styles.label}>— / {total}</span>
         <span className={styles.track}>
           <span className={styles.fill} style={{ width: '0%' }} />
         </span>
@@ -44,7 +48,7 @@ export function ProgressBar() {
   }
 
   const count = getCompletedCount(map);
-  const percent = getCompletedPercent(map);
+  const percent = getCompletedPercent(map, total);
 
   return (
     <div
@@ -52,12 +56,12 @@ export function ProgressBar() {
       role="progressbar"
       aria-label="Прогресс прохождения курса"
       aria-valuemin={0}
-      aria-valuemax={TOTAL_LESSONS}
+      aria-valuemax={total}
       aria-valuenow={count}
-      aria-valuetext={`${count} из ${TOTAL_LESSONS} (${percent}%)`}
+      aria-valuetext={`${count} из ${total} (${percent}%)`}
     >
       <span className={styles.label}>
-        {count} / {TOTAL_LESSONS} ({percent}%)
+        {count} / {total} ({percent}%)
       </span>
       <span className={styles.track} aria-hidden="true">
         <span className={styles.fill} style={{ width: `${percent}%` }} />

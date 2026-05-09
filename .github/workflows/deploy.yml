@@ -37,6 +37,9 @@ jobs:
         working-directory: web
         run: pnpm install --frozen-lockfile
 
+      - name: Check course coverage (course.yaml ↔ lectures/)
+        run: make web-check-coverage
+
       - name: Build site
         run: make web-build
 

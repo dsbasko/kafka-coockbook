@@ -7,6 +7,7 @@ import {
   getProgress,
   isCompleted,
   lessonKey,
+  PROGRESS_CHANGE_EVENT,
   PROGRESS_STORAGE_KEY,
   type ProgressMap,
 } from '@/lib/progress';
@@ -39,10 +40,10 @@ export function ProgramDrawer({
       setProgress(getProgress());
     }
     window.addEventListener('storage', syncFromStorage);
-    window.addEventListener('kafka-cookbook:progress-change', syncFromLocal);
+    window.addEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
     return () => {
       window.removeEventListener('storage', syncFromStorage);
-      window.removeEventListener('kafka-cookbook:progress-change', syncFromLocal);
+      window.removeEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
     };
   }, []);
 

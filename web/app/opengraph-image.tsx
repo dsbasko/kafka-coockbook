@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { getTotalLessons } from '@/lib/course';
 import { loadCourse } from '@/lib/course-loader';
 
 export const alt = 'Kafka Cookbook — курс по Apache Kafka на Go';
@@ -10,6 +11,9 @@ export default function OpengraphImage() {
   const description = course.description.replace(/\s+/g, ' ').trim();
   const truncated =
     description.length > 180 ? `${description.slice(0, 179).trimEnd()}…` : description;
+  const moduleCount = course.modules.length;
+  const lessonCount = getTotalLessons(course);
+  const stats = `${moduleCount} ${pluralize(moduleCount, ['модуль', 'модуля', 'модулей'])} · ${lessonCount} ${pluralize(lessonCount, ['урок', 'урока', 'уроков'])}`;
 
   return new ImageResponse(
     (
@@ -90,7 +94,7 @@ export default function OpengraphImage() {
             borderTop: '2px solid #e0d4b6',
           }}
         >
-          <span style={{ fontSize: 28, color: '#847b6d' }}>9 модулей · 42 урока</span>
+          <span style={{ fontSize: 28, color: '#847b6d' }}>{stats}</span>
           <span style={{ fontSize: 28, color: '#c14a1f', fontWeight: 600 }}>
             Apache Kafka · Go
           </span>
@@ -101,4 +105,13 @@ export default function OpengraphImage() {
       ...size,
     },
   );
+}
+
+function pluralize(n: number, forms: [string, string, string]): string {
+  const abs = Math.abs(n) % 100;
+  const lastDigit = abs % 10;
+  if (abs > 10 && abs < 20) return forms[2];
+  if (lastDigit > 1 && lastDigit < 5) return forms[1];
+  if (lastDigit === 1) return forms[0];
+  return forms[2];
 }

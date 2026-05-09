@@ -153,7 +153,11 @@ export function getPrevLesson(
   return flat[idx - 1];
 }
 
-export const TOTAL_LESSONS = 42;
+export function getTotalLessons(course: Course): number {
+  let total = 0;
+  for (const mod of course.modules) total += mod.lessons.length;
+  return total;
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

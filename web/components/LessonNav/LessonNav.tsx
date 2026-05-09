@@ -8,6 +8,7 @@ import {
   isCompleted,
   lessonKey,
   markCompleted,
+  PROGRESS_CHANGE_EVENT,
   PROGRESS_STORAGE_KEY,
   unmarkCompleted,
 } from '@/lib/progress';
@@ -30,12 +31,19 @@ export function LessonNav({ moduleId, slug, prev, next }: LessonNavProps) {
       if (event.key !== PROGRESS_STORAGE_KEY) return;
       setCompleted(isCompleted(getProgress(), key));
     }
+    function syncFromLocal() {
+      setCompleted(isCompleted(getProgress(), key));
+    }
     window.addEventListener('storage', syncFromStorage);
-    return () => window.removeEventListener('storage', syncFromStorage);
+    window.addEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
+    return () => {
+      window.removeEventListener('storage', syncFromStorage);
+      window.removeEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
+    };
   }, [key]);
 
   function emitChange() {
-    window.dispatchEvent(new Event('kafka-cookbook:progress-change'));
+    window.dispatchEvent(new Event(PROGRESS_CHANGE_EVENT));
   }
 
   function handleToggle() {

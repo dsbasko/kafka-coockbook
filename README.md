@@ -1,6 +1,6 @@
 # Курс: Kafka на Go от новичка до профессионала
 
-Это учебный курс из 9 модулей и 41 единицы материала (37 лекций плюс 4 сквозных use case'а). Курс наслаивается поверх sandbox-стенда из корня репозитория — kafka-1/2/3 в KRaft mode, Schema Registry, Kafka Connect, Kafka UI.
+Это учебный курс из 9 модулей и 42 единиц материала (38 лекций плюс 4 сквозных use case'а). Курс наслаивается поверх sandbox-стенда из корня репозитория — kafka-1/2/3 в KRaft mode, Schema Registry, Kafka Connect, Kafka UI.
 
 Цель — пройти путь от «что такое топик и партиция» до production-grade паттернов: транзакции, outbox, CDC через Debezium, гибрид gRPC + Kafka. Без сахара. С реальным кодом, который запускается на твоей машине через `make run` и оставляет наблюдаемый эффект на стенде.
 
@@ -10,7 +10,7 @@
 
 **https://dsbasko.github.io/kafka-cookbook/**
 
-Локальный запуск:
+Локальный запуск (требует Node ≥ 20 и pnpm 9.15.0 — `corepack enable && corepack prepare pnpm@9.15.0 --activate`):
 
 ```sh
 make web-install   # один раз — pnpm install в web/
@@ -18,7 +18,7 @@ make web-dev       # http://localhost:3000
 make web-build     # статика в web/out/ (то же самое собирает GitHub Action на push в main)
 ```
 
-Подробности про устройство и скрипты — в [web/README.md](web/README.md).
+Деплой автоматический: `.github/workflows/deploy.yml` собирает и публикует на push в `main` (один раз нужно включить Settings → Pages → Source: «GitHub Actions»). Origin для canonical/sitemap/OG задаётся переменной `NEXT_PUBLIC_SITE_URL` (дефолт `https://dsbasko.github.io`). Подробности про устройство и скрипты — в [web/README.md](web/README.md).
 
 ## Стек
 
@@ -204,7 +204,7 @@ Stream-processing концепции (event-time, windowing, watermark, late eve
 
 ## Как добавить новую лекцию
 
-Внутри модуля создаёшь папку формата `<MM>-<short-name>/`, кладёшь `go.mod` с module path `github.com/dsbasko/kafka-sandbox/lectures/<NN-module>/<MM-short>`, добавляешь `use ./<NN-module>/<MM-short>` в `lectures/go.work`, дальше README + Makefile + cmd. Раздел оглавления выше обновляешь руками — это чек-лист, что лекция готова, а не просто папка.
+Внутри модуля создаёшь папку формата `<MM>-<short-name>/`, кладёшь `go.mod` с module path `github.com/dsbasko/kafka-sandbox/lectures/<NN-module>/<MM-short>`, добавляешь `use ./<NN-module>/<MM-short>` в `lectures/go.work`, дальше README + Makefile + cmd. Параллельно прописываешь лекцию в `course.yaml` (id, title, duration, tags) и прогоняешь `make web-check-coverage` — она сверяет манифест с файловой системой и кричит про расхождения. Раздел оглавления ниже обновляешь руками.
 
 ## Совместимость и что вне scope
 

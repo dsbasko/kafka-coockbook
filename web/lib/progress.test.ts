@@ -111,11 +111,24 @@ describe('getCompletedCount / getCompletedPercent', () => {
     expect(getCompletedCount(getProgress())).toBe(2);
   });
 
-  it('computes percent against TOTAL_LESSONS=42', () => {
-    expect(getCompletedPercent({})).toBe(0);
+  it('computes percent against the provided total', () => {
+    expect(getCompletedPercent({}, 42)).toBe(0);
     for (let i = 0; i < 21; i += 1) {
       markCompleted(lessonKey('m', String(i)), () => '2026-05-06T00:00:00.000Z');
     }
-    expect(getCompletedPercent(getProgress())).toBe(50);
+    expect(getCompletedPercent(getProgress(), 42)).toBe(50);
+  });
+
+  it('returns 0 when total is zero or negative', () => {
+    markCompleted(lessonKey('a', 'b'), () => '2026-05-06T00:00:00.000Z');
+    expect(getCompletedPercent(getProgress(), 0)).toBe(0);
+    expect(getCompletedPercent(getProgress(), -1)).toBe(0);
+  });
+
+  it('clamps percent to 100 when count exceeds total (orphan keys)', () => {
+    for (let i = 0; i < 5; i += 1) {
+      markCompleted(lessonKey('m', String(i)), () => '2026-05-06T00:00:00.000Z');
+    }
+    expect(getCompletedPercent(getProgress(), 3)).toBe(100);
   });
 });

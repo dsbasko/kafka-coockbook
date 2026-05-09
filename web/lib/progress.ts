@@ -1,6 +1,5 @@
-import { TOTAL_LESSONS } from './course';
-
 export const PROGRESS_STORAGE_KEY = 'kafka-cookbook-progress';
+export const PROGRESS_CHANGE_EVENT = 'kafka-cookbook:progress-change';
 
 export type LessonKey = `${string}/${string}`;
 
@@ -65,9 +64,9 @@ export function getCompletedCount(map: ProgressMap): number {
   return Object.values(map).filter((entry) => entry?.completed === true).length;
 }
 
-export function getCompletedPercent(map: ProgressMap): number {
-  if (TOTAL_LESSONS <= 0) return 0;
-  const ratio = getCompletedCount(map) / TOTAL_LESSONS;
+export function getCompletedPercent(map: ProgressMap, total: number): number {
+  if (total <= 0) return 0;
+  const ratio = Math.min(getCompletedCount(map), total) / total;
   return Math.round(ratio * 100);
 }
 
