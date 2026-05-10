@@ -49,41 +49,8 @@ a.value:hover {
 }
 
 .markButton {
+  composes: btn btnPrimary from '../HomePage/HomePage.module.css';
   margin-top: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--accent-main);
-  color: var(--content-inverse);
-  border: 1px solid var(--accent-main);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.005em;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
-}
-
-.markButton:hover:not(:disabled) {
-  background: var(--accent-main-hover);
-  border-color: var(--accent-main-hover);
-}
-
-.markButton:focus-visible {
-  outline: 2px solid var(--accent-main);
-  outline-offset: 2px;
-}
-
-.markButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.markButton[data-completed='true'] {
-  background: transparent;
-  color: var(--accent-success);
-  border-color: var(--accent-success);
-}
-
-.markButton[data-completed='true']:hover:not(:disabled) {
-  background: var(--accent-success-soft);
+  border-radius: 4px;
+  justify-content: center;
 }

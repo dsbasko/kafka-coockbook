@@ -6,7 +6,6 @@ import {
   getProgress,
   isCompleted,
   lessonKey,
-  markCompleted,
   PROGRESS_CHANGE_EVENT,
   PROGRESS_STORAGE_KEY,
   unmarkCompleted,
@@ -50,19 +49,12 @@ export function LessonSideMeta({
     };
   }, [key]);
 
-  const handleToggle = () => {
-    if (completed) {
-      unmarkCompleted(key);
-      setCompleted(false);
-    } else {
-      markCompleted(key);
-      setCompleted(true);
-    }
+  const handleUnmark = () => {
+    unmarkCompleted(key);
+    setCompleted(false);
     window.dispatchEvent(new Event(PROGRESS_CHANGE_EVENT));
   };
 
-  const isReady = completed !== null;
-  const buttonLabel = completed ? '✓ Пройдено' : 'Отметить пройденным';
   const moduleNum = String(moduleIndex).padStart(2, '0');
 
   return (
@@ -89,16 +81,11 @@ export function LessonSideMeta({
           </span>
         </div>
       )}
-      <button
-        type="button"
-        className={styles.markButton}
-        data-completed={completed ? 'true' : 'false'}
-        onClick={isReady ? handleToggle : undefined}
-        disabled={!isReady}
-        aria-pressed={completed === true}
-      >
-        {buttonLabel}
-      </button>
+      {completed && (
+        <button type="button" className={styles.markButton} onClick={handleUnmark}>
+          Пометить непрочитанным
+        </button>
+      )}
     </div>
   );
 }

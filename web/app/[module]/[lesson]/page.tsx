@@ -115,7 +115,14 @@ export default async function LessonPage({ params }: LessonPageProps) {
             />
           ) : null
         }
-        footer={<LessonNav prev={prev} next={next} />}
+        footer={
+          <LessonNav
+            prev={prev}
+            next={next}
+            currentModuleId={params.module}
+            currentSlug={params.lesson}
+          />
+        }
       >
         <article className="markdown">{content}</article>
       </LessonPageLayout>
