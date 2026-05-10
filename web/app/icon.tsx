@@ -3,6 +3,10 @@ import { ImageResponse } from 'next/og';
 export const size = { width: 32, height: 32 };
 export const contentType = 'image/png';
 
+export function generateStaticParams() {
+  return [{ __metadata_id__: [] }];
+}
+
 export default function Icon() {
   return new ImageResponse(
     (

@@ -6,6 +6,10 @@ export const alt = 'Kafka Cookbook — курс по Apache Kafka на Go';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
+export function generateStaticParams() {
+  return [{ __metadata_id__: [] }];
+}
+
 export default function OpengraphImage() {
   const course = loadCourse();
   const description = course.description.replace(/\s+/g, ' ').trim();
