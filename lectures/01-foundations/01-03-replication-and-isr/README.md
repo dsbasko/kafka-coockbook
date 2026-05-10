@@ -247,7 +247,7 @@ make restore-broker BROKER=kafka-3
 make topic-describe
 ```
 
-Получится тот же ISR, что в watch-isr, только в нативном для shell-скриптов виде — `Leader: 1 Replicas: 1,2,3 Isr: 1,3`. Идея ровно та же, что в 01-02: `admin.ListTopics` отдаёт всё, что нужно, без вызовов shell.
+Получится тот же ISR, что в watch-isr, только в нативном для shell-скриптов виде — `Leader: 1 Replicas: 1,2,3 Isr: 1,3`. Идея ровно та же, что в [Топики и партиции](../../01-foundations/01-02-topics-and-partitions/README.md): `admin.ListTopics` отдаёт всё, что нужно, без вызовов shell.
 
 Убрать топик:
 
@@ -280,4 +280,4 @@ ISR={1}     min.insync.replicas=2     →     запись acks=all → NotEnoug
 - `RF=3 + min.insync.replicas=2 + acks=all` — стандартная durable-конфигурация. Терпит падение одной ноды; на двух ISR падает в 1, и `acks=all` начинает возвращать `NotEnoughReplicas`.
 - `admin.ListTopics` показывает всё, что нужно для наблюдения за ISR. Никаких shell-скриптов для этого не нужно.
 
-Дальше (01-04) посмотрим, как сообщения вообще живут во времени. Разберём offset, log end offset, HWM и retention. Заодно поймём, почему «у нас сообщения хранятся 7 дней» — фраза с двойным дном.
+Дальше ([Offsets и retention](../../01-foundations/01-04-offsets-and-retention/README.md)) посмотрим, как сообщения вообще живут во времени. Разберём offset, log end offset, HWM и retention. Заодно поймём, почему «у нас сообщения хранятся 7 дней» — фраза с двойным дном.
