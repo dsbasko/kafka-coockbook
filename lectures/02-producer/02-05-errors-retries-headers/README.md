@@ -174,7 +174,7 @@ fetches.EachRecord(func(r *kgo.Record) {
 - Headers — отдельный слот record'а. Туда кладут всё инфраструктурное: tracing context, correlation-id, message-type, source-service, idempotency-key и тому подобное. Брокер их не трогает.
 - В payload идут только бизнес-поля события, то, что описано в его schema. Headers — для всего остального, что нужно транспорту и инфраструктуре.
 
-В модуле 03 переключаемся на сторону консьюмера: группы, ребалансы, гарантии обработки. Headers пригодятся там в каждой второй лекции — особенно в 03-04 (error handling), где DLQ-сообщения принципиально требуют `error.message`, `error.class`, `original.offset` именно в headers, а не в payload.
+В модуле 03 переключаемся на сторону консьюмера: группы, ребалансы, гарантии обработки. Headers пригодятся там в каждой второй лекции — особенно в [Обработка ошибок](../../03-consumer/03-04-error-handling/README.md), где DLQ-сообщения принципиально требуют `error.message`, `error.class`, `original.offset` именно в headers, а не в payload.
 
 ## Запуск
 
