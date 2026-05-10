@@ -48,10 +48,11 @@ export function CodeBlock({ language, children }: CodeBlockProps) {
         <button
           type="button"
           className={styles.copy}
+          data-copied={copied ? 'true' : 'false'}
           onClick={handleCopy}
           aria-label={copied ? 'Скопировано' : 'Скопировать код'}
         >
-          {copied ? 'Скопировано ✓' : 'Скопировать'}
+          {copied ? '✓ скопировано' : 'copy'}
         </button>
       </header>
       <div className={styles.body}>{children}</div>

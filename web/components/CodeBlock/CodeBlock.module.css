@@ -6,13 +6,16 @@
   overflow: hidden;
 }
 
+[data-theme='dark'] .figure {
+  background-color: var(--bg-muted);
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  height: 36px;
-  padding: 0 var(--space-3) 0 var(--space-4);
+  padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--bg-stroke);
   background-color: var(--bg-subtle);
 }
@@ -20,25 +23,28 @@
 .language {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--content-secondary);
+  color: var(--content-tertiary);
 }
 
 .copy {
-  font-family: inherit;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--content-secondary);
   background-color: transparent;
   border: 1px solid var(--bg-stroke);
   border-radius: var(--radius-sm);
-  padding: 4px 10px;
+  padding: 3px 10px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+    color 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 
 .copy:hover {
@@ -52,7 +58,11 @@
   outline-offset: 2px;
 }
 
+.copy[data-copied='true'] {
+  color: var(--accent-success);
+  border-color: var(--accent-success);
+}
+
 .body {
-  /* let the inner <pre> own padding/scroll; we just provide a min-width container */
   display: block;
 }
