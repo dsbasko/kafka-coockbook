@@ -9,10 +9,12 @@ type HeaderProps = {
 export function Header({ breadcrumbs, actions }: HeaderProps) {
   return (
     <header className={styles.header}>
-      <div className={styles.breadcrumbs} aria-label="Хлебные крошки">
-        {breadcrumbs ?? <span className={styles.breadcrumbRoot}>Kafka Cookbook</span>}
+      <div className={styles.inner}>
+        <div className={styles.breadcrumbs} aria-label="Хлебные крошки">
+          {breadcrumbs ?? <span className={styles.breadcrumbRoot}>Kafka Cookbook</span>}
+        </div>
+        <div className={styles.actions}>{actions}</div>
       </div>
-      <div className={styles.actions}>{actions}</div>
     </header>
   );
 }

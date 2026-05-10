@@ -44,7 +44,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setResolvedTheme(resolved);
       applyResolvedTheme(resolved);
     };
-    handleChange();
+    // Listen for OS-level changes only. Don't apply on mount: the FOUC script
+    // and the storage-read effect already set the correct value, and the
+    // initial `preference` here is the stale `'system'` default — applying it
+    // would overwrite a user's stored `'light'`/`'dark'` choice with the
+    // system theme.
     mq.addEventListener('change', handleChange);
     return () => mq.removeEventListener('change', handleChange);
   }, [preference]);

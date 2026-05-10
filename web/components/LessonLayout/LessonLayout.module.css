@@ -1,6 +1,6 @@
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, var(--layout-content-max)) var(--layout-toc-width);
+  grid-template-columns: minmax(0, var(--layout-content-max));
   gap: var(--space-8);
   padding: var(--space-8) var(--space-6);
   max-width: 1280px;
@@ -9,7 +9,6 @@
 }
 
 .content {
-  grid-column: 1;
   min-width: 0;
 }
 
@@ -22,24 +21,8 @@
   letter-spacing: -0.01em;
 }
 
-.tocSlot {
-  grid-column: 2;
-  min-width: 0;
-}
-
-@media (max-width: 1279px) {
-  .layout {
-    grid-template-columns: minmax(0, var(--layout-content-max));
-  }
-
-  .tocSlot {
-    display: none;
-  }
-}
-
 @media (max-width: 1023px) {
   .layout {
-    grid-template-columns: minmax(0, 1fr);
     padding: var(--space-6) var(--space-4);
   }
 }

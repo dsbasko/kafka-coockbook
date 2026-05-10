@@ -1,44 +1,25 @@
 .sidebar {
   width: var(--layout-sidebar-width);
-  min-height: 100dvh;
+  /* Fixed viewport height so the flex parent doesn't stretch the column to
+     document height — otherwise the footer icons end up far below the fold. */
+  height: 100dvh;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-4) 0;
-  background-color: var(--bg-surface);
+  background-color: var(--bg-default);
   border-right: 1px solid var(--bg-stroke);
   position: sticky;
   top: 0;
-}
-
-.brand {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  background: var(--accent-main);
-  color: var(--content-inverse);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--space-2);
-  text-decoration: none;
-}
-
-.brand:focus-visible {
-  outline: 2px solid var(--accent-main);
-  outline-offset: 2px;
-}
-
-.brandMark {
-  line-height: 1;
+  z-index: 10;
 }
 
 .nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   width: 100%;
   align-items: center;
 }
@@ -47,24 +28,30 @@
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   width: 100%;
   align-items: center;
 }
 
 .button {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--content-secondary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     color 120ms ease,
-    background-color 120ms ease;
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .button:hover {
@@ -72,9 +59,16 @@
   color: var(--content-primary);
 }
 
-.button[aria-current='page'] {
-  color: var(--accent-main);
-  background-color: var(--accent-main-soft);
+.button:focus-visible {
+  outline: 2px solid var(--accent-main);
+  outline-offset: 2px;
+}
+
+.button[aria-current='page'],
+.button[aria-expanded='true'] {
+  color: var(--content-primary);
+  background-color: var(--bg-subtle);
+  border-color: var(--bg-stroke);
 }
 
 @media (max-width: 1023px) {
@@ -91,34 +85,22 @@
     z-index: var(--z-header);
   }
 
-  .brand {
-    margin-bottom: 0;
-    margin-right: var(--space-2);
-    width: 36px;
-    height: 36px;
-    font-size: var(--font-size-md);
-  }
-
   .nav,
   .footer {
     flex-direction: row;
     width: auto;
+    gap: var(--space-1);
   }
 
   .footer {
     margin-top: 0;
     margin-left: auto;
   }
-
-  .button {
-    width: 40px;
-    height: 40px;
-  }
 }
 
 @media (max-width: 480px) {
   .button {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
   }
 }

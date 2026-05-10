@@ -1,6 +1,6 @@
 /* Design tokens — Kafka Cookbook
  * Light: warm paper palette (cream + warm grays).
- * Dark:  deep ink with the same terracotta/amber accent for continuity.
+ * Dark:  deep ink with the same blue accent for continuity.
  *
  * Naming (BEM-friendly): --<category>-<role>.
  *   bg-*       — surface fills
@@ -66,65 +66,64 @@
   --z-popover: 110;
 }
 
-/* Light theme — warm paper.
- * Background tones from cream/sand. Accent: terracotta. */
+/* Light theme — neo-academic cream + deep moss accent. */
 [data-theme='light'] {
-  --bg-default: #faf6ef;
+  --bg-default: #faf7f2;
   --bg-surface: #ffffff;
-  --bg-subtle: #f1ead8;
-  --bg-muted: #ebe2cc;
-  --bg-stroke: #e0d4b6;
-  --bg-stroke-strong: #c8b88f;
+  --bg-subtle: #f3efe7;
+  --bg-muted: #ece7dc;
+  --bg-stroke: #e6e0d3;
+  --bg-stroke-strong: #d4cdba;
 
-  --content-primary: #1c1a16;
-  --content-secondary: #5b544a;
-  --content-tertiary: #847b6d;
-  --content-inverse: #faf6ef;
-  --content-link: #b03a1a;
-  --content-link-hover: #8a2c12;
+  --content-primary: #1a1a1a;
+  --content-secondary: #5b5750;
+  --content-tertiary: #8a857b;
+  --content-inverse: #faf7f2;
+  --content-link: #2e3b2e;
+  --content-link-hover: #243024;
 
-  --accent-main: #c14a1f;
-  --accent-main-hover: #a23d18;
-  --accent-main-soft: #f3d9cc;
-  --accent-success: #2f7a45;
-  --accent-success-soft: #d6ecdc;
-  --accent-notice: #b88018;
-  --accent-notice-soft: #f4e4c2;
+  --accent-main: #2e3b2e;
+  --accent-main-hover: #243024;
+  --accent-main-soft: rgba(46, 59, 46, 0.1);
+  --accent-success: #1f8a5b;
+  --accent-success-soft: rgba(31, 138, 91, 0.12);
+  --accent-notice: #c1862a;
+  --accent-notice-soft: rgba(193, 134, 42, 0.14);
   --accent-critical: #b53120;
-  --accent-critical-soft: #f4d2cc;
+  --accent-critical-soft: rgba(181, 49, 32, 0.12);
 
-  --shadow-sm: 0 1px 2px rgba(28, 26, 22, 0.06);
-  --shadow-md: 0 4px 12px rgba(28, 26, 22, 0.08);
-  --shadow-lg: 0 12px 32px rgba(28, 26, 22, 0.12);
+  --shadow-sm: 0 1px 2px rgba(35, 25, 10, 0.04), 0 0 0 1px rgba(35, 25, 10, 0.04);
+  --shadow-md: 0 4px 16px rgba(35, 25, 10, 0.06), 0 1px 3px rgba(35, 25, 10, 0.04);
+  --shadow-lg: 0 12px 32px rgba(35, 25, 10, 0.12);
 }
 
-/* Dark theme — deep ink with the same accent. */
+/* Dark theme — deep ink with sage accent. */
 [data-theme='dark'] {
-  --bg-default: #14130f;
-  --bg-surface: #1d1c18;
-  --bg-subtle: #232118;
-  --bg-muted: #2a2820;
-  --bg-stroke: #38342a;
-  --bg-stroke-strong: #534d3f;
+  --bg-default: #16140f;
+  --bg-surface: #1d1b16;
+  --bg-subtle: #100e0a;
+  --bg-muted: #25221b;
+  --bg-stroke: #2a2620;
+  --bg-stroke-strong: #3a342a;
 
-  --content-primary: #f1ebde;
-  --content-secondary: #a8a08e;
-  --content-tertiary: #756f5f;
-  --content-inverse: #14130f;
-  --content-link: #e87a4a;
-  --content-link-hover: #f0916a;
+  --content-primary: #f0ece2;
+  --content-secondary: #a8a294;
+  --content-tertiary: #6e695e;
+  --content-inverse: #16140f;
+  --content-link: #b8c7b1;
+  --content-link-hover: #cdd9c7;
 
-  --accent-main: #e87a4a;
-  --accent-main-hover: #f0916a;
-  --accent-main-soft: #3a2418;
-  --accent-success: #6cb87a;
-  --accent-success-soft: #1c2a1f;
-  --accent-notice: #d8a544;
-  --accent-notice-soft: #2e2516;
+  --accent-main: #b8c7b1;
+  --accent-main-hover: #cdd9c7;
+  --accent-main-soft: rgba(184, 199, 177, 0.12);
+  --accent-success: #4dbf8c;
+  --accent-success-soft: rgba(77, 191, 140, 0.14);
+  --accent-notice: #e0a449;
+  --accent-notice-soft: rgba(224, 164, 73, 0.16);
   --accent-critical: #e25c48;
-  --accent-critical-soft: #2f1814;
+  --accent-critical-soft: rgba(226, 92, 72, 0.14);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
 }

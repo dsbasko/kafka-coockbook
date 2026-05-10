@@ -1,0 +1,89 @@
+.meta {
+  border-top: 1px solid var(--bg-stroke);
+  padding-top: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: 13px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.key {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--content-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.value {
+  color: var(--content-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+a.value:hover {
+  color: var(--accent-main);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  padding: 1px 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-stroke);
+  border-radius: var(--radius-sm);
+  color: var(--content-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
+.markButton {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-main);
+  color: var(--content-inverse);
+  border: 1px solid var(--accent-main);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.005em;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.markButton:hover:not(:disabled) {
+  background: var(--accent-main-hover);
+  border-color: var(--accent-main-hover);
+}
+
+.markButton:focus-visible {
+  outline: 2px solid var(--accent-main);
+  outline-offset: 2px;
+}
+
+.markButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.markButton[data-completed='true'] {
+  background: transparent;
+  color: var(--accent-success);
+  border-color: var(--accent-success);
+}
+
+.markButton[data-completed='true']:hover:not(:disabled) {
+  background: var(--accent-success-soft);
+}

@@ -4,24 +4,31 @@
 }
 
 .trigger {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--content-secondary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     color 120ms ease,
-    background-color 120ms ease;
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.trigger svg {
+  width: 18px;
+  height: 18px;
 }
 
 .trigger:hover,
 .trigger[aria-expanded='true'] {
   background-color: var(--bg-subtle);
   color: var(--content-primary);
+  border-color: var(--bg-stroke);
 }
 
 .trigger:focus-visible {
@@ -97,7 +104,7 @@
 
 @media (max-width: 480px) {
   .trigger {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
   }
 }

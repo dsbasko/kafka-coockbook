@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
@@ -14,6 +14,7 @@ import {
   getPrevLesson,
   getTotalLessons,
 } from '@/lib/course';
+import { OPEN_PROGRAM_EVENT } from '@/lib/program-drawer';
 import styles from './AppShell.module.css';
 
 type AppShellProps = {
@@ -24,6 +25,15 @@ type AppShellProps = {
 export function AppShell({ children, course }: AppShellProps) {
   const pathname = usePathname() ?? '/';
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Allow descendant components (Hero CTA on the home page) to ask for the
+  // program drawer without lifting state up — the AppShell stays the single
+  // owner of drawer state.
+  useEffect(() => {
+    const handler = () => setIsDrawerOpen(true);
+    window.addEventListener(OPEN_PROGRAM_EVENT, handler);
+    return () => window.removeEventListener(OPEN_PROGRAM_EVENT, handler);
+  }, []);
 
   const segments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
   const moduleId = segments[0];
@@ -61,9 +71,20 @@ export function AppShell({ children, course }: AppShellProps) {
     </>
   );
 
+  // Home and module index pages own their own hero (eyebrow + breadcrumbs +
+  // progress card) — the global header would duplicate that chrome. Lesson
+  // pages keep the header because they need lesson nav + reading progress.
+  const isHome = pathname === '/';
+  const isModuleIndex = !!moduleId && !lessonSlug;
+  const hideHeader = isHome || isModuleIndex;
+
   return (
     <div className={styles.shell}>
-      <Sidebar onProgramClick={() => setIsDrawerOpen(true)} repoUrl={course.repoUrl} />
+      <Sidebar
+        onProgramClick={() => setIsDrawerOpen((prev) => !prev)}
+        isProgramOpen={isDrawerOpen}
+        repoUrl={course.repoUrl}
+      />
       <ProgramDrawer
         course={course}
         currentModuleId={currentModule?.id}
@@ -72,7 +93,7 @@ export function AppShell({ children, course }: AppShellProps) {
         onClose={() => setIsDrawerOpen(false)}
       />
       <div className={styles.body}>
-        <Header breadcrumbs={breadcrumbs} actions={actions} />
+        {hideHeader ? null : <Header breadcrumbs={breadcrumbs} actions={actions} />}
         <main className={styles.main}>{children}</main>
       </div>
     </div>

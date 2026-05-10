@@ -62,7 +62,7 @@ export function Toc({ entries }: TocProps) {
 
   return (
     <nav className={styles.toc} aria-label="Содержание">
-      <p className={styles.heading}>Содержание</p>
+      <p className={styles.heading}>/ contents</p>
       <ol className={styles.list}>
         {entries.map((entry) => {
           const isActive = entry.slug === activeSlug;
@@ -78,7 +78,8 @@ export function Toc({ entries }: TocProps) {
                 className={styles.link}
                 onClick={handleClick(entry.slug)}
               >
-                {entry.text}
+                <span className={styles.marker} aria-hidden="true" />
+                <span className={styles.label}>{entry.text}</span>
               </a>
             </li>
           );

@@ -1,0 +1,124 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 56px;
+  align-items: start;
+  padding: 56px var(--space-8) 96px;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.page[data-has-side='false'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.content {
+  min-width: 0;
+}
+
+.article {
+  min-width: 0;
+  max-width: 900px;
+}
+
+.hero {
+  padding-bottom: var(--space-8);
+  margin-bottom: var(--space-8);
+  border-bottom: 1px solid var(--bg-stroke);
+}
+
+.title {
+  font-size: 72px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.prose {
+  font-family: var(--font-serif), Georgia, 'Source Serif Pro', serif;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--content-primary);
+}
+
+/* Apply serif sizing to markdown body without rewriting markdown.css. */
+.prose :global(.markdown) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Headings inside the article stay sans-serif (Manrope) for editorial contrast. */
+.prose :global(.markdown h2),
+.prose :global(.markdown h3),
+.prose :global(.markdown h4) {
+  font-family: var(--font-ui), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+.prose :global(.markdown h2) {
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  margin-top: 40px;
+  margin-bottom: var(--space-5);
+  scroll-margin-top: calc(56px + var(--space-4));
+}
+
+.prose :global(.markdown p) {
+  text-wrap: pretty;
+}
+
+.footer {
+  margin-top: 56px;
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--bg-stroke);
+}
+
+/* Right sidebar: sticks within its own grid column. */
+.side {
+  position: sticky;
+  top: calc(56px + var(--space-5));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding-top: var(--space-2);
+  max-height: calc(100dvh - 56px - var(--space-8));
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-8);
+  }
+
+  .side {
+    display: none;
+  }
+
+  .title {
+    font-size: 56px;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--space-6) var(--space-5) var(--space-10);
+  }
+
+  .title {
+    font-size: 36px;
+  }
+
+  .prose {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .prose :global(.markdown h2) {
+    font-size: 22px;
+    margin-top: var(--space-8);
+  }
+}

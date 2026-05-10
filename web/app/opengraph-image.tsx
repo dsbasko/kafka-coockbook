@@ -25,9 +25,9 @@ export default function OpengraphImage() {
           flexDirection: 'column',
           justifyContent: 'space-between',
           padding: '72px 80px',
-          background: 'linear-gradient(135deg, #faf6ef 0%, #f1ead8 100%)',
+          background: 'linear-gradient(135deg, #faf7f2 0%, #f3efe7 100%)',
           fontFamily: 'sans-serif',
-          color: '#1c1a16',
+          color: '#1a1a1a',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
@@ -36,11 +36,11 @@ export default function OpengraphImage() {
               width: 96,
               height: 96,
               borderRadius: 48,
-              background: '#c14a1f',
+              background: '#1a1a1a',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#faf6ef',
+              color: '#faf7f2',
               fontSize: 60,
               fontWeight: 700,
               letterSpacing: -2,
@@ -52,7 +52,7 @@ export default function OpengraphImage() {
             style={{
               fontSize: 32,
               fontWeight: 500,
-              color: '#5b544a',
+              color: '#5b5750',
               letterSpacing: -0.5,
             }}
           >
@@ -67,7 +67,7 @@ export default function OpengraphImage() {
               fontWeight: 700,
               lineHeight: 1.05,
               letterSpacing: -3,
-              color: '#1c1a16',
+              color: '#1a1a1a',
             }}
           >
             {course.title}
@@ -77,7 +77,7 @@ export default function OpengraphImage() {
               fontSize: 32,
               fontWeight: 400,
               lineHeight: 1.35,
-              color: '#5b544a',
+              color: '#5b5750',
               maxWidth: 980,
             }}
           >
@@ -91,11 +91,11 @@ export default function OpengraphImage() {
             justifyContent: 'space-between',
             alignItems: 'center',
             paddingTop: 32,
-            borderTop: '2px solid #e0d4b6',
+            borderTop: '2px solid #e6e0d3',
           }}
         >
-          <span style={{ fontSize: 28, color: '#847b6d' }}>{stats}</span>
-          <span style={{ fontSize: 28, color: '#c14a1f', fontWeight: 600 }}>
+          <span style={{ fontSize: 28, color: '#8a857b' }}>{stats}</span>
+          <span style={{ fontSize: 28, color: '#2a6fdb', fontWeight: 600 }}>
             Apache Kafka · Go
           </span>
         </div>

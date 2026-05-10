@@ -1,26 +1,30 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { HomeIcon, ProgramIcon, GitHubIcon } from './icons';
 import styles from './Sidebar.module.css';
 
 type SidebarProps = {
   onProgramClick: () => void;
+  isProgramOpen: boolean;
   repoUrl: string;
 };
 
-export function Sidebar({ onProgramClick, repoUrl }: SidebarProps) {
+export function Sidebar({ onProgramClick, isProgramOpen, repoUrl }: SidebarProps) {
+  const pathname = usePathname() ?? '/';
+  const isHome = pathname === '/';
   return (
     <aside className={styles.sidebar} aria-label="Боковая навигация">
-      <Link href="/" className={styles.brand} aria-label="Kafka Cookbook — главная">
-        <span className={styles.brandMark} aria-hidden="true">
-          K
-        </span>
-      </Link>
-
       <nav className={styles.nav} aria-label="Основная навигация">
-        <Link href="/" className={styles.button} aria-label="Главная" title="Главная">
+        <Link
+          href="/"
+          className={styles.button}
+          aria-label="Главная"
+          title="Главная"
+          aria-current={isHome ? 'page' : undefined}
+        >
           <HomeIcon />
         </Link>
         <button
@@ -28,6 +32,8 @@ export function Sidebar({ onProgramClick, repoUrl }: SidebarProps) {
           className={styles.button}
           aria-label="Программа курса"
           title="Программа курса"
+          aria-haspopup="dialog"
+          aria-expanded={isProgramOpen}
           onClick={onProgramClick}
         >
           <ProgramIcon />

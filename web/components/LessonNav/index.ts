@@ -1,1 +1,1 @@
-export { LessonNav } from './LessonNav';
+export { LessonNav, type LessonNavLink } from './LessonNav';

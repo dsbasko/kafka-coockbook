@@ -1,18 +1,14 @@
 .toc {
-  position: sticky;
-  top: var(--space-6);
-  max-height: calc(100dvh - var(--space-12));
-  overflow-y: auto;
-  padding: var(--space-4) 0;
-  font-size: var(--font-size-sm);
+  font-size: 13px;
   line-height: var(--line-height-snug);
-  color: var(--content-secondary);
+  color: var(--content-tertiary);
 }
 
 .heading {
   margin: 0 0 var(--space-3) 0;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--content-tertiary);
@@ -22,11 +18,12 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  border-left: 1px solid var(--bg-stroke);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .item {
-  position: relative;
   margin: 0;
   padding: 0;
 }
@@ -36,23 +33,42 @@
 }
 
 .link {
-  display: block;
-  padding: var(--space-1) var(--space-3);
-  color: inherit;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 0;
   text-decoration: none;
-  border-left: 2px solid transparent;
-  margin-left: -1px;
-  transition: color 120ms ease, border-color 120ms ease;
+  color: var(--content-tertiary);
+  font-size: 13px;
+  line-height: 1.35;
+  transition: color 120ms ease;
 }
 
 .link:hover {
-  color: var(--content-primary);
+  color: var(--content-secondary);
+}
+
+.marker {
+  width: 8px;
+  height: 1px;
+  background: var(--bg-stroke-strong);
+  transition: width 180ms ease, height 180ms ease, background-color 180ms ease;
+}
+
+.label {
+  min-width: 0;
 }
 
 .item[data-active='true'] > .link {
-  color: var(--accent-main);
-  border-left-color: var(--accent-main);
-  font-weight: var(--font-weight-medium);
+  color: var(--content-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.item[data-active='true'] .marker {
+  width: 14px;
+  height: 2px;
+  background: var(--accent-main);
 }
 
 .link:focus-visible {

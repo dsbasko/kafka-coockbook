@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Manrope, JetBrains_Mono } from 'next/font/google';
+import { Manrope, JetBrains_Mono, Source_Serif_4 } from 'next/font/google';
 import { AppShell } from '@/components/AppShell';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { loadCourse } from '@/lib/course-loader';
@@ -17,6 +17,13 @@ const jetbrains = JetBrains_Mono({
   subsets: ['latin', 'cyrillic'],
   display: 'swap',
   variable: '--font-mono',
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin', 'cyrillic'],
+  display: 'swap',
+  variable: '--font-serif',
+  weight: ['400', '500', '600'],
 });
 
 export function generateMetadata(): Metadata {
@@ -51,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="ru"
       data-theme="light"
-      className={`${manrope.variable} ${jetbrains.variable}`}
+      className={`${manrope.variable} ${jetbrains.variable} ${sourceSerif.variable}`}
       suppressHydrationWarning
     >
       <head>

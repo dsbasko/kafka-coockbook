@@ -1,14 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { LessonLayout } from '@/components/LessonLayout';
-import { LessonMeta } from '@/components/LessonMeta';
-import { LessonNav } from '@/components/LessonNav';
+import { LessonNav, type LessonNavLink } from '@/components/LessonNav';
+import { LessonPageLayout } from '@/components/LessonPageLayout';
+import { LessonSideMeta } from '@/components/LessonSideMeta';
+import { ReadingProgress } from '@/components/ReadingProgress';
 import { Toc } from '@/components/Toc';
 import {
   findLesson,
   flattenLessons,
   getNextLesson,
   getPrevLesson,
+  type Course,
+  type FlatLessonEntry,
 } from '@/lib/course';
 import { loadCourse } from '@/lib/course-loader';
 import { getLessonContent } from '@/lib/lesson';
@@ -86,22 +89,45 @@ export default async function LessonPage({ params }: LessonPageProps) {
     course,
   });
 
-  const prev = getPrevLesson(course, params.module, params.lesson);
-  const next = getNextLesson(course, params.module, params.lesson);
+  const prev = toNavLink(getPrevLesson(course, params.module, params.lesson));
+  const next = toNavLink(getNextLesson(course, params.module, params.lesson));
+
+  const currentModule = course.modules.find((m) => m.id === params.module);
+  const moduleIndex = currentModule
+    ? course.modules.findIndex((m) => m.id === currentModule.id) + 1
+    : 0;
 
   return (
-    <LessonLayout
-      title={lesson.title}
-      meta={<LessonMeta duration={lesson.duration} tags={lesson.tags} />}
-      tocSlot={<Toc entries={toc} />}
-    >
-      <article className="markdown">{content}</article>
-      <LessonNav
-        moduleId={params.module}
-        slug={params.lesson}
-        prev={prev}
-        next={next}
-      />
-    </LessonLayout>
+    <>
+      <ReadingProgress />
+      <LessonPageLayout
+        title={lesson.title}
+        tocSlot={<Toc entries={toc} />}
+        sideMetaSlot={
+          currentModule ? (
+            <LessonSideMeta
+              moduleId={currentModule.id}
+              moduleTitle={currentModule.title}
+              moduleIndex={moduleIndex}
+              slug={params.lesson}
+              duration={lesson.duration}
+              tags={lesson.tags}
+            />
+          ) : null
+        }
+        footer={<LessonNav prev={prev} next={next} />}
+      >
+        <article className="markdown">{content}</article>
+      </LessonPageLayout>
+    </>
   );
+}
+
+function toNavLink(entry: FlatLessonEntry | null): LessonNavLink | null {
+  if (!entry) return null;
+  return {
+    moduleId: entry.moduleId,
+    slug: entry.lesson.slug,
+    title: entry.lesson.title,
+  };
 }
