@@ -1,6 +1,6 @@
 # 05-04 — Schema Evolution
 
-В 05-03 мы научили producer и consumer договариваться через Schema Registry: один регистрирует схему, другой по schema_id её достаёт. Пока схема одна — всё тихо. Но контракт живёт. Через месяц приходит запрос: «давайте добавим валюту в Order». Через полгода — «теперь ещё адрес доставки». Через год кто-то предложит поменять `amount_cents` на string, потому что фронту удобнее. И вот тут начинается интересное.
+В [Schema Registry](../../05-contracts/05-03-schema-registry/README.md) мы научили producer и consumer договариваться через Schema Registry: один регистрирует схему, другой по schema_id её достаёт. Пока схема одна — всё тихо. Но контракт живёт. Через месяц приходит запрос: «давайте добавим валюту в Order». Через полгода — «теперь ещё адрес доставки». Через год кто-то предложит поменять `amount_cents` на string, потому что фронту удобнее. И вот тут начинается интересное.
 
 Эта лекция — про дисциплину изменений. Что в Protobuf можно менять безопасно, что — никогда. Какие compatibility-режимы умеет SR. Что делает `buf breaking` и зачем он нужен в CI. Как это всё ложится на rolling deployment, когда producer-3 и consumer-1 одновременно живут в проде.
 
@@ -214,6 +214,6 @@ make clean                        # удалить топики, subject'ы и g
 
 ## Соседние лекции
 
-- [05-03 — Schema Registry](../05-03-schema-registry/README.md) — wire format и базовая регистрация
-- [05-02 — Protobuf in Go](../05-02-protobuf-in-go/README.md) — `.proto`, buf, кодген
-- [05-01 — Why Contracts & Wire Formats](../05-01-why-contracts-and-wire-formats/README.md) — зачем вообще схемы
+- [Schema Registry](../../05-contracts/05-03-schema-registry/README.md) — wire format и базовая регистрация
+- [Protobuf в Go](../../05-contracts/05-02-protobuf-in-go/README.md) — `.proto`, buf, кодген
+- [Зачем контракты и wire-форматы](../../05-contracts/05-01-why-contracts-and-wire-formats/README.md) — зачем вообще схемы
