@@ -8,7 +8,7 @@
 
 gRPC — это RPC-фреймворк поверх HTTP/2. Сериализация — Protobuf (мы его уже знаем из модуля 05). Описываешь сервис в `.proto`-файле, кодогенератор делает Go-интерфейс под сервер и Go-клиент. Заполняешь интерфейс — получаешь рабочий сервер. Импортируешь клиент — получаешь готовый стаб с типизированными методами. Никаких ручных JSON-маршалов, никаких URL-роутеров.
 
-Транспорт под капотом — HTTP/2. Отсюда мультиплексирование (много вызовов в одном соединении), стримы (об этом 06-02), бинарные фреймы, header compression. На сетевом уровне всё ещё TCP плюс TLS, но фреймы уже HTTP/2.
+Транспорт под капотом — HTTP/2. Отсюда мультиплексирование (много вызовов в одном соединении), стримы (об этом [gRPC streaming](../../06-communication-patterns/06-02-grpc-streaming/README.md)), бинарные фреймы, header compression. На сетевом уровне всё ещё TCP плюс TLS, но фреймы уже HTTP/2.
 
 Четыре типа RPC:
 
@@ -30,7 +30,7 @@ gRPC — это RPC-фреймворк поверх HTTP/2. Сериализац
 
 ## .proto-файл
 
-Контракт описывается в одном файле. Type-safety и совместимость — за счёт Protobuf, всё как в 05-02 / 05-03. Новое тут — ключевое слово `service` и описание методов.
+Контракт описывается в одном файле. Type-safety и совместимость — за счёт Protobuf, всё как в [Protobuf в Go](../../05-contracts/05-02-protobuf-in-go/README.md) / [Schema Registry](../../05-contracts/05-03-schema-registry/README.md). Новое тут — ключевое слово `service` и описание методов.
 
 ```proto
 service OrderService {
@@ -267,16 +267,16 @@ make grpcurl-create                               # создать заказ
 make grpcurl-get ID=<uuid из ответа Create>      # достать его обратно
 ```
 
-Заметь — server stateful, store живёт в памяти. Перезапустил сервер — все заказы пропали. Это и есть граница лекции: мы сделали голый gRPC, без БД, без Kafka, без аутентификации. Дальше в 06-04 этот же сервис обрастёт Postgres, outbox-таблицей и публикацией событий — там уже будет видно, как gRPC уживается с Kafka в одном процессе.
+Заметь — server stateful, store живёт в памяти. Перезапустил сервер — все заказы пропали. Это и есть граница лекции: мы сделали голый gRPC, без БД, без Kafka, без аутентификации. Дальше в [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md) этот же сервис обрастёт Postgres, outbox-таблицей и публикацией событий — там уже будет видно, как gRPC уживается с Kafka в одном процессе.
 
 ## Что дальше
 
-В 06-02 — стримы. Server-stream, client-stream, bidi. Там же будет про backpressure на стриме и про то, чем gRPC-стрим принципиально отличается от Kafka-стрима (короткий ответ — durability и replay).
+В [gRPC streaming](../../06-communication-patterns/06-02-grpc-streaming/README.md) — стримы. Server-stream, client-stream, bidi. Там же будет про backpressure на стриме и про то, чем gRPC-стрим принципиально отличается от Kafka-стрима (короткий ответ — durability и replay).
 
-В 06-03 — decision matrix: когда брать gRPC, когда Kafka. На примере «user signed up» с честными плюсами и минусами обоих подходов.
+В [Sync vs async: gRPC и Kafka](../../06-communication-patterns/06-03-sync-vs-async/README.md) — decision matrix: когда брать gRPC, когда Kafka. На примере «user signed up» с честными плюсами и минусами обоих подходов.
 
-В 06-04 — гибрид: gRPC для синхронной API + Kafka для событий + outbox для атомарности.
+В [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md) — гибрид: gRPC для синхронной API + Kafka для событий + outbox для атомарности.
 
-В 06-05 — saga и компенсации, choreography vs orchestration.
+В [Saga: choreography vs orchestration](../../06-communication-patterns/06-05-saga-choreography/README.md) — saga и компенсации, choreography vs orchestration.
 
 Пока — выйди в терминал и сделай `make run-server` плюс `make run-client`. Посмотри на лог. Дальше двигаемся.

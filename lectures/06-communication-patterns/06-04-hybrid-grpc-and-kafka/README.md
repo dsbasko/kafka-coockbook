@@ -2,7 +2,7 @@
 
 В прошлой лекции мы сравнили синхронный gRPC и асинхронный Kafka на одном и том же сценарии «user signed up». Победителя нет. У одного — низкая latency и предсказуемые ошибки. У другого — decoupling и replay. В реальном сервисе ты редко выбираешь одно. Чаще берёшь оба и собираешь гибрид.
 
-Эта лекция — про самый частый рисунок такого гибрида: write-side с gRPC API, шина событий через Kafka, отдельный read-side. Лекция концептуальная, на single-node setup; production-вариант с multi-node, integration-тестом и failure recovery — это use case 09-01, лежит в модуле 09. Тут — паттерн в чистом виде.
+Эта лекция — про самый частый рисунок такого гибрида: write-side с gRPC API, шина событий через Kafka, отдельный read-side. Лекция концептуальная, на single-node setup; production-вариант с multi-node, integration-тестом и failure recovery — это use case [Коммуникация микросервисов](../../09-use-cases/01-microservices-comm/README.md), лежит в модуле 09. Тут — паттерн в чистом виде.
 
 ## Зачем вообще «и то, и то»
 
@@ -65,7 +65,7 @@
 
 ## Write-path: orders + outbox в одной транзакции
 
-Главное правило write-path: никакого Produce внутри RPC handler'а. Если упадём после Produce и до COMMIT'а — у нас событие в Kafka про заказ, которого в БД нет. Никакая идемпотентность это не лечит. Лекция 04-03 («Outbox Pattern») разбирала это в деталях — тут переиспользуем тот же паттерн.
+Главное правило write-path: никакого Produce внутри RPC handler'а. Если упадём после Produce и до COMMIT'а — у нас событие в Kafka про заказ, которого в БД нет. Никакая идемпотентность это не лечит. Лекция [Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md) разбирала это в деталях — тут переиспользуем тот же паттерн.
 
 В транзакции пишем одновременно сам заказ и «надо позже опубликовать» — строку в outbox. И всё. Сама публикация — отдельный шаг, и отказ публикации никак не ломает консистентность БД.
 
@@ -184,7 +184,7 @@ if _, err := pool.Exec(ctx, reserveSQL, evt.ID, evt.CustomerID, evt.AmountCents)
 }
 ```
 
-Один UPSERT в `inventory_reservations`, никаких ссылок на orders. В реальной системе тут была бы своя БД, своя проверка остатков, и в случае «нельзя зарезервировать» — публикация события `order.rejected`, которое вернётся в order-side и переведёт заказ в CANCELLED. Это уже choreography saga, отдельная лекция (06-05).
+Один UPSERT в `inventory_reservations`, никаких ссылок на orders. В реальной системе тут была бы своя БД, своя проверка остатков, и в случае «нельзя зарезервировать» — публикация события `order.rejected`, которое вернётся в order-side и переведёт заказ в CANCELLED. Это уже choreography saga, отдельная лекция ([Saga: choreography vs orchestration](../../06-communication-patterns/06-05-saga-choreography/README.md)).
 
 ## Tracing context propagation
 
@@ -256,14 +256,14 @@ make db-truncate           # очистить все таблицы (RESTART IDE
 
 ## Что эта лекция намеренно НЕ делает
 
-- Нет multi-node. У всех сервисов один экземпляр. В use case 09-01 будут 2-3 ноды на сервис, рекомендованная картинка для прода.
+- Нет multi-node. У всех сервисов один экземпляр. В use case [Коммуникация микросервисов](../../09-use-cases/01-microservices-comm/README.md) будут 2-3 ноды на сервис, рекомендованная картинка для прода.
 - Нет integration-теста. Лекции не тестируются, тесты — у use case'ов.
-- Нет failure recovery beyond at-least-once + dedup. Никаких saga, компенсаций, reject-flow. Тоже use case или 06-05.
-- Нет Schema Registry. Payload — сырой JSON. Это уровень концепции; production-вариант — Protobuf через SR (лекция 05-03), но в этой лекции мы фокусируемся на самом гибриде, чтобы не тащить SR через все файлы.
-- Outbox publisher тут в том же процессе, что gRPC server. Это нормально для лекции и для маленьких сервисов; в крупных системах его выносят в отдельный бинарник (или CDC через Debezium — лекция 07-04).
+- Нет failure recovery beyond at-least-once + dedup. Никаких saga, компенсаций, reject-flow. Тоже use case или [Saga: choreography vs orchestration](../../06-communication-patterns/06-05-saga-choreography/README.md).
+- Нет Schema Registry. Payload — сырой JSON. Это уровень концепции; production-вариант — Protobuf через SR (лекция [Schema Registry](../../05-contracts/05-03-schema-registry/README.md)), но в этой лекции мы фокусируемся на самом гибриде, чтобы не тащить SR через все файлы.
+- Outbox publisher тут в том же процессе, что gRPC server. Это нормально для лекции и для маленьких сервисов; в крупных системах его выносят в отдельный бинарник (или CDC через Debezium — лекция [Debezium CDC](../../07-streams-and-connect/07-04-debezium-cdc/README.md)).
 
 ## Что забрать с собой
 
 Гибрид gRPC + Kafka — это разделение работы по двум осям. Синхронный API отвечает клиенту прямо сейчас. Асинхронные эффекты происходят потом, без оглядки на клиента. Outbox замыкает зазор между БД и Kafka. CQRS отделяет write от read — каждая сторона эволюционирует своим темпом. Eventual consistency тут — это контракт. Срабатывает он стабильно, и считать его багом — значит проектировать систему с неправильным ожиданием.
 
-Эту картинку имеет смысл держать в голове любому, кто проектирует back-end любой сложности больше «один сервис → одна БД». Дальше уже идут саги (когда нужно скоординировать несколько сервисов в одном бизнес-процессе) и stream processing (когда event log — основной носитель бизнес-логики). Лекции 06-05 и 07-* про это.
+Эту картинку имеет смысл держать в голове любому, кто проектирует back-end любой сложности больше «один сервис → одна БД». Дальше уже идут саги (когда нужно скоординировать несколько сервисов в одном бизнес-процессе) и stream processing (когда event log — основной носитель бизнес-логики). Лекции [Saga: choreography vs orchestration](../../06-communication-patterns/06-05-saga-choreography/README.md) и 07-* про это.
