@@ -108,7 +108,7 @@ lag = LEO - committed
 
 Если lag = 0 — мы догнали голову лога. Если lag растёт — обработка не успевает за продьюсером. Если lag растёт стабильно (по графику видно прямую линию вверх) — значит throughput consumer'а меньше throughput producer'а; масштабироваться надо именно тут.
 
-Lag меряют per-partition, а потом агрегируют. Перекос говорит о hot key или hot partition: общий lag в норме, а одна партиция отстала на миллион. Тут добавление worker'ов не поможет — лечится в ключах (см. лекцию 02-01 и runbook в 08-04).
+Lag меряют per-partition, а потом агрегируют. Перекос говорит о hot key или hot partition: общий lag в норме, а одна партиция отстала на миллион. Тут добавление worker'ов не поможет — лечится в ключах (см. лекцию [Ключи и партиционирование](../../02-producer/02-01-keys-and-partitioning/README.md) и runbook в [Troubleshooting runbook](../../08-operations/08-04-troubleshooting-runbook/README.md)).
 
 ## kadm.Lag в Go
 
@@ -168,7 +168,7 @@ Pool с tracker'ом — мощный инструмент, но не беспл
 
 **Ordering — только per-key.** Разные ключи в одной партиции внутри пула обработаются как угодно. Если бизнес-логика опирается не только на per-key, но и на «события в одной партиции вообще» — pool не подойдёт. Тогда либо больше партиций (откатываемся к sequential per-partition), либо более жёсткий пул, где запись идёт по `(partition, hash(key))` — чуть дороже, но сохраняет per-partition ordering на хвостах.
 
-**Hot key.** Если один ключ активнее всех других — его worker станет узким местом, остальные будут простаивать. Симптом — lag растёт, а CPU на 90% свободен. Лечится composite key (см. runbook 08-04) или per-record sharding c sub-key'ями.
+**Hot key.** Если один ключ активнее всех других — его worker станет узким местом, остальные будут простаивать. Симптом — lag растёт, а CPU на 90% свободен. Лечится composite key (см. runbook [Troubleshooting runbook](../../08-operations/08-04-troubleshooting-runbook/README.md)) или per-record sharding c sub-key'ями.
 
 **Async commit может проиграть гонку с упадом процесса.** Раз в 500 мс — это от 0 до 500 мс необработанной (но обработанной workers!) истории, которую перечитают на рестарте. Хочется меньше окно — коммиты чаще; чаще коммиты — выше нагрузка на coordinator. Стандартный tradeoff.
 
@@ -222,8 +222,8 @@ Lag сначала растёт (накопилось до старта), пот
 
 ## Дальше
 
-Out-of-order tracker — это то, что в Kafka Streams и Flink делается под капотом и называется «watermark / barrier». Идея та же — продвигаем коммитный курсор по нижней непрерывной границе. В модуле 04-01 (Transactions & EOS) этот же tracker превращается в часть consume-process-produce: коммит offset'а и produce'ы участвуют в одной транзакции, и тогда дублей при рестарте нет вообще. Дороже, не для каждого случая.
+Out-of-order tracker — это то, что в Kafka Streams и Flink делается под капотом и называется «watermark / barrier». Идея та же — продвигаем коммитный курсор по нижней непрерывной границе. В [Транзакции и EOS](../../04-reliability/04-01-transactions-and-eos/README.md) этот же tracker превращается в часть consume-process-produce: коммит offset'а и produce'ы участвуют в одной транзакции, и тогда дублей при рестарте нет вообще. Дороже, не для каждого случая.
 
-Лекция 04-02 (Consume-Process-Produce) и 04-04 (Retry & DLQ Deep Dive) опираются на то, что мы тут отделили обработку от commit'а. С транзакциями добавится ещё один шаг — `SendOffsetsToTransaction`, который атомарно увязывает «обработали и записали в downstream» с «закоммитили исходный offset».
+Лекции [Consume-process-produce](../../04-reliability/04-02-consume-process-produce/README.md) и [Retry и DLQ deep dive](../../04-reliability/04-04-retry-and-dlq/README.md) опираются на то, что мы тут отделили обработку от commit'а. С транзакциями добавится ещё один шаг — `SendOffsetsToTransaction`, который атомарно увязывает «обработали и записали в downstream» с «закоммитили исходный offset».
 
 Если pool с per-key sharding'ом перестаёт справляться — возвращаемся к первому варианту: больше партиций. Это нормально. Pool — оптимизация поверх Kafka-партиционирования, а не его замена.
