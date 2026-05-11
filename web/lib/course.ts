@@ -119,6 +119,15 @@ export function findLesson(
   return mod.lessons.find((l) => l.slug === lessonSlug) ?? null;
 }
 
+export function getLessonIndex(
+  course: Course,
+  moduleId: string,
+  slug: string,
+): number {
+  const flat = flattenLessons(course);
+  return flat.findIndex((e) => e.moduleId === moduleId && e.lesson.slug === slug);
+}
+
 export function flattenLessons(course: Course): FlatLessonEntry[] {
   const result: FlatLessonEntry[] = [];
   let index = 0;

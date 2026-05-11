@@ -1,59 +1,19 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import {
-  getCompletedCount,
-  getCompletedPercent,
-  getProgress,
-  PROGRESS_CHANGE_EVENT,
-  PROGRESS_STORAGE_KEY,
-  type ProgressMap,
-} from '@/lib/progress';
 import styles from './ProgressBar.module.css';
 
 type ProgressBarProps = {
   total: number;
 };
 
+/**
+ * Global course progress bar in the header. Pure server-rendered shape — the
+ * gate-paint inline script reads localStorage before first paint and rewrites
+ * count / percent / bar-width / ARIA attributes directly via the
+ * `data-progress-*` slots. No React state, no useEffect, no hydration flash.
+ */
 export function ProgressBar({ total }: ProgressBarProps) {
-  const [map, setMap] = useState<ProgressMap | null>(null);
-
-  useEffect(() => {
-    setMap(getProgress());
-    function handleStorage(event: StorageEvent) {
-      if (event.key !== PROGRESS_STORAGE_KEY) return;
-      setMap(getProgress());
-    }
-    function handleLocal() {
-      setMap(getProgress());
-    }
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener(PROGRESS_CHANGE_EVENT, handleLocal);
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener(PROGRESS_CHANGE_EVENT, handleLocal);
-    };
-  }, []);
-
-  // Server / pre-hydration: render fixed-width placeholder to avoid CLS.
-  if (map === null) {
-    return (
-      <div className={styles.bar} aria-hidden="true">
-        <span className={styles.label}>— / {total}</span>
-        <span className={styles.track}>
-          <span className={styles.fill} style={{ width: '0%' }} />
-        </span>
-      </div>
-    );
-  }
-
-  // Clamp to `total` so stale localStorage entries (lessons removed from
-  // course.yaml after a user marked them complete) cannot push the visible
-  // numerator above the denominator or break the ARIA contract
-  // (`aria-valuenow` must not exceed `aria-valuemax`).
-  const count = Math.min(getCompletedCount(map), total);
-  const percent = getCompletedPercent(map, total);
-
+  // suppressHydrationWarning on the host + on each slot the inline gate-paint
+  // script rewrites. The script runs before React hydration, so React's diff
+  // would otherwise report mismatches on textContent / style / aria values.
   return (
     <div
       className={styles.bar}
@@ -61,14 +21,23 @@ export function ProgressBar({ total }: ProgressBarProps) {
       aria-label="Прогресс прохождения курса"
       aria-valuemin={0}
       aria-valuemax={total}
-      aria-valuenow={count}
-      aria-valuetext={`${count} из ${total} (${percent}%)`}
+      aria-valuenow={0}
+      aria-valuetext={`0 из ${total} (0%)`}
+      data-progress-scope="global"
+      data-progress-state="not-started"
+      suppressHydrationWarning
     >
       <span className={styles.label}>
-        {count} / {total} ({percent}%)
+        <span data-progress-count suppressHydrationWarning>0</span> / {total} (
+        <span data-progress-pct suppressHydrationWarning>0</span>%)
       </span>
       <span className={styles.track} aria-hidden="true">
-        <span className={styles.fill} style={{ width: `${percent}%` }} />
+        <span
+          className={styles.fill}
+          data-progress-bar
+          style={{ width: '0%' }}
+          suppressHydrationWarning
+        />
       </span>
     </div>
   );

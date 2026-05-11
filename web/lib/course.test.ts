@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   flattenLessons,
   findLesson,
+  getLessonIndex,
   getNextLesson,
   getPrevLesson,
   parseCourse,
@@ -175,6 +176,21 @@ describe('flattenLessons', () => {
     expect(flat[1].lesson.slug).toBe('01-02-deep');
     expect(flat[2]).toMatchObject({ moduleId: '02-bar', index: 2 });
     expect(flat[2].lesson.slug).toBe('02-01-start');
+  });
+});
+
+describe('getLessonIndex', () => {
+  it('returns the linear index for a known lesson', () => {
+    const course = loadFixture();
+    expect(getLessonIndex(course, '01-foo', '01-01-intro')).toBe(0);
+    expect(getLessonIndex(course, '01-foo', '01-02-deep')).toBe(1);
+    expect(getLessonIndex(course, '02-bar', '02-01-start')).toBe(2);
+  });
+
+  it('returns -1 for unknown lessons', () => {
+    const course = loadFixture();
+    expect(getLessonIndex(course, '01-foo', 'no-such')).toBe(-1);
+    expect(getLessonIndex(course, 'ghost', '01-01-intro')).toBe(-1);
   });
 });
 

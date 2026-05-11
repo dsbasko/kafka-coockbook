@@ -276,6 +276,39 @@
   background-color: var(--bg-surface);
 }
 
+/* Gate-managed lock state. JSX always renders the open shape; the inline
+   gate-mark script flips data-locked on this link before first paint, and
+   CSS swaps the meta cell (duration/✓ → lock icon) and dims the row.
+   Avoids the React-driven re-render that previously caused a flash. */
+.lessonLink[data-locked='true'] {
+  cursor: not-allowed;
+  color: var(--content-tertiary);
+}
+
+.lessonLink[data-locked='true']:hover {
+  background-color: transparent;
+  color: var(--content-tertiary);
+}
+
+.lessonLink[data-locked='true'] .lessonTitle,
+.lessonLink[data-locked='true'] .lessonNum,
+.lessonLink[data-locked='true'] .lessonMeta {
+  color: var(--content-tertiary);
+}
+
+.lessonMeta .metaLocked {
+  display: none;
+  align-items: center;
+}
+
+.lessonLink[data-locked='true'] .metaOpen {
+  display: none;
+}
+
+.lessonLink[data-locked='true'] .metaLocked {
+  display: inline-flex;
+}
+
 @media (max-width: 720px) {
   .drawer {
     width: 100vw;

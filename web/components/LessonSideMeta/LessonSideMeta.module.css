@@ -54,3 +54,15 @@ a.value:hover {
   border-radius: 4px;
   justify-content: center;
 }
+
+/* The "Пометить непрочитанным" button is always in the DOM (so SSR markup
+   matches every hydration), but only visible when the wrapper carries
+   data-completed='true'. The gate-paint inline script stamps that
+   attribute synchronously before first paint based on localStorage. */
+.meta [data-show-when-completed] {
+  display: none;
+}
+
+.meta[data-completed='true'] [data-show-when-completed] {
+  display: inline-flex;
+}

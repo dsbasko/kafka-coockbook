@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useGate } from '@/components/GateProvider';
+import { LockIcon } from '@/components/ProgramDrawer/LockIcon';
 import {
   type Course,
   type Module,
-  flattenLessons,
 } from '@/lib/course';
 import {
   formatDurationHm,
@@ -13,14 +15,8 @@ import {
   parseDurationMin,
   pluralize,
 } from '@/lib/format';
-import {
-  getProgress,
-  isCompleted,
-  lessonKey,
-  PROGRESS_CHANGE_EVENT,
-  PROGRESS_STORAGE_KEY,
-  type ProgressMap,
-} from '@/lib/progress';
+import { lessonKey } from '@/lib/progress';
+import { navigateToFrontierHref } from '@/lib/frontier-link';
 import styles from './ModulePage.module.css';
 
 type ModulePageProps = {
@@ -30,26 +26,9 @@ type ModulePageProps = {
 };
 
 export function ModulePage({ course, module, level }: ModulePageProps) {
-  const [progress, setProgress] = useState<ProgressMap | null>(null);
-
-  useEffect(() => {
-    setProgress(getProgress());
-    function syncStorage(event: StorageEvent) {
-      if (event.key !== PROGRESS_STORAGE_KEY) return;
-      setProgress(getProgress());
-    }
-    function syncLocal() {
-      setProgress(getProgress());
-    }
-    window.addEventListener('storage', syncStorage);
-    window.addEventListener(PROGRESS_CHANGE_EVENT, syncLocal);
-    return () => {
-      window.removeEventListener('storage', syncStorage);
-      window.removeEventListener(PROGRESS_CHANGE_EVENT, syncLocal);
-    };
-  }, []);
-
   const moduleIndex = course.modules.findIndex((m) => m.id === module.id);
+  const router = useRouter();
+  const { basePath } = useGate();
   const prevModule = moduleIndex > 0 ? course.modules[moduleIndex - 1] : null;
   const nextModule =
     moduleIndex >= 0 && moduleIndex < course.modules.length - 1
@@ -62,51 +41,25 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
   );
 
   const totalLessons = module.lessons.length;
-  const doneInModule =
-    progress === null
-      ? 0
-      : module.lessons.filter((l) =>
-          isCompleted(progress, lessonKey(module.id, l.slug)),
-        ).length;
-  const pct = totalLessons === 0 ? 0 : Math.round((doneInModule / totalLessons) * 100);
-  const isComplete = totalLessons > 0 && doneInModule === totalLessons;
-  const isStarted = doneInModule > 0;
 
-  // First lesson in this module the user hasn't completed yet (linear walk).
-  // Pre-hydration treats everything as not started, so this is the first lesson.
-  const nextLessonInModule = useMemo(() => {
-    if (progress === null) return module.lessons[0] ?? null;
-    return (
-      module.lessons.find(
-        (l) => !isCompleted(progress, lessonKey(module.id, l.slug)),
-      ) ?? null
-    );
-  }, [module, progress]);
+  // CSV of this module's lesson keys, attached to the side card and CTA row
+  // so the gate-paint inline script can compute per-module progress without
+  // re-deriving the module shape on its own.
+  const moduleKeysCsv = useMemo(
+    () => module.lessons.map((l) => lessonKey(module.id, l.slug)).join(','),
+    [module],
+  );
 
-  // First globally-unfinished lesson — used for the "Reread → continue elsewhere"
-  // affordance when this whole module is already done.
-  const globalNext = useMemo(() => {
-    if (progress === null) return null;
-    const flat = flattenLessons(course);
-    for (const entry of flat) {
-      if (!isCompleted(progress, lessonKey(entry.moduleId, entry.lesson.slug))) {
-        return entry;
-      }
-    }
-    return null;
-  }, [course, progress]);
-
-  const continueHref = nextLessonInModule
-    ? `/${module.id}/${nextLessonInModule.slug}`
-    : module.lessons[0]
-      ? `/${module.id}/${module.lessons[0].slug}`
-      : '#';
-
-  const ctaLabel = isComplete
-    ? 'Перечитать модуль'
-    : isStarted && nextLessonInModule
-      ? `Продолжить · ${nextLessonInModule.title}`
-      : 'Начать модуль';
+  // SSR + pre-hydration baseline: pretend nothing has been done yet. The
+  // gate-paint script reads localStorage and rewrites textContent / sets
+  // data-* attributes before first paint, so the user never sees this 0%
+  // state flash to the real one. All React state derived from `progress`
+  // has been removed from this component — it would only re-derive the
+  // same numbers and cause a hydration re-render.
+  const firstLesson = module.lessons[0] ?? null;
+  const fallbackHref = firstLesson
+    ? `/${module.id}/${firstLesson.slug}`
+    : '#';
 
   return (
     <div className={styles.page}>
@@ -130,12 +83,46 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
           <h1 className={styles.title}>{module.title}</h1>
           <p className={styles.desc}>{collapseWhitespace(module.description)}</p>
 
-          <div className={styles.ctaRow}>
+          <div
+            className={styles.ctaRow}
+            data-cta-frontier="module"
+            data-cta-state="not-started"
+            data-progress-keys={moduleKeysCsv}
+            suppressHydrationWarning
+          >
+            {/* Three CTA variants stacked in the DOM, exactly one visible per
+                module state. The gate-paint script flips data-cta-state and
+                rewrites href + title on the in-progress variant; CSS hides
+                the other two. JSX never re-renders this region in response
+                to progress changes — no flash. */}
             <Link
-              href={continueHref}
-              className={`${styles.btn} ${isComplete ? styles.btnSecondary : styles.btnPrimary}`}
+              href={fallbackHref}
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              data-cta-variant="not-started"
             >
-              {ctaLabel}
+              Начать модуль
+              <span className={styles.btnArrow}>→</span>
+            </Link>
+            <Link
+              href={fallbackHref}
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              data-cta-variant="in-progress"
+              data-cta-frontier-link
+              suppressHydrationWarning
+              onClick={(e) => navigateToFrontierHref(e, router, basePath)}
+            >
+              Продолжить ·{' '}
+              <span data-cta-frontier-title suppressHydrationWarning>
+                {firstLesson?.title ?? ''}
+              </span>
+              <span className={styles.btnArrow}>→</span>
+            </Link>
+            <Link
+              href={fallbackHref}
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              data-cta-variant="complete"
+            >
+              Перечитать модуль
               <span className={styles.btnArrow}>→</span>
             </Link>
             {nextModule && (
@@ -144,33 +131,39 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
               </Link>
             )}
           </div>
-
-          {isComplete && globalNext && globalNext.moduleId !== module.id && (
-            <div className={styles.nextHint}>
-              <span className={styles.nextHintArrow}>↳</span>{' '}
-              <span className={styles.nextHintModule}>
-                {course.modules.find((m) => m.id === globalNext.moduleId)?.title}
-              </span>
-              <span className={styles.nextHintSep}> / </span>
-              <span className={styles.nextHintLesson}>{globalNext.lesson.title}</span>
-            </div>
-          )}
         </div>
 
-        <aside className={styles.sideCard} aria-label="Прогресс модуля">
+        <aside
+          className={styles.sideCard}
+          aria-label="Прогресс модуля"
+          data-progress-scope="module"
+          data-progress-keys={moduleKeysCsv}
+          data-progress-state="not-started"
+          suppressHydrationWarning
+        >
           <div className={styles.sideRow}>
             <span className={styles.sideLabel}>Прогресс</span>
-            <span className={`${styles.sideVal} ${isComplete ? styles.sideValDone : ''}`}>
-              {isComplete ? 'Пройдено ✓' : `${doneInModule} / ${totalLessons}`}
+            <span className={styles.sideVal}>
+              <span data-progress-count suppressHydrationWarning>
+                0
+              </span>{' '}
+              / {totalLessons}
             </span>
           </div>
           <div className={styles.sideBar} aria-hidden="true">
             <span
-              className={`${styles.sideFill} ${isComplete ? styles.sideFillDone : ''}`}
-              style={{ width: `${pct}%` }}
+              className={styles.sideFill}
+              data-progress-bar
+              style={{ width: '0%' }}
+              suppressHydrationWarning
             />
           </div>
-          <div className={styles.sidePct}>{pct}%</div>
+          <div className={styles.sidePct}>
+            <span data-progress-pct suppressHydrationWarning>
+              0
+            </span>
+            %
+          </div>
 
           <div className={styles.sideDivider} />
 
@@ -202,40 +195,49 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
         </div>
       </header>
 
-      <ol className={styles.lessons}>
+      <ol className={styles.lessons} data-lesson-group={module.id}>
         {module.lessons.map((lesson, index) => {
           const key = lessonKey(module.id, lesson.slug);
-          const done = progress !== null && isCompleted(progress, key);
-          const isNext = !done && lesson.slug === nextLessonInModule?.slug && !isComplete;
-
-          const rowClasses = [
-            styles.lessonRow,
-            done ? styles.lessonRowDone : '',
-            isNext ? styles.lessonRowNext : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
 
           return (
             <li key={lesson.slug} className={styles.lessonItem}>
-              <Link href={`/${module.id}/${lesson.slug}`} className={rowClasses}>
+              <Link
+                href={`/${module.id}/${lesson.slug}`}
+                className={styles.lessonRow}
+                data-lesson-key={key}
+                onClick={(e) => {
+                  if (e.currentTarget.getAttribute('data-locked') === 'true') {
+                    e.preventDefault();
+                  }
+                }}
+                title="Урок откроется после прохождения предыдущих"
+              >
                 <span className={styles.lessonNum}>
                   {String(index + 1).padStart(2, '0')}
                 </span>
+                {/* All four status glyphs are present in the DOM at all times.
+                    CSS shows exactly one based on data-completed / data-next /
+                    data-locked, which the gate-paint script flips synchronously
+                    before paint and again on progress changes. */}
                 <span className={styles.lessonStatus} aria-hidden="true">
-                  {done ? (
-                    <span className={styles.lessonCheck}>✓</span>
-                  ) : isNext ? (
-                    <span className={styles.lessonDot} />
-                  ) : (
-                    <span className={styles.lessonCircle} />
-                  )}
+                  <span
+                    className={`${styles.lessonCircle} ${styles.statusDefault}`}
+                  />
+                  <span className={`${styles.lessonDot} ${styles.statusNext}`} />
+                  <span className={`${styles.lessonCheck} ${styles.statusDone}`}>
+                    ✓
+                  </span>
+                  <span
+                    className={`${styles.lessonLockSlot} ${styles.statusLocked}`}
+                  >
+                    <LockIcon />
+                  </span>
                 </span>
                 <span className={styles.lessonText}>
                   <span className={styles.lessonTitle}>{lesson.title}</span>
-                  {isNext && (
-                    <span className={styles.lessonHint}>↳ продолжить отсюда</span>
-                  )}
+                  {/* Hint is always present in DOM; CSS shows it only when
+                      the row carries data-next and not data-locked. */}
+                  <span className={styles.lessonHint}>↳ продолжить отсюда</span>
                 </span>
                 {lesson.tags && lesson.tags.length > 0 && (
                   <span className={styles.lessonTags}>

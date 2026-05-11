@@ -1,13 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  getProgress,
-  isCompleted,
   lessonKey,
   PROGRESS_CHANGE_EVENT,
-  PROGRESS_STORAGE_KEY,
   unmarkCompleted,
 } from '@/lib/progress';
 import styles from './LessonSideMeta.module.css';
@@ -21,6 +17,14 @@ type LessonSideMetaProps = {
   tags: string[];
 };
 
+/**
+ * Lesson sidebar meta. Server-rendered; the "Пометить непрочитанным" button
+ * is always present in the DOM but hidden by default — the gate-paint inline
+ * script stamps `data-completed` on the wrapper before first paint when the
+ * lesson is in the completed set, and CSS reveals the button from there.
+ * Avoids the React-driven hydration cycle that previously made the button
+ * pop in after mount.
+ */
 export function LessonSideMeta({
   moduleId,
   moduleTitle,
@@ -30,35 +34,18 @@ export function LessonSideMeta({
   tags,
 }: LessonSideMetaProps) {
   const key = lessonKey(moduleId, slug);
-  const [completed, setCompleted] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    setCompleted(isCompleted(getProgress(), key));
-    const syncFromStorage = (event: StorageEvent) => {
-      if (event.key !== PROGRESS_STORAGE_KEY) return;
-      setCompleted(isCompleted(getProgress(), key));
-    };
-    const syncFromLocal = () => {
-      setCompleted(isCompleted(getProgress(), key));
-    };
-    window.addEventListener('storage', syncFromStorage);
-    window.addEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
-    return () => {
-      window.removeEventListener('storage', syncFromStorage);
-      window.removeEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
-    };
-  }, [key]);
+  const moduleNum = String(moduleIndex).padStart(2, '0');
 
   const handleUnmark = () => {
     unmarkCompleted(key);
-    setCompleted(false);
+    // Fire the change event so GateProvider re-paints data-completed on
+    // every [data-lesson-key] (including this wrapper) — the button hides
+    // again via CSS without a React re-render here.
     window.dispatchEvent(new Event(PROGRESS_CHANGE_EVENT));
   };
 
-  const moduleNum = String(moduleIndex).padStart(2, '0');
-
   return (
-    <div className={styles.meta}>
+    <div className={styles.meta} data-lesson-key={key}>
       <div className={styles.row}>
         <span className={styles.key}>module</span>
         <Link href={`/${moduleId}`} className={styles.value}>
@@ -81,11 +68,14 @@ export function LessonSideMeta({
           </span>
         </div>
       )}
-      {completed && (
-        <button type="button" className={styles.markButton} onClick={handleUnmark}>
-          Пометить непрочитанным
-        </button>
-      )}
+      <button
+        type="button"
+        className={styles.markButton}
+        data-show-when-completed
+        onClick={handleUnmark}
+      >
+        Пометить непрочитанным
+      </button>
     </div>
   );
 }

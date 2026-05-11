@@ -1,18 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useGate } from '@/components/GateProvider';
 import type { Course } from '@/lib/course';
 import { parseDurationMin } from '@/lib/format';
-import {
-  getProgress,
-  isCompleted,
-  lessonKey,
-  PROGRESS_CHANGE_EVENT,
-  PROGRESS_STORAGE_KEY,
-  type ProgressMap,
-} from '@/lib/progress';
+import { applyGatePainting } from '@/lib/gate-mark-script';
+import { isCompleted, lessonKey } from '@/lib/progress';
+import { LockIcon } from './LockIcon';
 import styles from './ProgramDrawer.module.css';
+
+// useLayoutEffect on the client, no-op on the server — gate marking touches
+// the DOM and only matters in the browser, but unconditional useLayoutEffect
+// would warn during SSR.
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 type ProgramDrawerProps = {
   course: Course;
@@ -29,7 +31,10 @@ export function ProgramDrawer({
   isOpen,
   onClose,
 }: ProgramDrawerProps) {
-  const [progress, setProgress] = useState<ProgressMap | null>(null);
+  const gate = useGate();
+  // Use the shared progress map from GateProvider (single source of truth) so
+  // the drawer agrees with checkmark state elsewhere on the page.
+  const progress = gate.hydrated ? gate.progress : null;
 
   // Default expanded set:
   //   • the module containing the active lesson, if any (so the user lands
@@ -45,29 +50,32 @@ export function ProgramDrawer({
   }, [course, currentModuleId]);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(initialExpanded);
+  const asideRef = useRef<HTMLElement | null>(null);
+
+  // Toggle `inert` on the drawer aside instead of relying on per-element
+  // tabindex. The gate-mark script reaches into [data-lesson-key] elements
+  // and strips `tabindex` on unlocked items so they regain default focus
+  // behavior in HomePage / ModulePage / MDX cross-lesson links — which is
+  // correct everywhere except inside a closed offscreen drawer. `inert`
+  // removes the entire subtree from the focus order regardless of what
+  // individual `tabindex` attributes say, so the two concerns no longer
+  // fight each other. useLayoutEffect runs before paint so a freshly
+  // closed drawer never leaks focus between render and effect.
+  useIsomorphicLayoutEffect(() => {
+    const aside = asideRef.current;
+    if (!aside) return;
+    if (isOpen) {
+      aside.removeAttribute('inert');
+    } else {
+      aside.setAttribute('inert', '');
+    }
+  }, [isOpen]);
 
   // Re-seed expansion when the active module changes — opening the drawer
   // from a different lesson should snap to that module.
   useEffect(() => {
     setExpanded(initialExpanded);
   }, [initialExpanded]);
-
-  useEffect(() => {
-    setProgress(getProgress());
-    function syncFromStorage(event: StorageEvent) {
-      if (event.key !== PROGRESS_STORAGE_KEY) return;
-      setProgress(getProgress());
-    }
-    function syncFromLocal() {
-      setProgress(getProgress());
-    }
-    window.addEventListener('storage', syncFromStorage);
-    window.addEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
-    return () => {
-      window.removeEventListener('storage', syncFromStorage);
-      window.removeEventListener(PROGRESS_CHANGE_EVENT, syncFromLocal);
-    };
-  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -92,6 +100,15 @@ export function ProgramDrawer({
   const toggle = (id: string) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
+  // Drawer-rendered lesson rows are added to the DOM after the initial
+  // gate-mark inline script ran, so re-apply marking whenever the expanded
+  // set or progress changes. useLayoutEffect runs before paint, so locked
+  // rows never flash as "open".
+  useIsomorphicLayoutEffect(() => {
+    if (!gate.hydrated) return;
+    applyGatePainting(course, gate.furthestIndex, gate.basePath);
+  }, [gate.hydrated, gate.furthestIndex, gate.basePath, course, expanded, isOpen]);
+
   return (
     <>
       <div
@@ -101,12 +118,17 @@ export function ProgramDrawer({
         aria-hidden="true"
       />
       <aside
+        ref={asideRef}
         className={styles.drawer}
         data-open={isOpen ? 'true' : 'false'}
         aria-label="Программа курса"
         aria-hidden={!isOpen}
         role="dialog"
         aria-modal="true"
+        // SSR-side `inert` so the closed drawer is non-focusable before
+        // hydration runs the layout effect above. The effect keeps it in
+        // sync on subsequent open/close transitions.
+        {...((isOpen ? {} : { inert: '' }) as Record<string, string>)}
       >
         <header className={styles.header}>
           <div>
@@ -176,8 +198,18 @@ export function ProgramDrawer({
                               aria-current={isCurrent ? 'page' : undefined}
                               data-completed={done ? 'true' : 'false'}
                               data-current={isCurrent ? 'true' : 'false'}
-                              onClick={onClose}
+                              data-lesson-key={key}
+                              onClick={(e) => {
+                                if (
+                                  e.currentTarget.getAttribute('data-locked') === 'true'
+                                ) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                onClose();
+                              }}
                               tabIndex={isOpen ? 0 : -1}
+                              title="Урок откроется после прохождения предыдущих"
                             >
                               <span className={styles.lessonNum}>
                                 {String(lIndex + 1).padStart(2, '0')}
@@ -186,11 +218,16 @@ export function ProgramDrawer({
                                 {lesson.title}
                               </span>
                               <span className={styles.lessonMeta} aria-hidden="true">
-                                {done ? (
-                                  <span className={styles.lessonCheck}>✓</span>
-                                ) : (
-                                  `${durMin || lesson.duration}м`
-                                )}
+                                <span className={styles.metaOpen}>
+                                  {done ? (
+                                    <span className={styles.lessonCheck}>✓</span>
+                                  ) : (
+                                    `${durMin || lesson.duration}м`
+                                  )}
+                                </span>
+                                <span className={styles.metaLocked}>
+                                  <LockIcon />
+                                </span>
                               </span>
                             </Link>
                           </li>

@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useGate } from '@/components/GateProvider';
+import { LockIcon } from '@/components/ProgramDrawer/LockIcon';
 import {
   flattenLessons,
   getTotalLessons,
@@ -15,16 +18,8 @@ import {
   pluralize,
 } from '@/lib/format';
 import { openProgramDrawer } from '@/lib/program-drawer';
-import {
-  getCompletedCount,
-  getCompletedPercent,
-  getProgress,
-  isCompleted,
-  lessonKey,
-  PROGRESS_CHANGE_EVENT,
-  PROGRESS_STORAGE_KEY,
-  type ProgressMap,
-} from '@/lib/progress';
+import { lessonKey } from '@/lib/progress';
+import { navigateToFrontierHref } from '@/lib/frontier-link';
 import styles from './HomePage.module.css';
 
 type HomePageProps = {
@@ -33,26 +28,9 @@ type HomePageProps = {
 };
 
 export function HomePage({ course, level }: HomePageProps) {
-  const [progress, setProgress] = useState<ProgressMap | null>(null);
-
-  useEffect(() => {
-    setProgress(getProgress());
-    function syncStorage(event: StorageEvent) {
-      if (event.key !== PROGRESS_STORAGE_KEY) return;
-      setProgress(getProgress());
-    }
-    function syncLocal() {
-      setProgress(getProgress());
-    }
-    window.addEventListener('storage', syncStorage);
-    window.addEventListener(PROGRESS_CHANGE_EVENT, syncLocal);
-    return () => {
-      window.removeEventListener('storage', syncStorage);
-      window.removeEventListener(PROGRESS_CHANGE_EVENT, syncLocal);
-    };
-  }, []);
-
   const totalLessons = getTotalLessons(course);
+  const router = useRouter();
+  const { basePath } = useGate();
   const totalDurationMin = useMemo(
     () =>
       course.modules.reduce(
@@ -63,37 +41,15 @@ export function HomePage({ course, level }: HomePageProps) {
     [course],
   );
 
-  // Treat pre-hydration as "no progress" for the visible state — copy will
-  // hint "Начать с первого урока", numbers default to 0/total. Once
-  // localStorage is read, we re-render with the real values.
-  const completedCount =
-    progress === null ? 0 : Math.min(getCompletedCount(progress), totalLessons);
-  const percent = progress === null ? 0 : getCompletedPercent(progress, totalLessons);
-  const hasProgress = completedCount > 0;
-
-  // First lesson the user hasn't completed yet (linear walk over the
-  // flattened module/lesson order). null when everything is done.
-  const nextEntry = useMemo(() => {
-    if (progress === null) return null;
-    const flat = flattenLessons(course);
-    for (const entry of flat) {
-      if (!isCompleted(progress, lessonKey(entry.moduleId, entry.lesson.slug))) {
-        return entry;
-      }
-    }
-    return null;
-  }, [course, progress]);
-
+  // SSR baseline: render the "fresh user" shape — 0% progress, CTA points at
+  // the first lesson, "Начать с первого урока" copy, module rows say "не
+  // начато". The inline gate-paint script reads localStorage before first
+  // paint and rewrites href + textContent + data-* attributes for the real
+  // state, so the user with progress doesn't see this baseline flash.
   const firstEntry = useMemo(() => flattenLessons(course)[0] ?? null, [course]);
-  const continueHref = nextEntry
-    ? `/${nextEntry.moduleId}/${nextEntry.lesson.slug}`
-    : firstEntry
-      ? `/${firstEntry.moduleId}/${firstEntry.lesson.slug}`
-      : '#';
-  const continueLessonNum = nextEntry ? nextEntry.index + 1 : 1;
-  const nextModuleTitle = nextEntry
-    ? course.modules.find((m) => m.id === nextEntry.moduleId)?.title
-    : null;
+  const firstHref = firstEntry
+    ? `/${firstEntry.moduleId}/${firstEntry.lesson.slug}`
+    : '#';
 
   return (
     <div className={styles.page}>
@@ -103,66 +59,101 @@ export function HomePage({ course, level }: HomePageProps) {
             Kafka <span className={styles.heroTitleAccent}>для тех, кто</span> пишет на Go
           </h1>
           <p className={styles.heroLead}>{collapseWhitespace(course.description)}</p>
-          <div className={styles.ctaRow}>
-            {hasProgress ? (
-              <>
-                <Link href={continueHref} className={`${styles.btn} ${styles.btnPrimary}`}>
-                  Продолжить · урок {continueLessonNum}
-                  <span className={styles.btnArrow}>→</span>
-                </Link>
-                <Link
-                  href={firstEntry ? `/${firstEntry.moduleId}/${firstEntry.lesson.slug}` : '#'}
-                  className={`${styles.btn} ${styles.btnSecondary}`}
-                >
-                  Начать с начала
-                </Link>
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnGhost}`}
-                  onClick={openProgramDrawer}
-                >
-                  Программа курса
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href={continueHref} className={`${styles.btn} ${styles.btnPrimary}`}>
-                  Начать с первого урока
-                  <span className={styles.btnArrow}>→</span>
-                </Link>
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnSecondary}`}
-                  onClick={openProgramDrawer}
-                >
-                  Программа курса
-                </button>
-              </>
-            )}
+          <div
+            className={styles.ctaRow}
+            data-cta-frontier="global"
+            data-cta-state="not-started"
+            suppressHydrationWarning
+          >
+            {/* Two CTA variants: gate-paint flips data-cta-state and CSS
+                shows exactly one. Pre-paint baseline = "not-started" so the
+                SSR HTML reads "Начать с первого урока". */}
+            <Link
+              href={firstHref}
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              data-cta-variant="not-started"
+            >
+              Начать с первого урока
+              <span className={styles.btnArrow}>→</span>
+            </Link>
+            <Link
+              href={firstHref}
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              data-cta-variant="in-progress"
+              data-cta-frontier-link
+              suppressHydrationWarning
+              onClick={(e) => navigateToFrontierHref(e, router, basePath)}
+            >
+              Продолжить · урок{' '}
+              <span data-cta-frontier-num suppressHydrationWarning>
+                1
+              </span>
+              <span className={styles.btnArrow}>→</span>
+            </Link>
+            {/* "Начать с начала" only visible in in-progress state. */}
+            <Link
+              href={firstHref}
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              data-cta-variant="in-progress"
+            >
+              Начать с начала
+            </Link>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnGhost}`}
+              onClick={openProgramDrawer}
+            >
+              Программа курса
+            </button>
           </div>
-          {hasProgress && nextEntry && (
-            <div className={styles.nextHint}>
-              <span className={styles.nextHintArrow}>↳</span>{' '}
-              <span className={styles.nextHintModule}>{nextModuleTitle}</span>
-              <span className={styles.nextHintSep}> / </span>
-              <span className={styles.nextHintLesson}>{nextEntry.lesson.title}</span>
-            </div>
-          )}
+          {/* Frontier hint — only visible once gate-paint marks the page as
+              having progress. Lesson title is rewritten in-place. */}
+          <div
+            className={styles.nextHint}
+            data-frontier-hint
+            data-hint-state="hidden"
+            suppressHydrationWarning
+          >
+            <span className={styles.nextHintArrow}>↳</span>{' '}
+            <span
+              className={styles.nextHintLesson}
+              data-frontier-hint-lesson
+              suppressHydrationWarning
+            >
+              {firstEntry?.lesson.title ?? ''}
+            </span>
+          </div>
         </div>
 
-        <aside className={styles.statsCard} aria-label="Сводка прогресса">
+        <aside
+          className={styles.statsCard}
+          aria-label="Сводка прогресса"
+          data-progress-scope="global"
+          data-progress-state="not-started"
+          suppressHydrationWarning
+        >
           <div className={styles.statsProgress}>
             <div className={styles.statsProgressRow}>
               <span className={styles.statsPct}>
-                {percent}
+                <span data-progress-pct suppressHydrationWarning>
+                  0
+                </span>
                 <span className={styles.statsPctUnit}>%</span>
               </span>
               <span className={styles.statsOf}>
-                {completedCount} / {totalLessons} {pluralize(totalLessons, LESSON_FORMS)}
+                <span data-progress-count suppressHydrationWarning>
+                  0
+                </span>{' '}
+                / {totalLessons} {pluralize(totalLessons, LESSON_FORMS)}
               </span>
             </div>
             <div className={styles.statsBar} aria-hidden="true">
-              <span className={styles.statsBarFill} style={{ width: `${percent}%` }} />
+              <span
+                className={styles.statsBarFill}
+                data-progress-bar
+                style={{ width: '0%' }}
+                suppressHydrationWarning
+              />
             </div>
           </div>
           <dl className={styles.statsGrid}>
@@ -199,29 +190,38 @@ export function HomePage({ course, level }: HomePageProps) {
 
       <ol className={styles.modules}>
         {course.modules.map((mod, mi) => {
-          const completedInModule =
-            progress === null
-              ? 0
-              : mod.lessons.filter((l) =>
-                  isCompleted(progress, lessonKey(mod.id, l.slug)),
-                ).length;
           const total = mod.lessons.length;
           const moduleDurationMin = mod.lessons.reduce(
             (s, l) => s + parseDurationMin(l.duration),
             0,
           );
-          const modulePct =
-            total === 0 ? 0 : Math.round((completedInModule / total) * 100);
-          const isComplete = completedInModule === total && total > 0;
-          const status = isComplete
-            ? 'пройдено'
-            : completedInModule > 0
-              ? 'в процессе'
-              : 'не начато';
+          // Module is treated as a single gate target via its first lesson.
+          // CSV of lesson keys feeds the gate-paint script so it can paint
+          // per-module count / percent / state in this row.
+          const moduleKey = mod.lessons[0]
+            ? lessonKey(mod.id, mod.lessons[0].slug)
+            : undefined;
+          const moduleKeysCsv = mod.lessons
+            .map((l) => lessonKey(mod.id, l.slug))
+            .join(',');
 
           return (
             <li key={mod.id} className={styles.moduleItem}>
-              <Link href={`/${mod.id}`} className={styles.moduleRow}>
+              <Link
+                href={`/${mod.id}`}
+                className={styles.moduleRow}
+                data-lesson-key={moduleKey}
+                data-progress-scope="module"
+                data-progress-keys={moduleKeysCsv}
+                data-progress-state="not-started"
+                onClick={(e) => {
+                  if (e.currentTarget.getAttribute('data-locked') === 'true') {
+                    e.preventDefault();
+                  }
+                }}
+                title="Модуль откроется после прохождения предыдущих уроков"
+                suppressHydrationWarning
+              >
                 <div className={styles.moduleNum}>
                   {String(mi + 1).padStart(2, '0')}
                 </div>
@@ -229,19 +229,25 @@ export function HomePage({ course, level }: HomePageProps) {
                   <h3 className={styles.moduleTitle}>{mod.title}</h3>
                   <p className={styles.moduleDesc}>{collapseWhitespace(mod.description)}</p>
                 </div>
-                <div
-                  className={`${styles.moduleProgress} ${isComplete ? styles.moduleProgressDone : ''}`}
-                >
+                <div className={styles.moduleProgress}>
                   <div className={styles.mpRow}>
-                    <span>{status}</span>
+                    {/* Status label is derived from data-progress-state via
+                        CSS pseudo-elements, so SSR markup is the same regardless
+                        of progress. See HomePage.module.css. */}
+                    <span className={styles.mpStatus} />
                     <span className={styles.mpPct}>
-                      {completedInModule}/{total}
+                      <span data-progress-count suppressHydrationWarning>
+                        0
+                      </span>
+                      /{total}
                     </span>
                   </div>
                   <div className={styles.mpBar} aria-hidden="true">
                     <span
                       className={styles.mpFill}
-                      style={{ width: `${modulePct}%` }}
+                      data-progress-bar
+                      style={{ width: '0%' }}
+                      suppressHydrationWarning
                     />
                   </div>
                 </div>
@@ -254,7 +260,10 @@ export function HomePage({ course, level }: HomePageProps) {
                   </span>
                 </div>
                 <div className={styles.arrowCell} aria-hidden="true">
-                  →
+                  <span className={styles.arrowOpen}>→</span>
+                  <span className={styles.arrowLocked}>
+                    <LockIcon />
+                  </span>
                 </div>
               </Link>
             </li>

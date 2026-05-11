@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime';
 import { unified, type Plugin } from 'unified';
 import remarkParse from 'remark-parse';
@@ -14,6 +14,7 @@ import remarkLessonImages from './mdx-plugins/remark-lesson-images';
 import remarkLinkRewrite from './mdx-plugins/remark-link-rewrite';
 import rehypeCallout from './mdx-plugins/rehype-callout';
 import type { Course } from './course';
+import { LessonAwareLink } from '@/components/LessonAwareLink';
 import { MarkdownAside, MarkdownFigure } from './markdown-components';
 import { extractToc, type TocEntry } from './extract-toc';
 
@@ -123,11 +124,24 @@ export async function renderLessonMarkdown(
 
   const toc = extractToc(hast);
 
+  // Wrap LessonAwareLink in a closure so it learns the build's basePath at
+  // render time without needing a React context (renderLessonMarkdown runs
+  // server-side; GateContext is client-only). The wrapper passes basePath
+  // down so the link can derive data-lesson-key from href on the server,
+  // which is what the inline gate-mark script needs to find at first paint.
+  const basePath = options.basePath;
+  const LessonLink = (props: Record<string, unknown>) =>
+    createElement(LessonAwareLink, {
+      basePath,
+      ...(props as Record<string, unknown>),
+    } as never);
+
   const content = toJsxRuntime(hast, {
     Fragment,
     jsx: jsx as never,
     jsxs: jsxs as never,
     components: {
+      a: LessonLink as never,
       figure: MarkdownFigure as never,
       aside: MarkdownAside as never,
     },

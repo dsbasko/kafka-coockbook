@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { LessonLockedInterstitial } from '@/components/LessonLockedInterstitial';
 import { LessonNav, type LessonNavLink } from '@/components/LessonNav';
 import { LessonPageLayout } from '@/components/LessonPageLayout';
 import { LessonSideMeta } from '@/components/LessonSideMeta';
@@ -97,35 +98,48 @@ export default async function LessonPage({ params }: LessonPageProps) {
     ? course.modules.findIndex((m) => m.id === currentModule.id) + 1
     : 0;
 
+  // Both branches render side-by-side. CSS toggles their visibility via the
+  // `data-lesson-locked` attribute on <html>, which the inline gate-init
+  // script stamps synchronously before <body> is parsed (no flash) and which
+  // GateProvider keeps in sync on the client (route changes, cross-tab
+  // localStorage updates).
   return (
     <>
-      <ReadingProgress />
-      <LessonPageLayout
-        title={lesson.title}
-        tocSlot={<Toc entries={toc} />}
-        sideMetaSlot={
-          currentModule ? (
-            <LessonSideMeta
-              moduleId={currentModule.id}
-              moduleTitle={currentModule.title}
-              moduleIndex={moduleIndex}
-              slug={params.lesson}
-              duration={lesson.duration}
-              tags={lesson.tags}
+      <div data-lesson-body>
+        <ReadingProgress />
+        <LessonPageLayout
+          title={lesson.title}
+          tocSlot={<Toc entries={toc} />}
+          sideMetaSlot={
+            currentModule ? (
+              <LessonSideMeta
+                moduleId={currentModule.id}
+                moduleTitle={currentModule.title}
+                moduleIndex={moduleIndex}
+                slug={params.lesson}
+                duration={lesson.duration}
+                tags={lesson.tags}
+              />
+            ) : null
+          }
+          footer={
+            <LessonNav
+              prev={prev}
+              next={next}
+              currentModuleId={params.module}
+              currentSlug={params.lesson}
             />
-          ) : null
-        }
-        footer={
-          <LessonNav
-            prev={prev}
-            next={next}
-            currentModuleId={params.module}
-            currentSlug={params.lesson}
-          />
-        }
-      >
-        <article className="markdown">{content}</article>
-      </LessonPageLayout>
+          }
+        >
+          <article className="markdown">{content}</article>
+        </LessonPageLayout>
+      </div>
+      <div data-lesson-gate>
+        <LessonLockedInterstitial
+          attemptedModuleId={params.module}
+          attemptedSlug={params.lesson}
+        />
+      </div>
     </>
   );
 }

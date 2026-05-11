@@ -1,13 +1,32 @@
+'use client';
+
 import Link from 'next/link';
+import { useGate } from '@/components/GateProvider';
 import type { FlatLessonEntry } from '@/lib/course';
+import { lessonKey, markCompletedAndAdvance } from '@/lib/progress';
 import styles from './Header.module.css';
 
 type HeaderLessonNavProps = {
   prev: FlatLessonEntry | null;
   next: FlatLessonEntry | null;
+  currentModuleId: string;
+  currentSlug: string;
 };
 
-export function HeaderLessonNav({ prev, next }: HeaderLessonNavProps) {
+export function HeaderLessonNav({
+  prev,
+  next,
+  currentModuleId,
+  currentSlug,
+}: HeaderLessonNavProps) {
+  const gate = useGate();
+  const handleNextClick = () => {
+    // Mirror LessonNav: advance the sticky pointer before navigating so the
+    // gate considers the next lesson reachable. Without this, clicking the
+    // header chevron from a fresh-state lesson lands on the locked interstitial.
+    markCompletedAndAdvance(gate.course, lessonKey(currentModuleId, currentSlug));
+  };
+
   return (
     <>
       {prev ? (
@@ -34,6 +53,7 @@ export function HeaderLessonNav({ prev, next }: HeaderLessonNavProps) {
           className={styles.navButton}
           title={`${next.lesson.title} →`}
           aria-label={`Следующий урок: ${next.lesson.title}`}
+          onClick={handleNextClick}
         >
           <ChevronRight />
         </Link>

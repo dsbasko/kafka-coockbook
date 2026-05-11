@@ -1,0 +1,12 @@
+/* Locked-state visuals for cross-lesson MDX links live in globals.css —
+   they target plain attribute selectors and don't fit CSS Modules' "must
+   contain a local class" rule. This file only keeps the local class for
+   the inline lock badge that the global rule reveals. */
+
+.lockBadge {
+  display: none;
+  align-items: center;
+  margin-left: 0.25em;
+  vertical-align: -0.15em;
+  color: var(--content-tertiary);
+}

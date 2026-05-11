@@ -67,7 +67,14 @@ export function AppShell({ children, course }: AppShellProps) {
   const actions = (
     <>
       <ProgressBar total={getTotalLessons(course)} />
-      {currentLesson ? <HeaderLessonNav prev={prev} next={next} /> : null}
+      {currentModule && currentLesson ? (
+        <HeaderLessonNav
+          prev={prev}
+          next={next}
+          currentModuleId={currentModule.id}
+          currentSlug={currentLesson.slug}
+        />
+      ) : null}
     </>
   );
 

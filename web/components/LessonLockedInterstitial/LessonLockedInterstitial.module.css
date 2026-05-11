@@ -1,0 +1,367 @@
+/* Locked-lesson interstitial.
+   Built on the same editorial-technical chassis as ModulePage / HomePage hero:
+   asymmetric two-column hero, mono eyebrows, brutalist accent buttons, mono
+   numeric stats. The user lands here when navigating directly to a lesson
+   they haven't unlocked yet — by mirroring the rest of the course the page
+   feels like a continuation, not an error screen. */
+
+.page {
+  --li-space-7: 32px;
+  --li-space-8: 40px;
+  --li-space-9: 56px;
+  --li-space-10: 72px;
+  --li-space-11: 96px;
+
+  --li-fs-meta: 12px;
+  --li-fs-small: 13px;
+  --li-fs-body: 15px;
+  --li-fs-lead: 18px;
+  --li-fs-display: 64px;
+
+  --li-r-1: 2px;
+  --li-r-2: 4px;
+  --li-r-3: 8px;
+
+  padding: var(--li-space-9) var(--li-space-7) var(--li-space-11);
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  font-size: var(--li-fs-body);
+  line-height: 1.55;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--li-space-9);
+  align-items: start;
+}
+
+.heroText {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--li-fs-meta);
+  color: var(--content-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+/* Locked-state chip — borrows the boxed-eyebrow look from ModulePage's
+   "01 / 09" badge but flips it to the notice palette so the gate is the
+   first thing the eye finds. */
+.eyebrowBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--accent-notice);
+  font-weight: 600;
+  padding: 3px 8px;
+  background: var(--accent-notice-soft);
+  border: 1px solid var(--accent-notice);
+  border-radius: var(--li-r-1);
+}
+
+.eyebrowDot {
+  color: var(--bg-stroke-strong);
+}
+
+.title {
+  font-size: var(--li-fs-display);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin: 0 0 var(--space-5);
+  color: var(--content-primary);
+  text-wrap: balance;
+  max-width: 640px;
+}
+
+.desc {
+  font-size: var(--li-fs-lead);
+  line-height: 1.5;
+  color: var(--content-secondary);
+  margin: 0 0 var(--li-space-7);
+  max-width: 580px;
+  text-wrap: pretty;
+}
+
+/* "/ вы пытались открыть" — a thin editorial card pinned under the lead,
+   echoing the way ModulePage labels its lesson list. Helps the user
+   confirm they landed where they intended even though it's locked. */
+.targetCard {
+  margin: 0 0 var(--li-space-7);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-subtle);
+  border: 1px solid var(--bg-stroke);
+  border-left: 2px solid var(--accent-notice);
+  border-radius: var(--li-r-2);
+  max-width: 580px;
+}
+
+.targetLabel {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--content-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 var(--space-2);
+}
+
+.targetTitle {
+  margin: 0;
+  font-size: var(--li-fs-body);
+  color: var(--content-primary);
+}
+
+.targetModule {
+  color: var(--content-secondary);
+}
+
+.targetSep {
+  color: var(--content-tertiary);
+}
+
+.targetLesson {
+  color: var(--content-primary);
+  font-weight: 600;
+}
+
+.ctaRow {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ---------- Buttons (mirror ModulePage/HomePage) ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px var(--space-5);
+  border-radius: var(--li-r-2);
+  font-size: var(--li-fs-body);
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  white-space: nowrap;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btnPrimary {
+  background: var(--accent-main);
+  color: var(--content-inverse);
+  border-color: var(--accent-main);
+}
+
+/* Pin the foreground on hover — the missing color override was the bug:
+   --content-inverse (cream) was inheriting from the parent and falling onto
+   --accent-main-hover (deep moss), wiping out the label. */
+.btnPrimary:hover {
+  background: var(--accent-main-hover);
+  border-color: var(--accent-main-hover);
+  color: var(--content-inverse);
+}
+
+.btnGhost {
+  background: transparent;
+  color: var(--content-secondary);
+  padding: 12px var(--space-3);
+}
+
+.btnGhost:hover {
+  color: var(--content-primary);
+}
+
+.btnArrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 400;
+  transition: transform 150ms ease;
+}
+
+.btn:hover .btnArrow {
+  transform: translateX(3px);
+}
+
+/* ---------- Side card (sticky readout) ---------- */
+
+.sideCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-stroke);
+  border-radius: var(--li-r-3);
+  padding: var(--space-6);
+  position: sticky;
+  top: var(--li-space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sideRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.sideLabel {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--li-fs-meta);
+  color: var(--content-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sideVal {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--li-fs-small);
+  color: var(--content-primary);
+  font-weight: 600;
+}
+
+.sideBar {
+  height: 6px;
+  background: var(--bg-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sideFill {
+  display: block;
+  height: 100%;
+  background: var(--accent-main);
+  border-radius: 999px;
+  transition: width 400ms ease;
+}
+
+.sidePct {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: var(--space-1);
+  color: var(--content-primary);
+  line-height: 1;
+}
+
+.sideDivider {
+  height: 1px;
+  background: var(--bg-stroke);
+  margin: var(--space-3) 0;
+}
+
+.sideBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.frontierLine {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--li-fs-meta);
+  color: var(--content-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.frontierModule {
+  color: var(--content-secondary);
+}
+
+.frontierLesson {
+  font-size: var(--li-fs-body);
+  font-weight: 600;
+  color: var(--content-primary);
+  line-height: 1.35;
+}
+
+.stepsValue {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--content-primary);
+  letter-spacing: -0.01em;
+}
+
+.stepsUnit {
+  font-weight: 400;
+  color: var(--content-tertiary);
+  font-size: var(--li-fs-small);
+}
+
+/* Gate-paint flips data-hint-state on the frontier-hint sideBlock and
+   data-steps-state on the steps-until slot. Pre-hydration baseline =
+   hidden, so SSR markup stays stable for users with no progress (where
+   these blocks really shouldn't appear). */
+.sideBlock[data-hint-state='hidden'] {
+  display: none;
+}
+
+/* Hide the entire "До этого урока" block when steps == 0 — uses :has on the
+   slot's data-steps-state. */
+.sideBlock:has([data-steps-state='hidden']) {
+  display: none;
+}
+
+/* CTA variants. Gate-paint sets data-cta-state on the row, CSS picks the
+   variant. Same convention as HomePage / ModulePage. */
+.ctaRow [data-cta-variant] {
+  display: none;
+}
+.ctaRow[data-cta-state='not-started'] [data-cta-variant='not-started'],
+.ctaRow[data-cta-state='in-progress'] [data-cta-variant='in-progress'] {
+  display: inline-flex;
+}
+
+/* Success palette for the bar fill once the course is complete. */
+.sideCard[data-progress-state='complete'] .sideFill {
+  background: var(--accent-success);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1100px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: var(--li-space-7);
+  }
+  .sideCard {
+    position: static;
+  }
+  .title {
+    font-size: 52px;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--space-6) var(--space-5) var(--li-space-9);
+  }
+  .title {
+    font-size: 36px;
+  }
+  .desc {
+    font-size: var(--li-fs-body);
+  }
+  .ctaRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ctaRow .btn {
+    justify-content: space-between;
+    width: 100%;
+  }
+}

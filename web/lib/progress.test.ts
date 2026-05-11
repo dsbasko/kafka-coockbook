@@ -1,14 +1,52 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { parseCourse, type Course } from './course';
 import {
+  bumpFurthest,
+  FURTHEST_STORAGE_KEY,
   getCompletedCount,
   getCompletedPercent,
+  getFurthestKey,
   getProgress,
   isCompleted,
   lessonKey,
   markCompleted,
+  markCompletedAndAdvance,
+  PROGRESS_CHANGE_EVENT,
   PROGRESS_STORAGE_KEY,
   unmarkCompleted,
 } from './progress';
+
+const COURSE_YAML = `
+title: Test
+description: Test
+basePath: /test
+repoUrl: https://example.com/test
+modules:
+  - id: 01-foo
+    title: Foo
+    description: D
+    lessons:
+      - slug: 01-01-intro
+        title: Intro
+        duration: 30m
+      - slug: 01-02-deep
+        title: Deep
+        duration: 45m
+  - id: 02-bar
+    title: Bar
+    description: D
+    lessons:
+      - slug: 02-01-start
+        title: Start
+        duration: 20m
+      - slug: 02-02-end
+        title: End
+        duration: 20m
+`;
+
+function loadCourse(): Course {
+  return parseCourse(COURSE_YAML);
+}
 
 // jsdom in this project ships without a working Storage implementation,
 // so install a minimal in-memory shim shared across the test file.
@@ -130,5 +168,62 @@ describe('getCompletedCount / getCompletedPercent', () => {
       markCompleted(lessonKey('m', String(i)), () => '2026-05-06T00:00:00.000Z');
     }
     expect(getCompletedPercent(getProgress(), 3)).toBe(100);
+  });
+});
+
+describe('getFurthestKey / bumpFurthest', () => {
+  it('returns null when storage is empty', () => {
+    expect(getFurthestKey()).toBeNull();
+  });
+
+  it('ignores malformed stored values', () => {
+    window.localStorage.setItem(FURTHEST_STORAGE_KEY, 'no slash here');
+    expect(getFurthestKey()).toBeNull();
+  });
+
+  it('writes the key when nothing was stored before', () => {
+    const course = loadCourse();
+    const result = bumpFurthest(course, lessonKey('01-foo', '01-02-deep'));
+    expect(result).toBe('01-foo/01-02-deep');
+    expect(getFurthestKey()).toBe('01-foo/01-02-deep');
+  });
+
+  it('moves forward but never backward in linear order', () => {
+    const course = loadCourse();
+    bumpFurthest(course, lessonKey('02-bar', '02-01-start'));
+    const result = bumpFurthest(course, lessonKey('01-foo', '01-01-intro'));
+    expect(result).toBe('02-bar/02-01-start');
+    expect(getFurthestKey()).toBe('02-bar/02-01-start');
+  });
+
+  it('ignores keys not present in the course', () => {
+    const course = loadCourse();
+    bumpFurthest(course, lessonKey('01-foo', '01-01-intro'));
+    const result = bumpFurthest(course, lessonKey('ghost', 'unknown'));
+    expect(result).toBe('01-foo/01-01-intro');
+    expect(getFurthestKey()).toBe('01-foo/01-01-intro');
+  });
+});
+
+describe('markCompletedAndAdvance', () => {
+  it('writes progress, advances the pointer and emits a change event', () => {
+    const course = loadCourse();
+    const listener = vi.fn();
+    window.addEventListener(PROGRESS_CHANGE_EVENT, listener);
+    try {
+      markCompletedAndAdvance(course, lessonKey('01-foo', '01-02-deep'));
+      expect(isCompleted(getProgress(), lessonKey('01-foo', '01-02-deep'))).toBe(true);
+      expect(getFurthestKey()).toBe('01-foo/01-02-deep');
+      expect(listener).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener(PROGRESS_CHANGE_EVENT, listener);
+    }
+  });
+
+  it('does not retract the pointer when unmarking a completed lesson', () => {
+    const course = loadCourse();
+    markCompletedAndAdvance(course, lessonKey('02-bar', '02-01-start'));
+    unmarkCompleted(lessonKey('02-bar', '02-01-start'));
+    expect(getFurthestKey()).toBe('02-bar/02-01-start');
   });
 });

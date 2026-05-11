@@ -48,3 +48,41 @@ samp,
 pre {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }
+
+/* Lesson gate: the lesson page renders both the lesson body and the locked
+   interstitial side-by-side; visibility is toggled via the data attribute
+   on <html>. The attribute is set synchronously by the gate-init inline
+   script before <body> parses (no flash on direct navigation) and kept in
+   sync on the client by GateProvider (SPA route changes, cross-tab
+   localStorage updates). Default state hides the gate. */
+[data-lesson-gate] {
+  display: none;
+}
+
+html[data-lesson-locked='true'] [data-lesson-body] {
+  display: none;
+}
+
+html[data-lesson-locked='true'] [data-lesson-gate] {
+  display: block;
+}
+
+/* Cross-lesson links inside MDX prose: the inline gate-mark script flips
+   `data-locked` on any `<a>` whose `data-lesson-key` points at a still-
+   locked lesson. Visual is global because the selector targets a bare
+   attribute pattern that CSS Modules forbids; the trailing lock badge is
+   a local class on the link (see LessonAwareLink.module.css). */
+a[data-lesson-key][data-locked='true'] {
+  cursor: not-allowed;
+  color: var(--content-tertiary);
+  text-decoration: underline dotted var(--content-tertiary);
+  text-underline-offset: 3px;
+}
+
+a[data-lesson-key][data-locked='true']:hover {
+  color: var(--content-tertiary);
+}
+
+a[data-lesson-key][data-locked='true'] [data-lock-badge] {
+  display: inline-flex;
+}

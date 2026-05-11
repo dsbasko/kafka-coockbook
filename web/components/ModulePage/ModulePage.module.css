@@ -420,22 +420,119 @@
   letter-spacing: 0.06em;
 }
 
-.lessonRowDone .lessonNum,
-.lessonRowDone .lessonTitle {
+/* Gate-paint managed: all four status glyphs are rendered in DOM at all
+   times; the inline gate-paint script flips data-completed / data-next /
+   data-locked synchronously before first paint (and applyGatePainting
+   re-applies them on progress changes). CSS picks exactly one glyph by
+   the row's current attribute state. */
+
+.lessonStatus .statusDefault {
+  display: inline-flex;
+}
+
+.lessonStatus .statusNext,
+.lessonStatus .statusDone,
+.lessonStatus .statusLocked {
+  display: none;
+}
+
+.lessonRow[data-completed='true'] .statusDefault {
+  display: none;
+}
+.lessonRow[data-completed='true'] .statusDone {
+  display: inline-flex;
+}
+
+.lessonRow[data-next='true'] .statusDefault,
+.lessonRow[data-next='true'] .statusDone {
+  display: none;
+}
+.lessonRow[data-next='true'] .statusNext {
+  display: inline-flex;
+}
+
+/* Locked beats every other state. */
+.lessonRow[data-locked='true'] .statusDefault,
+.lessonRow[data-locked='true'] .statusNext,
+.lessonRow[data-locked='true'] .statusDone {
+  display: none;
+}
+.lessonRow[data-locked='true'] .statusLocked {
+  display: grid;
+}
+
+.lessonLockSlot {
+  display: grid;
+  place-items: center;
   color: var(--content-tertiary);
 }
 
-.lessonRowDone .lessonTitle {
+/* "Done" row dimming + strikethrough. */
+.lessonRow[data-completed='true'] .lessonNum,
+.lessonRow[data-completed='true'] .lessonTitle {
+  color: var(--content-tertiary);
+}
+.lessonRow[data-completed='true'] .lessonTitle {
   text-decoration: line-through;
   text-decoration-color: var(--content-tertiary);
 }
 
-.lessonRowNext {
+/* "Next" row: soft accent background + hint reveal. Hint is always rendered
+   so SSR markup stays consistent across all rows; CSS toggles its visibility
+   based on data-next. */
+.lessonHint {
+  display: none;
+}
+.lessonRow[data-next='true']:not([data-locked='true']) {
   background: var(--accent-main-soft);
 }
-
-.lessonRowNext:hover {
+.lessonRow[data-next='true']:not([data-locked='true']):hover {
   background: var(--accent-main-soft);
+}
+.lessonRow[data-next='true']:not([data-locked='true']) .lessonHint {
+  display: inline;
+}
+
+/* Locked row styling. */
+.lessonRow[data-locked='true'] {
+  cursor: not-allowed;
+  color: var(--content-tertiary);
+}
+.lessonRow[data-locked='true']:hover {
+  background: transparent;
+}
+.lessonRow[data-locked='true']:hover .lessonArrow {
+  color: var(--content-tertiary);
+  transform: none;
+}
+.lessonRow[data-locked='true'] .lessonTitle,
+.lessonRow[data-locked='true'] .lessonNum,
+.lessonRow[data-locked='true'] .lessonDuration,
+.lessonRow[data-locked='true'] .lessonDurUnit {
+  color: var(--content-tertiary);
+}
+.lessonRow[data-locked='true'] .lessonArrow {
+  visibility: hidden;
+}
+
+/* CTA variants. Gate-paint sets data-cta-state on the ctaRow; CSS leaves
+   exactly one variant visible. */
+.ctaRow [data-cta-variant] {
+  display: none;
+}
+.ctaRow[data-cta-state='not-started'] [data-cta-variant='not-started'],
+.ctaRow[data-cta-state='in-progress'] [data-cta-variant='in-progress'],
+.ctaRow[data-cta-state='complete'] [data-cta-variant='complete'] {
+  display: inline-flex;
+}
+
+/* Side card: bar / number colour follows success palette once everything
+   in the module is done. */
+.sideCard[data-progress-state='complete'] .sideFill {
+  background: var(--accent-success);
+}
+.sideCard[data-progress-state='complete'] .sideVal {
+  color: var(--accent-success);
 }
 
 .lessonTags {

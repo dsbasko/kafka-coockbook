@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { lessonKey, markCompleted, PROGRESS_CHANGE_EVENT } from '@/lib/progress';
+import { useGate } from '@/components/GateProvider';
+import { lessonKey, markCompletedAndAdvance } from '@/lib/progress';
 import styles from './LessonNav.module.css';
 
 export type LessonNavLink = {
@@ -18,9 +19,12 @@ type LessonNavProps = {
 };
 
 export function LessonNav({ prev, next, currentModuleId, currentSlug }: LessonNavProps) {
+  const gate = useGate();
   const handleNextClick = () => {
-    markCompleted(lessonKey(currentModuleId, currentSlug));
-    window.dispatchEvent(new Event(PROGRESS_CHANGE_EVENT));
+    // Single entry point: marks completed, advances the sticky furthest
+    // pointer, dispatches the change event. Keeps gate state internally
+    // consistent so an in-flight read in another tab doesn't see a half-write.
+    markCompletedAndAdvance(gate.course, lessonKey(currentModuleId, currentSlug));
   };
 
   return (

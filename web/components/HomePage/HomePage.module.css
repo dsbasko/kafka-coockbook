@@ -307,6 +307,85 @@
   background: var(--bg-subtle);
 }
 
+/* Lock state — toggled by the gate-mark inline script setting data-locked
+   on this same element. JSX always renders the open shape, the script
+   flips the attribute before first paint, and CSS swaps icon + styling
+   without rebuilding the DOM (no React-driven re-render → no flash). */
+.moduleRow[data-locked='true'] {
+  cursor: not-allowed;
+  color: var(--content-tertiary);
+}
+
+.moduleRow[data-locked='true']:hover {
+  background: transparent;
+}
+
+.moduleRow[data-locked='true']:hover .arrowCell {
+  color: var(--content-tertiary);
+  transform: none;
+}
+
+.moduleRow[data-locked='true'] .moduleTitle,
+.moduleRow[data-locked='true'] .moduleDesc,
+.moduleRow[data-locked='true'] .mmLessons,
+.moduleRow[data-locked='true'] .mmDuration,
+.moduleRow[data-locked='true'] .mpPct {
+  color: var(--content-tertiary);
+}
+
+.arrowCell .arrowLocked {
+  display: none;
+  color: var(--content-tertiary);
+}
+
+.moduleRow[data-locked='true'] .arrowOpen {
+  display: none;
+}
+
+.moduleRow[data-locked='true'] .arrowLocked {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Per-module status label is generated via ::before so SSR markup is the
+   same regardless of progress; gate-paint flips data-progress-state on the
+   row and CSS picks the right copy. */
+.mpStatus::before {
+  content: 'не начато';
+}
+.moduleRow[data-progress-state='in-progress'] .mpStatus::before {
+  content: 'в процессе';
+}
+.moduleRow[data-progress-state='complete'] .mpStatus::before {
+  content: 'пройдено';
+}
+.moduleRow[data-progress-state='complete'] .mpFill {
+  background: var(--accent-success);
+}
+
+/* CTA variants. Gate-paint sets data-cta-state on the row, CSS picks the
+   variant. Two of the variants share data-cta-variant='in-progress' (the
+   primary "Продолжить" link and the secondary "Начать с начала"); they
+   both reveal in the in-progress state. */
+.ctaRow [data-cta-variant] {
+  display: none;
+}
+.ctaRow[data-cta-state='not-started'] [data-cta-variant='not-started'],
+.ctaRow[data-cta-state='in-progress'] [data-cta-variant='in-progress'] {
+  display: inline-flex;
+}
+
+/* Frontier hint: hidden by default (SSR baseline = not-started). Gate-paint
+   flips data-hint-state once it knows the user has progressed. */
+.nextHint[data-hint-state='hidden'] {
+  display: none;
+}
+
+/* Global stats card: success colour once everything is finished. */
+.statsCard[data-progress-state='complete'] .statsBarFill {
+  background: var(--accent-success);
+}
+
 .moduleRow:hover .arrowCell {
   color: var(--content-primary);
   transform: translateX(4px);
