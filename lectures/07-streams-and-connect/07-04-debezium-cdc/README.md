@@ -13,7 +13,7 @@ CDC — это «change data capture». Идея простая: вместо т
 1. **Аналитика.** Postgres отлично для OLTP, но строить отчёты по нему на терабайтах больно. CDC → Kafka → ClickHouse / BigQuery / Snowflake. Бизнес-БД остаётся чистой, аналитика работает на отдельном движке.
 2. **Поиск.** Postgres → Elasticsearch. Каждая правка строки → переиндексация документа. Без CDC пришлось бы либо batch'ом переливать всю базу раз в час, либо прибивать в код приложения двойную запись (а двойная запись без транзакции = боль).
 3. **Микросервисы.** Старая монолитная БД, новый микросервис, которому нужны её данные. Подписали на CDC — он живёт своей жизнью на свежих данных, не дёргая исходный сервис синхронно.
-4. **Outbox pattern.** Из лекции [04-03](../../04-reliability/04-03-outbox-pattern/README.md) ты помнишь: транзакционный outbox решает проблему «БД-write + Kafka-publish атомарно». Но там publisher — это poller, который SELECT'ит outbox каждые 100ms. Дороже, чем хочется. С CDC publisher не нужен совсем — Debezium читает WAL и сам публикует.
+4. **Outbox pattern.** Из лекции [Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md) ты помнишь: транзакционный outbox решает проблему «БД-write + Kafka-publish атомарно». Но там publisher — это poller, который SELECT'ит outbox каждые 100ms. Дороже, чем хочется. С CDC publisher не нужен совсем — Debezium читает WAL и сам публикует.
 
 Четвёртый пункт — это финальная форма outbox'а, и в этой лекции мы её собираем.
 
@@ -202,7 +202,7 @@ make slot-status
 
 ## Гарантии и подводные камни
 
-Debezium даёт **at-least-once**. Никаких exactly-once тут нет — потребитель должен быть idempotent. Если коннектор перезапустился между fetch'ем из WAL'а и публикацией в Kafka — событие может прийти дважды. На стороне потребителя обычно дедупим по (topic, partition, offset) или по бизнес-ключу из payload'а (см. лекцию [03-03 — Processing Guarantees](../../03-consumer/03-03-processing-guarantees/README.md)).
+Debezium даёт **at-least-once**. Никаких exactly-once тут нет — потребитель должен быть idempotent. Если коннектор перезапустился между fetch'ем из WAL'а и публикацией в Kafka — событие может прийти дважды. На стороне потребителя обычно дедупим по (topic, partition, offset) или по бизнес-ключу из payload'а (см. лекцию [Гарантии обработки](../../03-consumer/03-03-processing-guarantees/README.md)).
 
 Порядок гарантирован per-key, но не глобально. Все события одной строки (по PK) попадают в одну партицию и сохраняют порядок коммитов. События разных строк могут перемешаться, и это нормально — если порядок нужен глобальный, придётся ставить partitions=1 (с потерей масштабирования).
 
@@ -216,7 +216,7 @@ Snapshot долгий. Если таблица на терабайт — initial
 
 Эта лекция — последняя в модуле 07. Дальше — модуль 08 про эксплуатацию (мониторинг, retention, sizing, troubleshooting), и в use case'ах модуля 09 этот же Debezium встретится дважды:
 
-- 09-03 — Postgres → ClickHouse через Debezium + Go-анонимизатор + ClickHouse Sink
-- 09-04 — Postgres → Elasticsearch через Debezium + ES Sink (без Go вообще, declarative ETL)
+- [Postgres → ClickHouse с анонимизацией](../../09-use-cases/03-pg-to-clickhouse/README.md) — Postgres → ClickHouse через Debezium + Go-анонимизатор + ClickHouse Sink
+- [Postgres → Elasticsearch](../../09-use-cases/04-pg-to-elasticsearch/README.md) — Postgres → Elasticsearch через Debezium + ES Sink (без Go вообще, declarative ETL)
 
 Здесь же — концептуальная база. Если уловил, как WAL → slot → connector → топик складываются в стек — дальше use case'ы будут вариациями на эту тему.

@@ -1,6 +1,6 @@
 # 07-02 — Stream Processing in Go (franz-go + Pebble)
 
-В 07-01 мы говорили про идеи: event-time, окна, watermark, KStream/KTable. Тут пора потрогать. Stream processing'у нужно state'е — счётчики где-то живут между записями. И state этот надо переживать рестарты, иначе любая аналитика рассыпается на первой же `kill -9`.
+В [Stream processing: концепции](../../07-streams-and-connect/07-01-stream-processing-concepts/README.md) мы говорили про идеи: event-time, окна, watermark, KStream/KTable. Тут пора потрогать. Stream processing'у нужно state'е — счётчики где-то живут между записями. И state этот надо переживать рестарты, иначе любая аналитика рассыпается на первой же `kill -9`.
 
 Беда в том, что для Go нативного Kafka Streams нет. В Java — есть библиотека, прямо от Confluent. В Go — пусто. Самые близкие штуки (Watermill, например) — это про message routing, не про stateful streams. Так что собираем руками: kafka-клиент + локальный embedded KV-store + changelog topic для durability.
 
@@ -107,7 +107,7 @@ err = w.client.CommitUncommittedOffsets(commitCtx)
 
 Альтернативно: сначала commit, потом changelog. Если краш между ними — дубль обработки в Pebble (рестарт перечитает не закоммиченное), но changelog в порядке. Тоже плохо: счётчик станет на единицу больше, чем должен.
 
-Правильный порядок (Pebble → changelog → commit) даёт **at-least-once** end-to-end. После рестарта мы можем повторно обработать последний батч (Pebble дважды инкрементнётся для тех же слов), но и changelog получит обе записи — restore из него выдаст то же завышенное значение. Это согласовано само с собой. Чтобы получить exactly-once, понадобится транзакционный продьюсер плюс `SendOffsetsToTransaction` (это лекция 04-02), но для word-count разница в один-два инкремента после редкого краша — допустимая цена.
+Правильный порядок (Pebble → changelog → commit) даёт **at-least-once** end-to-end. После рестарта мы можем повторно обработать последний батч (Pebble дважды инкрементнётся для тех же слов), но и changelog получит обе записи — restore из него выдаст то же завышенное значение. Это согласовано само с собой. Чтобы получить exactly-once, понадобится транзакционный продьюсер плюс `SendOffsetsToTransaction` (это лекция [Consume-process-produce](../../04-reliability/04-02-consume-process-produce/README.md)), но для word-count разница в один-два инкремента после редкого краша — допустимая цена.
 
 ## Output: top-N снэпшот
 
@@ -237,12 +237,12 @@ rm -rf ./state
 
 То, что мы собрали — модель stateful processing'а на минималках. Не хватает массы вещей, и про каждую полезно знать, что её здесь нет.
 
-- **Time windows.** Word-count'у не нужен event-time — он считает «всё за всё время». Реальные стримы почти всегда хотят окна (см. 07-01). На основе нашей схемы это делается так: ключ Pebble не `word`, а `<word>:<window-start>`, плюс отдельный процесс закрывает окна по watermark'у и удаляет старые ключи.
+- **Time windows.** Word-count'у не нужен event-time — он считает «всё за всё время». Реальные стримы почти всегда хотят окна (см. [Stream processing: концепции](../../07-streams-and-connect/07-01-stream-processing-concepts/README.md)). На основе нашей схемы это делается так: ключ Pebble не `word`, а `<word>:<window-start>`, плюс отдельный процесс закрывает окна по watermark'у и удаляет старые ключи.
 - **Joins.** Stream-stream и stream-table join'ы — отдельная большая тема. Базово: нужно репартиционировать обе стороны по join-ключу, потом держать local cache (KTable-side) в Pebble.
-- **Backpressure.** В нашем коде `flushLoop` идёт независимо от обработки. Если поток входящих сообщений сильно опережает скорость flush'а в Kafka — буфер растёт. Для production'а: `cl.PauseFetchPartitions` при перегрузе outputTopic'а (паттерн из 04-05).
-- **Exactly-once.** Чтобы избавиться от дублей при крашах, нужны транзакции producer'а вокруг блока «Pebble update + changelog produce + offset commit». Это `kgo.TransactionalID(...)` плюс `kgo.SendOffsetsToTransaction` — паттерн из 04-02.
+- **Backpressure.** В нашем коде `flushLoop` идёт независимо от обработки. Если поток входящих сообщений сильно опережает скорость flush'а в Kafka — буфер растёт. Для production'а: `cl.PauseFetchPartitions` при перегрузе outputTopic'а (паттерн из [Доставка во внешние системы](../../04-reliability/04-05-external-delivery/README.md)).
+- **Exactly-once.** Чтобы избавиться от дублей при крашах, нужны транзакции producer'а вокруг блока «Pebble update + changelog produce + offset commit». Это `kgo.TransactionalID(...)` плюс `kgo.SendOffsetsToTransaction` — паттерн из [Consume-process-produce](../../04-reliability/04-02-consume-process-produce/README.md).
 - **Шардинг state'а.** При большом числе партиций input'а одна нода с одним Pebble — bottleneck. Kafka Streams делит state по партициям ключа, каждая нода держит свой shard. Тут — один процесс, один state. Расширяется через consumer-group: каждый member берёт свои партиции, держит свой Pebble; changelog'ом всё равно делятся.
-- **Метрики и наблюдаемость.** Lag входного топика, размер state'а, lag changelog-publish'а, latency flush'а top-N. Это 08-01.
+- **Метрики и наблюдаемость.** Lag входного топика, размер state'а, lag changelog-publish'а, latency flush'а top-N. Это [Мониторинг и метрики](../../08-operations/08-01-monitoring-and-metrics/README.md).
 
 Всё перечисленное — поверх той же базы. Pebble + changelog + грамотный порядок «state → log → commit». Меняется обвязка, не суть.
 
@@ -253,4 +253,4 @@ rm -rf ./state
 - **Порядок операций важнее, чем кажется.** State → log → commit. Любая перестановка даёт неприятную семантику (потеря или несогласованный счётчик), и эту неприятность ты заметишь сильно позже первого продакшн-инцидента.
 - **Compacted topic — это материализованный snapshot, не лог.** Все рассуждения про retention к нему не применимы; размер ограничен числом уникальных ключей, не числом записей.
 
-В 07-03 уйдём в другую сторону — Kafka Connect и декларативный ETL без своего кода. Для тех случаев, где Pebble + Go — overkill.
+В [Kafka Connect](../../07-streams-and-connect/07-03-kafka-connect/README.md) уйдём в другую сторону — Kafka Connect и декларативный ETL без своего кода. Для тех случаев, где Pebble + Go — overkill.
