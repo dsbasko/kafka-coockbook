@@ -268,7 +268,7 @@ Use case собирает в одно:
 Чего тут осознанно нет:
 
 - Schema Registry. Здесь byte-в-byte protobuf без `magic byte` + `schema_id`. Отдельная лекция ([Schema Registry](../../05-contracts/05-03-schema-registry/README.md)) показывает, как добавить SR — паттерн ортогональный, в этот use case встраивается без изменений в логике.
-- Outbox-паттерн ([Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md)). Выходное сообщение в `notification-events` пишется напрямую — мы не моделируем write-side с базой. Если бы делали, добавили бы `outbox` таблицу и publisher, но это удлинило бы пример без новых уроков.
+- [Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md). Выходное сообщение в `notification-events` пишется напрямую — мы не моделируем write-side с базой. Если бы делали, добавили бы `outbox` таблицу и publisher, но это удлинило бы пример без новых уроков.
 - gRPC API. Этот use case — про async-доставку. gRPC-фронт показан в [Коммуникация микросервисов](../../09-use-cases/01-microservices-comm/README.md) и [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md).
 - Реальные APNs / Firebase credentials. Cert-flow для APNs и FCM HTTP v1 token-exchange — отдельная история, в курсе она out of scope. Архитектура канала тут демонстрируется на mock'ах.
 
