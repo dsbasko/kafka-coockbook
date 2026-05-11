@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useGate } from '@/components/GateProvider';
 import {
   flattenLessons,
   getLessonIndex,
   getTotalLessons,
 } from '@/lib/course';
-import { lessonKey } from '@/lib/progress';
+import { navigateToFrontierHref } from '@/lib/frontier-link';
 import { openProgramDrawer } from '@/lib/program-drawer';
 import styles from './LessonLockedInterstitial.module.css';
 
@@ -32,6 +33,7 @@ export function LessonLockedInterstitial({
   // flash. Reading from gate avoids drilling course through props.
   const gate = useGate();
   const { course, basePath } = gate;
+  const router = useRouter();
 
   const attemptedLesson =
     attemptedModuleId && attemptedSlug
@@ -52,11 +54,10 @@ export function LessonLockedInterstitial({
 
   const totalLessons = getTotalLessons(course);
   const firstEntry = flattenLessons(course)[0] ?? null;
+  // Bare path — Next `<Link>` prepends basePath; pre-baking it here would
+  // produce `/kafka-cookbook/kafka-cookbook/...` on client-side navigation.
   const firstHref = firstEntry
-    ? `/${basePath || ''}/${lessonKey(firstEntry.moduleId, firstEntry.lesson.slug)}/`.replace(
-        /\/+/g,
-        '/',
-      )
+    ? `/${firstEntry.moduleId}/${firstEntry.lesson.slug}`
     : '#';
 
   return (
@@ -115,6 +116,7 @@ export function LessonLockedInterstitial({
               data-cta-variant="in-progress"
               data-cta-frontier-link
               suppressHydrationWarning
+              onClick={(e) => navigateToFrontierHref(e, router, basePath)}
             >
               Продолжить ·{' '}
               <span data-cta-frontier-title suppressHydrationWarning>
