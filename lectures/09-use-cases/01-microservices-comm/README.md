@@ -1,6 +1,6 @@
 # Use case 09-01 — Microservices Communication
 
-Лекция 06-04 показала гибрид gRPC + Kafka на одном узле каждой роли. Это был концепт. Тут — продакшн-вариант того же гибрида, но в реалистичной форме: каждый сервис работает в нескольких копиях, между ними распределяется нагрузка, в середине нагрузки одна копия падает — система продолжает доводить заказы до конца. Всё это закрыто integration-тестом, который запускается одной командой.
+Лекция [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md) показала гибрид gRPC + Kafka на одном узле каждой роли. Это был концепт. Тут — продакшн-вариант того же гибрида, но в реалистичной форме: каждый сервис работает в нескольких копиях, между ними распределяется нагрузка, в середине нагрузки одна копия падает — система продолжает доводить заказы до конца. Всё это закрыто integration-тестом, который запускается одной командой.
 
 ## Что внутри
 
@@ -10,11 +10,11 @@
 2. `inventory-service` — consumer на `order.created` в группе `inventory`. Тоже несколько копий. Партиции делятся между нодами через consumer-group механизм, каждое сообщение обрабатывает ровно одна нода. При падении ноды — ребаланс, оставшиеся подбирают её партиции.
 3. `notification-service` — второй consumer на тот же топик, но в собственной группе `notifications`. Это как раз тот трюк, ради которого в гибрид добавляли Kafka: новый downstream добавляется без правок в `order-service` и без согласований. Включил группу — прочитал лог с нуля — поехал.
 
-Один Postgres под всех ради компактности, как в лекции 06-04. В проде у каждого сервиса своя БД. Один топик `usecase-09-01-order-created` с 6 партициями и RF=3.
+Один Postgres под всех ради компактности, как в лекции [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md). В проде у каждого сервиса своя БД. Один топик `usecase-09-01-order-created` с 6 партициями и RF=3.
 
-Всё, что выходит из `order-service` в Kafka — это `OrderCreated`-payload в Protobuf, плюс набор headers (`outbox-id`, `aggregate-id`, `publisher-node`, `trace-id`, `tenant-id`, `event-type`, `content-type`). Headers — для propagation сквозного контекста и для dedup'а. Payload — proto-байты, без Schema Registry. Лекция 05-03 показывает как наслаивать SR поверх; тут SR опущен, чтобы integration test был самодостаточен и не зависел от регистрации схем по сети при каждом прогоне.
+Всё, что выходит из `order-service` в Kafka — это `OrderCreated`-payload в Protobuf, плюс набор headers (`outbox-id`, `aggregate-id`, `publisher-node`, `trace-id`, `tenant-id`, `event-type`, `content-type`). Headers — для propagation сквозного контекста и для dedup'а. Payload — proto-байты, без Schema Registry. Лекция [Schema Registry](../../05-contracts/05-03-schema-registry/README.md) показывает как наслаивать SR поверх; тут SR опущен, чтобы integration test был самодостаточен и не зависел от регистрации схем по сети при каждом прогоне.
 
-## Чем этот use case отличается от лекции 06-04
+## Чем этот use case отличается от лекции [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md)
 
 | Что | 06-04 (концепт) | 09-01 (use case) |
 |---|---|---|
@@ -64,7 +64,7 @@
                   inventory_reservations                notifications_log
 ```
 
-Левая половина — write-path. Никакого Produce внутри RPC handler'а: только `INSERT INTO orders` плюс `INSERT INTO outbox` под одним COMMIT. Это контракт outbox-паттерна (см. 04-03 и 06-04). Outbox publisher — отдельная горутина в том же процессе. На каждом тике опрашивает `SELECT ... WHERE published_at IS NULL ... FOR UPDATE SKIP LOCKED`, шлёт батч в Kafka, помечает `published_at = NOW()`. Если две копии `order-service` опрашивают параллельно — `SKIP LOCKED` не даст им зацепиться за одну строку, не нужно ни лидер-выбор, ни шардинг по нодам.
+Левая половина — write-path. Никакого Produce внутри RPC handler'а: только `INSERT INTO orders` плюс `INSERT INTO outbox` под одним COMMIT. Это контракт outbox-паттерна (см. [Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md) и [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md)). Outbox publisher — отдельная горутина в том же процессе. На каждом тике опрашивает `SELECT ... WHERE published_at IS NULL ... FOR UPDATE SKIP LOCKED`, шлёт батч в Kafka, помечает `published_at = NOW()`. Если две копии `order-service` опрашивают параллельно — `SKIP LOCKED` не даст им зацепиться за одну строку, не нужно ни лидер-выбор, ни шардинг по нодам.
 
 Правая половина — два независимых консьюмера. У `inventory` несколько нод в одной группе, партиции делятся. У `notifications` — одна нода в своей группе, читает все партиции. Принципиально не отличается: один и тот же топик читают две независимые проекции, ничего не знают друг про друга.
 
@@ -229,16 +229,16 @@ make notifications-count
 ## Что в этом use case намеренно упрощено
 
 - **Один Postgres на всех.** В проде у каждого сервиса своя БД. Тут — общая ради компактности кода и теста. Логика от этого не меняется: dedup-таблица всё равно per-consumer, write-path всё равно атомарный per-сервис.
-- **Нет Schema Registry.** События в Kafka — голые protobuf-байты. SR показан в лекции 05-03 и наслаивается поверх через `sr.Serde`. Здесь без него: тест должен быть быстрым и самодостаточным.
+- **Нет Schema Registry.** События в Kafka — голые protobuf-байты. SR показан в лекции [Schema Registry](../../05-contracts/05-03-schema-registry/README.md) и наслаивается поверх через `sr.Serde`. Здесь без него: тест должен быть быстрым и самодостаточным.
 - **Нет real-world load patterns.** 200 заказов через round-robin на двух нодах — это unit-stress, не нагрузочный тест. Бенчмарки по throughput не цель этой лекции.
-- **Mock notification.** `notification-service` пишет в `notifications_log` вместо реальной доставки. Реальные каналы (Firebase / APNs / webhook с CB и retry) — следующий use case 09-02.
+- **Mock notification.** `notification-service` пишет в `notifications_log` вместо реальной доставки. Реальные каналы (Firebase / APNs / webhook с CB и retry) — следующий use case [Push-уведомления](../../09-use-cases/02-push-notifications/README.md).
 
 Что не упрощено — outbox publisher с `FOR UPDATE SKIP LOCKED` на нескольких нодах, multi-node consumer-group с recovery, dedup на consumer'ах через `processed_events`. Это работает один-в-один как на проде.
 
 ## Связи с другими лекциями
 
-- **04-03 — Outbox Pattern** — сама идея outbox'а. Тут она просто масштабируется на N нод.
-- **06-04 — Hybrid: gRPC + Kafka** — концепция гибрида. Этот use case — её production-edition.
-- **03-01 — Consumer Groups & Rebalance** — что такое ребаланс, что такое session timeout, почему `cooperative-sticky` лучше `range`.
-- **03-03 — Processing Guarantees** — почему dedup по `(consumer, outbox_id)` превращает at-least-once в effectively-once.
-- **05-02 — Protobuf in Go** — генерация Go-кода через `buf`, который тут используется.
+- **[Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md)** — сама идея outbox'а. Тут она просто масштабируется на N нод.
+- **[Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md)** — концепция гибрида. Этот use case — её production-edition.
+- **[Группы и ребалансы](../../03-consumer/03-01-groups-and-rebalance/README.md)** — что такое ребаланс, что такое session timeout, почему `cooperative-sticky` лучше `range`.
+- **[Гарантии обработки](../../03-consumer/03-03-processing-guarantees/README.md)** — почему dedup по `(consumer, outbox_id)` превращает at-least-once в effectively-once.
+- **[Protobuf в Go](../../05-contracts/05-02-protobuf-in-go/README.md)** — генерация Go-кода через `buf`, который тут используется.

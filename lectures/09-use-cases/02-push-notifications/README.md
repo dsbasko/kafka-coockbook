@@ -1,6 +1,6 @@
 # 09-02 — Push Notifications
 
-Use case про доставку уведомлений в три внешних канала. Один Kafka-топик на входе, три канала-получателя, у каждого свой retry-пайплайн и DLQ. Это сборка из четырёх лекций сразу — outbox-паттерн (04-03) забыли, но retry/DLQ (04-04), CB и HMAC (04-05), микросервисная гарантия с dedup (09-01) и Protobuf (05-02) тут все по делу.
+Use case про доставку уведомлений в три внешних канала. Один Kafka-топик на входе, три канала-получателя, у каждого свой retry-пайплайн и DLQ. Это сборка из четырёх лекций сразу — outbox-паттерн ([Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md)) забыли, но retry/DLQ ([Retry и DLQ deep dive](../../04-reliability/04-04-retry-and-dlq/README.md)), CB и HMAC ([Доставка во внешние системы](../../04-reliability/04-05-external-delivery/README.md)), микросервисная гарантия с dedup ([Коммуникация микросервисов](../../09-use-cases/01-microservices-comm/README.md)) и Protobuf ([Protobuf в Go](../../05-contracts/05-02-protobuf-in-go/README.md)) тут все по делу.
 
 ## Что собираем
 
@@ -77,7 +77,7 @@ stages := []Stage{
 }
 ```
 
-Одна consumer-группа на все три топика. На retry-ступенях перед обработкой ждём, пока `record.Timestamp + stage.Delay` не наступит — записал записал в retry-30s в 12:00:00, ждём до 12:00:30. Это блокирует poll-loop, но по делу: пайплайн должен быть нагляден. В проде делают изящнее (отдельный поток на каждый retry-топик или `PauseFetchPartitions` — последнее в 04-05).
+Одна consumer-группа на все три топика. На retry-ступенях перед обработкой ждём, пока `record.Timestamp + stage.Delay` не наступит — записал записал в retry-30s в 12:00:00, ждём до 12:00:30. Это блокирует poll-loop, но по делу: пайплайн должен быть нагляден. В проде делают изящнее (отдельный поток на каждый retry-топик или `PauseFetchPartitions` — последнее в [Доставка во внешние системы](../../04-reliability/04-05-external-delivery/README.md)).
 
 ```go
 if st.Delay > 0 {
@@ -95,7 +95,7 @@ result, err := s.cb.Execute(func() (deliveryResult, error) {
 })
 ```
 
-Внутри `deliverWithRetries` — обычный backoff с jitter, до `MaxAttempts` раз внутри одной ступени. CB смотрит снаружи: если N подряд `Execute()`-ов вернули ошибку, переходит в Open и режет дальнейшие звонки. Половина 04-05 оказалась тут как есть — паттерн универсальный.
+Внутри `deliverWithRetries` — обычный backoff с jitter, до `MaxAttempts` раз внутри одной ступени. CB смотрит снаружи: если N подряд `Execute()`-ов вернули ошибку, переходит в Open и режет дальнейшие звонки. Половина [Доставка во внешние системы](../../04-reliability/04-05-external-delivery/README.md) оказалась тут как есть — паттерн универсальный.
 
 ### Куда уходит record после неудачи
 
@@ -136,7 +136,7 @@ err = pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 })
 ```
 
-Гейт и бизнес-вставка в одной транзакции — иначе между ними мог бы случиться краш, и при рестарте гейт скажет «уже обработано», а лог так и не появится. Тот же приём, что в 09-01.
+Гейт и бизнес-вставка в одной транзакции — иначе между ними мог бы случиться краш, и при рестарте гейт скажет «уже обработано», а лог так и не появится. Тот же приём, что в [Коммуникация микросервисов](../../09-use-cases/01-microservices-comm/README.md).
 
 ### HMAC и идемпотентность снаружи
 
@@ -177,7 +177,7 @@ case "dlq":
 - `cmd/mock-apns/main.go` на :8092
 - `cmd/mock-webhook/main.go` на :8093
 
-Каждый принимает POST `/send`. По `FAIL_RATE_503` отвечает 503, по `FAIL_RATE_TIMEOUT` зависает на N секунд, есть пинг `/health` для healthcheck'а, в остальных случаях отдаёт 200. Это копия паттерна из 04-05, размноженная на три канала.
+Каждый принимает POST `/send`. По `FAIL_RATE_503` отвечает 503, по `FAIL_RATE_TIMEOUT` зависает на N секунд, есть пинг `/health` для healthcheck'а, в остальных случаях отдаёт 200. Это копия паттерна из [Доставка во внешние системы](../../04-reliability/04-05-external-delivery/README.md), размноженная на три канала.
 
 ```go
 case dice < fail503:
@@ -260,16 +260,16 @@ if lastSnap.dlq > 0 {
 
 Use case собирает в одно:
 
-- 04-04 — retry-топики с задержкой и DLQ как терминал
-- 04-05 — circuit breaker, HMAC, exponential backoff с jitter, мок-webhook паттерн
-- 05-02 — Protobuf для wire-формата
-- 09-01 — at-least-once + dedup на consumer'е через `processed_events`
+- [Retry и DLQ deep dive](../../04-reliability/04-04-retry-and-dlq/README.md) — retry-топики с задержкой и DLQ как терминал
+- [Доставка во внешние системы](../../04-reliability/04-05-external-delivery/README.md) — circuit breaker, HMAC, exponential backoff с jitter, мок-webhook паттерн
+- [Protobuf в Go](../../05-contracts/05-02-protobuf-in-go/README.md) — Protobuf для wire-формата
+- [Коммуникация микросервисов](../../09-use-cases/01-microservices-comm/README.md) — at-least-once + dedup на consumer'е через `processed_events`
 
 Чего тут осознанно нет:
 
-- Schema Registry. Здесь byte-в-byte protobuf без `magic byte` + `schema_id`. Отдельная лекция (05-03) показывает, как добавить SR — паттерн ортогональный, в этот use case встраивается без изменений в логике.
-- Outbox-паттерн (04-03). Выходное сообщение в `notification-events` пишется напрямую — мы не моделируем write-side с базой. Если бы делали, добавили бы `outbox` таблицу и publisher, но это удлинило бы пример без новых уроков.
-- gRPC API. Этот use case — про async-доставку. gRPC-фронт показан в 09-01 и 06-04.
+- Schema Registry. Здесь byte-в-byte protobuf без `magic byte` + `schema_id`. Отдельная лекция ([Schema Registry](../../05-contracts/05-03-schema-registry/README.md)) показывает, как добавить SR — паттерн ортогональный, в этот use case встраивается без изменений в логике.
+- Outbox-паттерн ([Outbox-паттерн](../../04-reliability/04-03-outbox-pattern/README.md)). Выходное сообщение в `notification-events` пишется напрямую — мы не моделируем write-side с базой. Если бы делали, добавили бы `outbox` таблицу и publisher, но это удлинило бы пример без новых уроков.
+- gRPC API. Этот use case — про async-доставку. gRPC-фронт показан в [Коммуникация микросервисов](../../09-use-cases/01-microservices-comm/README.md) и [Гибрид gRPC + Kafka](../../06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md).
 - Реальные APNs / Firebase credentials. Cert-flow для APNs и FCM HTTP v1 token-exchange — отдельная история, в курсе она out of scope. Архитектура канала тут демонстрируется на mock'ах.
 
 ## Что попробовать руками

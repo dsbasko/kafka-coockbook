@@ -1,6 +1,6 @@
 # 09-03 — Postgres → ClickHouse с анонимизацией
 
-ETL для аналитики. Слева Postgres с реальными PII, справа ClickHouse, в который нельзя класть сырые персональные данные. Между ними — Debezium (snapshot + live CDC), наш Go-анонимизатор и ClickHouse Sink connector. Use case собирает CDC из 07-04, контракты из 05-02, паттерн декларативной маски и ReplacingMergeTree для дедупликации.
+ETL для аналитики. Слева Postgres с реальными PII, справа ClickHouse, в который нельзя класть сырые персональные данные. Между ними — Debezium (snapshot + live CDC), наш Go-анонимизатор и ClickHouse Sink connector. Use case собирает CDC из [Debezium CDC](../../07-streams-and-connect/07-04-debezium-cdc/README.md), контракты из [Protobuf в Go](../../05-contracts/05-02-protobuf-in-go/README.md), паттерн декларативной маски и ReplacingMergeTree для дедупликации.
 
 ## Что собираем
 
@@ -27,7 +27,7 @@ kafka-connect: ClickHouse Sink
 ClickHouse (18123) → ReplacingMergeTree(cdc_lsn)
 ```
 
-Главное отличие от 07-04 — два звена вместо одного. В 07-04 Debezium гнал чистый CDC прямо потребителю, тут между Debezium и Sink'ом стоит анонимизатор: он читает Debezium-события, обрезает PII по правилам YAML и отдаёт в `analytics.*` уже безопасную версию. ClickHouse Sink этих правил не знает и ему не нужно — он просто пишет JSON в таблицы.
+Главное отличие от [Debezium CDC](../../07-streams-and-connect/07-04-debezium-cdc/README.md) — два звена вместо одного. В [Debezium CDC](../../07-streams-and-connect/07-04-debezium-cdc/README.md) Debezium гнал чистый CDC прямо потребителю, тут между Debezium и Sink'ом стоит анонимизатор: он читает Debezium-события, обрезает PII по правилам YAML и отдаёт в `analytics.*` уже безопасную версию. ClickHouse Sink этих правил не знает и ему не нужно — он просто пишет JSON в таблицы.
 
 ## Зачем посредник вместо Connect SMT
 
@@ -266,7 +266,7 @@ make ch-shell
 
 ## Что осталось за кадром
 
-- Schema Registry и `sr.Serde`. ClickHouse Sink по дефолту читает JsonConverter, для Avro/Protobuf через SR нужна другая комбинация конвертеров. Задача про SR-обёртку решена в 05-03; если хочется добавить — поменять `value.converter` в обоих коннекторах и обернуть `prod.ProduceSync` в `sr.Serde`.
+- Schema Registry и `sr.Serde`. ClickHouse Sink по дефолту читает JsonConverter, для Avro/Protobuf через SR нужна другая комбинация конвертеров. Задача про SR-обёртку решена в [Schema Registry](../../05-contracts/05-03-schema-registry/README.md); если хочется добавить — поменять `value.converter` в обоих коннекторах и обернуть `prod.ProduceSync` в `sr.Serde`.
 - Tombstones: `tombstones.on.delete: true` в Debezium шлёт пустой record после `d`. Anonymizer его пропускает (см. `transform`, `r.Value == nil`), потому что `_deleted=1` уже отправлен с before-кадра. Если Sink захочет tombstone для compaction — поменять логику.
 - Бэкап и replay: после реальной аварии Connect может ругаться на «replication slot does not exist». Лечится `pg_drop_replication_slot` (в Makefile цель `connector-delete-all` это уже делает) и пересозданием коннектора с `snapshot.mode: initial`.
 - Производительность: при больших объёмах (миллионы строк) ClickHouse Sink начинает упираться в batch settings. Полезные ручки — `clickhouse.bulk.size`, `consumer.override.fetch.min.bytes`. В sandbox их не трогаем.
