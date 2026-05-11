@@ -41,7 +41,7 @@ make build                                                   # собрать в
 - Module path: `github.com/dsbasko/kafka-sandbox/lectures/<NN-module>/<MM-short>`.
 - В `go.mod` каждой лекции — `replace github.com/dsbasko/kafka-sandbox/internal => ../../internal` (после реструктуризации в `lectures/` относительный путь сохранил ту же глубину `../../`).
 - Внутри лекции: `cmd/<binary>/main.go` для одно-двух бинарей, `pkg/` или плоские файлы — для чего-то крупнее.
-- README — обычный markdown (без MDX). Картинки в `images/` рядом с README, относительные ссылки `./images/foo.png`. Внутрикурсовые ссылки на соседние лекции — `../<module>/<slug>/README.md`. Сайт переписывает их на site-URL автоматически.
+- README — обычный markdown (без MDX). Картинки в `images/` рядом с README, относительные ссылки `./images/foo.png`. Внутрикурсовые ссылки на соседние лекции — `[Заголовок из course.yaml](../../<module>/<slug>/README.md)` (из каталога лекции путь поднимается на два уровня). `remark-link-rewrite` в `web/` валидирует target против `course.yaml` и роняет билд на любых других формах. Сайт переписывает их на site-URL автоматически.
 
 ## Как добавить лекцию
 
