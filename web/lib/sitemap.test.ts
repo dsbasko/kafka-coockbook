@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Course, Lesson, Module } from './course';
-import { buildSitemap } from './sitemap';
+import { buildLangMap, buildLessonLangMap, buildSitemap } from './sitemap';
 
 const NOW = new Date('2026-05-13T12:00:00Z');
 const SITE = 'https://dsbasko.github.io';
@@ -159,5 +159,42 @@ describe('buildSitemap — totals and metadata', () => {
     // Only the two home entries remain.
     expect(map).toHaveLength(2);
     expect(map.every((e) => /\/(ru|en)\/$/.test(e.url))).toBe(true);
+  });
+});
+
+describe('buildLangMap', () => {
+  it('emits ru/en + x-default→DEFAULT_LANG for a root tail', () => {
+    expect(buildLangMap('/test', [])).toEqual({
+      ru: `${SITE}/test/ru/`,
+      en: `${SITE}/test/en/`,
+      'x-default': `${SITE}/test/en/`,
+    });
+  });
+
+  it('preserves the tail segments across all languages', () => {
+    expect(buildLangMap('/test', ['01-foo'])).toEqual({
+      ru: `${SITE}/test/ru/01-foo/`,
+      en: `${SITE}/test/en/01-foo/`,
+      'x-default': `${SITE}/test/en/01-foo/`,
+    });
+  });
+});
+
+describe('buildLessonLangMap', () => {
+  it('includes both langs and points x-default at EN when the EN translation exists', () => {
+    expect(buildLessonLangMap('/test', '01-foo', '01-01-intro', true)).toEqual({
+      ru: `${SITE}/test/ru/01-foo/01-01-intro/`,
+      en: `${SITE}/test/en/01-foo/01-01-intro/`,
+      'x-default': `${SITE}/test/en/01-foo/01-01-intro/`,
+    });
+  });
+
+  it('omits the en key and routes x-default→RU when the EN translation is missing', () => {
+    const map = buildLessonLangMap('/test', '01-foo', '01-02-deep', false);
+    expect(map).toEqual({
+      ru: `${SITE}/test/ru/01-foo/01-02-deep/`,
+      'x-default': `${SITE}/test/ru/01-foo/01-02-deep/`,
+    });
+    expect(map).not.toHaveProperty('en');
   });
 });

@@ -4,6 +4,7 @@ import { ModulePage } from '@/components/ModulePage';
 import { loadCourse } from '@/lib/course-loader';
 import { getDict } from '@/lib/i18n';
 import { isLang, LANGS, type Lang } from '@/lib/lang';
+import { buildLangMap } from '@/lib/sitemap';
 import { buildAssetUrl, buildSiteUrl } from '@/lib/site-url';
 
 type ModulePageProps = {
@@ -38,10 +39,13 @@ export function generateMetadata({ params }: ModulePageProps): Metadata {
     height: 630,
     alt: t.ogImageAlt,
   };
+  // See note in `[lang]/page.tsx`: `alternates` from the root layout is
+  // overridden, not merged, so we have to re-emit the hreflang map.
+  const languages = buildLangMap(course.basePath, [mod.id]);
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: url, languages },
     openGraph: {
       type: 'article',
       siteName: course.title,

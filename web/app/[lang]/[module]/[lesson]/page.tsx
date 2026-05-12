@@ -20,6 +20,7 @@ import { isLang, LANGS, type Lang } from '@/lib/lang';
 import { getLessonContent } from '@/lib/lesson';
 import { renderLessonMarkdown } from '@/lib/markdown';
 import { extractDescription } from '@/lib/description';
+import { buildLessonLangMap } from '@/lib/sitemap';
 import { buildAssetUrl, buildSiteUrl, getRuntimeBasePath } from '@/lib/site-url';
 
 type LessonPageProps = {
@@ -85,6 +86,25 @@ export async function generateMetadata({
     alt: t.ogImageAlt,
   };
 
+  // Determine EN translation presence independently of the route lang:
+  // `course.hasTranslation` only reflects whichever language the course was
+  // loaded with, but the hreflang map must always say whether the EN copy
+  // exists. On EN we already loaded it; on RU we re-resolve via loadCourse.
+  let hasEn: boolean;
+  if (lang === 'en') {
+    hasEn = !fallbackUsed;
+  } else {
+    const enCourse = loadCourse('en');
+    const enLesson = findLesson(enCourse, params.module, params.lesson);
+    hasEn = enLesson?.hasTranslation ?? false;
+  }
+  const languages = buildLessonLangMap(
+    course.basePath,
+    params.module,
+    params.lesson,
+    hasEn,
+  );
+
   // EN page falling back to RU content — withhold from search and point the
   // canonical at the actual RU URL so search engines don't index a duplicate
   // under the wrong language. Still emit a full openGraph block: without it
@@ -100,7 +120,7 @@ export async function generateMetadata({
     return {
       title,
       description,
-      alternates: { canonical: ruCanonical },
+      alternates: { canonical: ruCanonical, languages },
       robots: { index: false, follow: true },
       openGraph: {
         type: 'article',
@@ -123,7 +143,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: canonicalUrl },
+    alternates: { canonical: canonicalUrl, languages },
     openGraph: {
       type: 'article',
       siteName: course.title,

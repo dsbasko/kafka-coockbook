@@ -4,6 +4,7 @@ import { HomePage } from '@/components/HomePage';
 import { loadCourse } from '@/lib/course-loader';
 import { getDict } from '@/lib/i18n';
 import { isLang, LANGS, type Lang } from '@/lib/lang';
+import { buildLangMap } from '@/lib/sitemap';
 import { buildAssetUrl, buildSiteUrl } from '@/lib/site-url';
 
 type LangPageProps = {
@@ -31,10 +32,14 @@ export function generateMetadata({ params }: LangPageProps): Metadata {
     height: 630,
     alt: t.ogImageAlt,
   };
+  // Next.js' metadata resolution overrides `alternates` wholesale rather than
+  // merging — without re-specifying `languages` here, the root layout's
+  // hreflang map is dropped from /ru/ and /en/ pages.
+  const languages = buildLangMap(course.basePath, []);
   return {
     title: course.title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: url, languages },
     openGraph: {
       type: 'website',
       siteName: course.title,
