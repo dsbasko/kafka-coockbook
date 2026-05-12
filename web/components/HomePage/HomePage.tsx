@@ -12,10 +12,9 @@ import {
 } from '@/lib/course';
 import {
   formatDurationHm,
-  LESSON_FORMS,
-  MODULE_FORMS,
+  formatLessonCount,
+  formatModuleCount,
   parseDurationMin,
-  pluralize,
 } from '@/lib/format';
 import { openProgramDrawer } from '@/lib/program-drawer';
 import { lessonKey } from '@/lib/progress';
@@ -149,7 +148,7 @@ export function HomePage({ course, level }: HomePageProps) {
                 <span data-progress-count suppressHydrationWarning>
                   0
                 </span>{' '}
-                / {totalLessons} {pluralize(totalLessons, LESSON_FORMS)}
+                / {formatLessonCount(totalLessons, lang)}
               </span>
             </div>
             <div className={styles.statsBar} aria-hidden="true">
@@ -172,7 +171,7 @@ export function HomePage({ course, level }: HomePageProps) {
             </div>
             <div>
               <dt className={styles.statsLabel}>{t.durationLabel}</dt>
-              <dd className={styles.statsValue}>{formatDurationHm(totalDurationMin)}</dd>
+              <dd className={styles.statsValue}>{formatDurationHm(totalDurationMin, lang)}</dd>
             </div>
             <div>
               <dt className={styles.statsLabel}>{t.stackLabel}</dt>
@@ -188,8 +187,8 @@ export function HomePage({ course, level }: HomePageProps) {
           <h2 className={styles.sectionTitle}>{t.programCourse}</h2>
         </div>
         <div className={styles.sectionTools}>
-          {course.modules.length} {pluralize(course.modules.length, MODULE_FORMS)} ·{' '}
-          {totalLessons} {pluralize(totalLessons, LESSON_FORMS)}
+          {formatModuleCount(course.modules.length, lang)} ·{' '}
+          {formatLessonCount(totalLessons, lang)}
         </div>
       </header>
 
@@ -236,10 +235,14 @@ export function HomePage({ course, level }: HomePageProps) {
                 </div>
                 <div className={styles.moduleProgress}>
                   <div className={styles.mpRow}>
-                    {/* Status label is derived from data-progress-state via
-                        CSS pseudo-elements, so SSR markup is the same regardless
-                        of progress. See HomePage.module.css. */}
-                    <span className={styles.mpStatus} />
+                    {/* All three labels live in the DOM; CSS shows exactly
+                        one based on the row's data-progress-state. Gate-paint
+                        flips that attribute without re-rendering React. */}
+                    <span className={styles.mpStatus}>
+                      <span data-status="not-started">{t.statusNotStarted}</span>
+                      <span data-status="in-progress">{t.statusInProgress}</span>
+                      <span data-status="complete">{t.statusComplete}</span>
+                    </span>
                     <span className={styles.mpPct}>
                       <span data-progress-count suppressHydrationWarning>
                         0
@@ -258,10 +261,10 @@ export function HomePage({ course, level }: HomePageProps) {
                 </div>
                 <div className={styles.moduleMeta}>
                   <span className={styles.mmLessons}>
-                    {total} {pluralize(total, LESSON_FORMS)}
+                    {formatLessonCount(total, lang)}
                   </span>
                   <span className={styles.mmDuration}>
-                    {formatDurationHm(moduleDurationMin)}
+                    {formatDurationHm(moduleDurationMin, lang)}
                   </span>
                 </div>
                 <div className={styles.arrowCell} aria-hidden="true">

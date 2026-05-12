@@ -310,15 +310,3 @@ export function applyGatePainting(
   );
 }
 
-// Kept as a thin alias so existing imports (`applyGateMarking`) continue to
-// work — the gate-mark module historically only handled lock state, while
-// this new implementation also paints progress/CTA/hints. New code should
-// import applyGatePainting directly.
-export function applyGateMarking(course: Course, furthestIndex: number): void {
-  // basePath here is best-effort — when called without basePath via the old
-  // signature, fall back to '' which makes hrefs site-root-relative. The
-  // initial inline script always knows the real basePath. Lang defaults to
-  // 'en' which matches DEFAULT_LANG; real callers should use the language-
-  // aware applyGatePainting directly.
-  applyGatePainting(course, furthestIndex, '', 'en');
-}

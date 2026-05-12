@@ -1,16 +1,20 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { DEFAULT_LANG, type Lang } from '@/lib/lang';
+import { getDict } from '@/lib/i18n';
 import styles from './CodeBlock.module.css';
 
 const COPY_RESET_MS = 1500;
 
 type CodeBlockProps = {
   language: string;
+  lang?: Lang;
   children: ReactNode;
 };
 
-export function CodeBlock({ language, children }: CodeBlockProps) {
+export function CodeBlock({ language, lang = DEFAULT_LANG, children }: CodeBlockProps) {
+  const t = getDict(lang);
   const figureRef = useRef<HTMLElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [copied, setCopied] = useState(false);
@@ -50,9 +54,9 @@ export function CodeBlock({ language, children }: CodeBlockProps) {
           className={styles.copy}
           data-copied={copied ? 'true' : 'false'}
           onClick={handleCopy}
-          aria-label={copied ? 'Скопировано' : 'Скопировать код'}
+          aria-label={copied ? t.codeBlockCopiedAriaLabel : t.codeBlockCopyAriaLabel}
         >
-          {copied ? '✓ скопировано' : 'copy'}
+          {copied ? t.codeBlockCopied : t.codeBlockCopy}
         </button>
       </header>
       <div className={styles.body}>{children}</div>

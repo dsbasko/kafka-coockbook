@@ -11,9 +11,9 @@ import {
 } from '@/lib/course';
 import {
   formatDurationHm,
-  LESSON_FORMS,
+  formatDurationShort,
+  formatLessonCount,
   parseDurationMin,
-  pluralize,
 } from '@/lib/format';
 import { lessonKey } from '@/lib/progress';
 import { navigateToFrontierHref } from '@/lib/frontier-link';
@@ -77,10 +77,10 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
             </span>
             <span className={styles.eyebrowDot}>·</span>
             <span>
-              {totalLessons} {pluralize(totalLessons, LESSON_FORMS)}
+              {formatLessonCount(totalLessons, lang)}
             </span>
             <span className={styles.eyebrowDot}>·</span>
-            <span>{formatDurationHm(moduleDurationMin)}</span>
+            <span>{formatDurationHm(moduleDurationMin, lang)}</span>
           </div>
 
           <h1 className={styles.title}>{module.title}</h1>
@@ -177,7 +177,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
             </div>
             <div>
               <dt className={styles.sideMetaLabel}>{t.durationLabelShort}</dt>
-              <dd className={styles.sideMetaValue}>{formatDurationHm(moduleDurationMin)}</dd>
+              <dd className={styles.sideMetaValue}>{formatDurationHm(moduleDurationMin, lang)}</dd>
             </div>
             <div>
               <dt className={styles.sideMetaLabel}>{t.stackLabelShort}</dt>
@@ -193,8 +193,8 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
           <h2 className={styles.sectionTitle}>{t.moduleLessonsHeading}</h2>
         </div>
         <div className={styles.sectionTools}>
-          {totalLessons} {pluralize(totalLessons, LESSON_FORMS)} ·{' '}
-          {formatDurationHm(moduleDurationMin)}
+          {formatLessonCount(totalLessons, lang)} ·{' '}
+          {formatDurationHm(moduleDurationMin, lang)}
         </div>
       </header>
 
@@ -252,8 +252,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
                   </span>
                 )}
                 <span className={styles.lessonDuration}>
-                  {parseDurationMin(lesson.duration)}
-                  <span className={styles.lessonDurUnit}> м</span>
+                  {formatDurationShort(parseDurationMin(lesson.duration), lang)}
                 </span>
                 <span className={styles.lessonArrow} aria-hidden="true">
                   →

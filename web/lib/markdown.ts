@@ -16,7 +16,7 @@ import rehypeCallout from './mdx-plugins/rehype-callout';
 import type { Course } from './course';
 import { DEFAULT_LANG, type Lang } from './lang';
 import { LessonAwareLink } from '@/components/LessonAwareLink';
-import { MarkdownAside, MarkdownFigure } from './markdown-components';
+import { makeMarkdownAside, makeMarkdownFigure } from './markdown-components';
 import { extractToc, type TocEntry } from './extract-toc';
 
 export interface RenderLessonMarkdownOptions {
@@ -138,6 +138,7 @@ export async function renderLessonMarkdown(
   // down so the link can derive data-lesson-key from href on the server,
   // which is what the inline gate-mark script needs to find at first paint.
   const basePath = options.basePath;
+  const lang = options.lang ?? DEFAULT_LANG;
   const LessonLink = (props: Record<string, unknown>) =>
     createElement(LessonAwareLink, {
       basePath,
@@ -150,8 +151,8 @@ export async function renderLessonMarkdown(
     jsxs: jsxs as never,
     components: {
       a: LessonLink as never,
-      figure: MarkdownFigure as never,
-      aside: MarkdownAside as never,
+      figure: makeMarkdownFigure(lang) as never,
+      aside: makeMarkdownAside(lang) as never,
     },
   }) as ReactElement;
 

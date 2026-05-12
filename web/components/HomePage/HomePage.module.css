@@ -347,17 +347,16 @@
   align-items: center;
 }
 
-/* Per-module status label is generated via ::before so SSR markup is the
-   same regardless of progress; gate-paint flips data-progress-state on the
-   row and CSS picks the right copy. */
-.mpStatus::before {
-  content: 'не начато';
+/* Status labels live in JSX as siblings of .mpStatus; CSS hides all but the
+   one matching the row's data-progress-state. Gate-paint flips that state
+   on the row, CSS reveals the right copy without re-rendering React. */
+.mpStatus > [data-status] {
+  display: none;
 }
-.moduleRow[data-progress-state='in-progress'] .mpStatus::before {
-  content: 'в процессе';
-}
-.moduleRow[data-progress-state='complete'] .mpStatus::before {
-  content: 'пройдено';
+.moduleRow[data-progress-state='not-started'] .mpStatus > [data-status='not-started'],
+.moduleRow[data-progress-state='in-progress'] .mpStatus > [data-status='in-progress'],
+.moduleRow[data-progress-state='complete'] .mpStatus > [data-status='complete'] {
+  display: inline;
 }
 .moduleRow[data-progress-state='complete'] .mpFill {
   background: var(--accent-success);

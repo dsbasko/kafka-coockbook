@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useGate } from '@/components/GateProvider';
 import type { Course } from '@/lib/course';
-import { parseDurationMin } from '@/lib/format';
+import { formatDurationShort, parseDurationMin } from '@/lib/format';
 import { applyGatePainting } from '@/lib/gate-mark-script';
 import { isCompleted, lessonKey } from '@/lib/progress';
 import { useLang, useT } from '@/lib/use-i18n';
@@ -225,7 +225,7 @@ export function ProgramDrawer({
                                   {done ? (
                                     <span className={styles.lessonCheck}>✓</span>
                                   ) : (
-                                    `${durMin || lesson.duration}м`
+                                    formatDurationShort(durMin, lang)
                                   )}
                                 </span>
                                 <span className={styles.metaLocked}>

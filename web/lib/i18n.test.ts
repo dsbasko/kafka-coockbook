@@ -33,6 +33,8 @@ describe('UI_STRINGS', () => {
       // Brand / proper nouns that stay the same across languages.
       'locked',
       'heroTitleLead',
+      // CodeBlock "copy" label happens to read the same in both languages.
+      'codeBlockCopy',
     ]);
     for (const key of Object.keys(ru) as (keyof UIDict)[]) {
       if (allowedEqual.has(key)) continue;

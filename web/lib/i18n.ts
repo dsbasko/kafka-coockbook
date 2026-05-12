@@ -122,6 +122,24 @@ export type UIDict = {
   // Metadata fallbacks
   notFoundMetadataTitle: string;
   ogImageAlt: string;
+
+  // HomePage module status (CSS-only pseudo-element labels lifted into JSX)
+  statusNotStarted: string;
+  statusInProgress: string;
+  statusComplete: string;
+
+  // Callout titles (rendered server-side via MDX pipeline)
+  calloutNote: string;
+  calloutTip: string;
+  calloutWarning: string;
+  calloutImportant: string;
+  calloutCaution: string;
+
+  // CodeBlock copy button
+  codeBlockCopy: string;
+  codeBlockCopied: string;
+  codeBlockCopyAriaLabel: string;
+  codeBlockCopiedAriaLabel: string;
 };
 
 export const UI_STRINGS: Record<Lang, UIDict> = {
@@ -219,6 +237,21 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
 
     notFoundMetadataTitle: 'Страница не найдена · Kafka Cookbook',
     ogImageAlt: 'Kafka Cookbook — курс по Apache Kafka на Go',
+
+    statusNotStarted: 'не начато',
+    statusInProgress: 'в процессе',
+    statusComplete: 'пройдено',
+
+    calloutNote: 'Заметка',
+    calloutTip: 'Подсказка',
+    calloutWarning: 'Внимание',
+    calloutImportant: 'Важно',
+    calloutCaution: 'Осторожно',
+
+    codeBlockCopy: 'copy',
+    codeBlockCopied: '✓ скопировано',
+    codeBlockCopyAriaLabel: 'Скопировать код',
+    codeBlockCopiedAriaLabel: 'Скопировано',
   },
   en: {
     sidebarLabel: 'Side navigation',
@@ -314,6 +347,21 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
 
     notFoundMetadataTitle: 'Page not found · Kafka Cookbook',
     ogImageAlt: 'Kafka Cookbook — Apache Kafka course in Go',
+
+    statusNotStarted: 'not started',
+    statusInProgress: 'in progress',
+    statusComplete: 'complete',
+
+    calloutNote: 'Note',
+    calloutTip: 'Tip',
+    calloutWarning: 'Warning',
+    calloutImportant: 'Important',
+    calloutCaution: 'Caution',
+
+    codeBlockCopy: 'copy',
+    codeBlockCopied: '✓ copied',
+    codeBlockCopyAriaLabel: 'Copy code',
+    codeBlockCopiedAriaLabel: 'Copied',
   },
 };
 

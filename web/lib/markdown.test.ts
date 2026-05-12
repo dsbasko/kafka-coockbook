@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { renderLessonMarkdown } from './markdown';
 import type { Course } from './course';
+import type { Lang } from './lang';
 
 const COURSE: Course = {
   title: 'Kafka Cookbook',
@@ -36,8 +37,8 @@ const baseOpts = {
   course: COURSE,
 };
 
-async function renderHtml(source: string): Promise<string> {
-  const { content } = await renderLessonMarkdown(source, baseOpts);
+async function renderHtml(source: string, lang: Lang = 'ru'): Promise<string> {
+  const { content } = await renderLessonMarkdown(source, { ...baseOpts, lang });
   return renderToStaticMarkup(content);
 }
 
@@ -168,5 +169,18 @@ describe('renderLessonMarkdown', () => {
       expect(html).toContain(`data-callout-type="${type}"`);
       expect(html).toContain(label);
     }
+  });
+
+  it('renders Callout titles in English when lang=en', async () => {
+    const html = await renderHtml('> [!NOTE]\n> body', 'en');
+    expect(html).toContain('data-callout-type="note"');
+    expect(html).toContain('Note');
+    expect(html).not.toContain('Заметка');
+  });
+
+  it('renders CodeBlock copy button in English when lang=en', async () => {
+    const html = await renderHtml(['```ts', 'const x = 1;', '```'].join('\n'), 'en');
+    expect(html).toContain('Copy code');
+    expect(html).not.toContain('Скопировать');
   });
 });

@@ -1,28 +1,31 @@
 import type { ReactNode, SVGProps } from 'react';
+import { DEFAULT_LANG, type Lang } from '@/lib/lang';
+import { getDict } from '@/lib/i18n';
 import styles from './Callout.module.css';
 
 export type CalloutType = 'note' | 'tip' | 'warning' | 'important' | 'caution';
 
-const TITLES: Readonly<Record<CalloutType, string>> = {
-  note: 'Заметка',
-  tip: 'Подсказка',
-  warning: 'Внимание',
-  important: 'Важно',
-  caution: 'Осторожно',
-};
-
 type CalloutProps = {
   type: CalloutType;
+  lang?: Lang;
   children?: ReactNode;
 };
 
-export function Callout({ type, children }: CalloutProps) {
+export function Callout({ type, lang = DEFAULT_LANG, children }: CalloutProps) {
   const Icon = ICONS[type];
+  const t = getDict(lang);
+  const titles: Readonly<Record<CalloutType, string>> = {
+    note: t.calloutNote,
+    tip: t.calloutTip,
+    warning: t.calloutWarning,
+    important: t.calloutImportant,
+    caution: t.calloutCaution,
+  };
   return (
     <aside className={styles.callout} data-callout-type={type} role="note">
       <header className={styles.header}>
         <Icon className={styles.icon} aria-hidden="true" />
-        <span className={styles.title}>{TITLES[type]}</span>
+        <span className={styles.title}>{titles[type]}</span>
       </header>
       <div className={styles.body}>{children}</div>
     </aside>

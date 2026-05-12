@@ -1,8 +1,11 @@
 import { ImageResponse } from 'next/og';
 import { getTotalLessons } from '@/lib/course';
 import { loadCourse } from '@/lib/course-loader';
+import { formatLessonCount, formatModuleCount } from '@/lib/format';
+import { getDict } from '@/lib/i18n';
+import { DEFAULT_LANG } from '@/lib/lang';
 
-export const alt = 'Kafka Cookbook — курс по Apache Kafka на Go';
+export const alt = getDict(DEFAULT_LANG).ogImageAlt;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -11,13 +14,13 @@ export function generateStaticParams() {
 }
 
 export default function OpengraphImage() {
-  const course = loadCourse('ru');
+  const course = loadCourse(DEFAULT_LANG);
   const description = course.description.replace(/\s+/g, ' ').trim();
   const truncated =
     description.length > 180 ? `${description.slice(0, 179).trimEnd()}…` : description;
   const moduleCount = course.modules.length;
   const lessonCount = getTotalLessons(course);
-  const stats = `${moduleCount} ${pluralize(moduleCount, ['модуль', 'модуля', 'модулей'])} · ${lessonCount} ${pluralize(lessonCount, ['урок', 'урока', 'уроков'])}`;
+  const stats = `${formatModuleCount(moduleCount, DEFAULT_LANG)} · ${formatLessonCount(lessonCount, DEFAULT_LANG)}`;
 
   return new ImageResponse(
     (
@@ -109,13 +112,4 @@ export default function OpengraphImage() {
       ...size,
     },
   );
-}
-
-function pluralize(n: number, forms: [string, string, string]): string {
-  const abs = Math.abs(n) % 100;
-  const lastDigit = abs % 10;
-  if (abs > 10 && abs < 20) return forms[2];
-  if (lastDigit > 1 && lastDigit < 5) return forms[1];
-  if (lastDigit === 1) return forms[0];
-  return forms[2];
 }
