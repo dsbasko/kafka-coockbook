@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/use-i18n';
 import { HomeIcon, ProgramIcon, GitHubIcon } from './icons';
@@ -43,6 +44,7 @@ export function Sidebar({ onProgramClick, isProgramOpen, repoUrl }: SidebarProps
       </nav>
 
       <div className={styles.footer}>
+        <LanguageToggle />
         <ThemeToggle />
         <a
           className={styles.button}

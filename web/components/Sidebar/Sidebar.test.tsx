@@ -18,6 +18,10 @@ vi.mock('@/components/ThemeToggle', () => ({
   ThemeToggle: () => <div data-testid="theme-toggle-stub" />,
 }));
 
+vi.mock('@/components/LanguageToggle', () => ({
+  LanguageToggle: () => <div data-testid="language-toggle-stub" />,
+}));
+
 const { Sidebar } = await import('./Sidebar');
 const { UI_STRINGS } = await import('@/lib/i18n');
 
@@ -86,5 +90,16 @@ describe('Sidebar', () => {
     expect(home?.getAttribute('title')).toBe(UI_STRINGS.en.home);
     const repo = container.querySelector<HTMLAnchorElement>(`a[aria-label="${UI_STRINGS.en.githubRepo}"]`);
     expect(repo?.getAttribute('href')).toBe('https://example.com/repo');
+  });
+
+  it('renders LanguageToggle above ThemeToggle in the footer', () => {
+    renderSidebar();
+    const language = container.querySelector('[data-testid="language-toggle-stub"]');
+    const theme = container.querySelector('[data-testid="theme-toggle-stub"]');
+    expect(language).not.toBeNull();
+    expect(theme).not.toBeNull();
+    expect(
+      language!.compareDocumentPosition(theme!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
