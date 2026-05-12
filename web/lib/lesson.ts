@@ -16,8 +16,7 @@ export async function getLessonContent(
   slug: string,
   options: GetLessonContentOptions = {},
 ): Promise<LessonContent> {
-  const root = options.lecturesRoot ?? DEFAULT_LECTURES_ROOT;
-  const readmePath = path.join(root, moduleId, slug, 'README.md');
+  const readmePath = getLessonReadmePath(moduleId, slug, options);
   try {
     const markdown = await fs.readFile(readmePath, 'utf8');
     return { markdown };
@@ -38,5 +37,5 @@ export function getLessonReadmePath(
   options: GetLessonContentOptions = {},
 ): string {
   const root = options.lecturesRoot ?? DEFAULT_LECTURES_ROOT;
-  return path.join(root, moduleId, slug, 'README.md');
+  return path.join(root, moduleId, slug, 'i18n', 'ru', 'README.md');
 }

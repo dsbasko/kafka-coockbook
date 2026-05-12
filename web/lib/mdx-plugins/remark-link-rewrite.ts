@@ -70,7 +70,13 @@ export function rewriteLessonLink(
 
   const [pathPart, hashPart = ''] = splitHash(url);
   const lecturesRoot = options.lecturesRoot ?? '/lectures';
-  const lessonDir = path.posix.join(lecturesRoot, options.moduleId, options.slug);
+  const lessonDir = path.posix.join(
+    lecturesRoot,
+    options.moduleId,
+    options.slug,
+    'i18n',
+    'ru',
+  );
   const resolved = path.posix.normalize(path.posix.join(lessonDir, pathPart));
 
   if (!isInside(resolved, lecturesRoot)) {
@@ -94,7 +100,10 @@ export function rewriteLessonLink(
   const looksLikeLessonDir =
     segments.length === 2 && pathPart.endsWith('/');
   const looksLikeLessonReadme =
-    segments.length === 3 && segments[2] === 'README.md';
+    segments.length === 5 &&
+    segments[2] === 'i18n' &&
+    segments[3] === 'ru' &&
+    segments[4] === 'README.md';
 
   if (!isMarkdown && !looksLikeLessonDir) {
     // Non-markdown file (e.g. "../foo.txt") — outside the supported subset.
@@ -108,8 +117,8 @@ export function rewriteLessonLink(
   if (isMarkdown && !looksLikeLessonReadme) {
     throw new Error(
       `remark-link-rewrite: link "${rawUrl}" in ${options.moduleId}/${options.slug} ` +
-        `points to "${segments.join('/')}". Only "<module>/<slug>/README.md" ` +
-        `markdown links are supported in MVP.`,
+        `points to "${segments.join('/')}". Only ` +
+        `"<module>/<slug>/i18n/ru/README.md" markdown links are supported.`,
     );
   }
 

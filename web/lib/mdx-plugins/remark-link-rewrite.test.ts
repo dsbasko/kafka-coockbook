@@ -43,7 +43,7 @@ const OPTIONS: RemarkLinkRewriteOptions = {
 describe('rewriteLessonLink', () => {
   it('rewrites sibling lesson README.md to site URL with trailing slash', () => {
     const out = rewriteLessonLink(
-      '../02-04-batching-and-throughput/README.md',
+      '../../../02-04-batching-and-throughput/i18n/ru/README.md',
       OPTIONS,
     );
     expect(out).toEqual({
@@ -54,7 +54,7 @@ describe('rewriteLessonLink', () => {
 
   it('rewrites cross-module lesson README.md to site URL', () => {
     const out = rewriteLessonLink(
-      '../../03-consumer/03-01-groups-and-rebalance/README.md',
+      '../../../../03-consumer/03-01-groups-and-rebalance/i18n/ru/README.md',
       OPTIONS,
     );
     expect(out).toEqual({
@@ -65,7 +65,7 @@ describe('rewriteLessonLink', () => {
 
   it('preserves anchor when rewriting README.md links', () => {
     const out = rewriteLessonLink(
-      '../../03-consumer/03-03-processing-guarantees/README.md#идемпотентность',
+      '../../../../03-consumer/03-03-processing-guarantees/i18n/ru/README.md#идемпотентность',
       OPTIONS,
     );
     expect(out.url).toBe(
@@ -76,7 +76,7 @@ describe('rewriteLessonLink', () => {
 
   it('rewrites links pointing to a lesson directory (trailing slash, no README.md)', () => {
     const out = rewriteLessonLink(
-      '../02-04-batching-and-throughput/',
+      '../../../02-04-batching-and-throughput/',
       OPTIONS,
     );
     expect(out).toEqual({
@@ -87,7 +87,7 @@ describe('rewriteLessonLink', () => {
 
   it('strips trailing slash from basePath', () => {
     const out = rewriteLessonLink(
-      '../02-04-batching-and-throughput/README.md',
+      '../../../02-04-batching-and-throughput/i18n/ru/README.md',
       { ...OPTIONS, basePath: '/kafka-cookbook/' },
     );
     expect(out.url).toBe(
@@ -120,25 +120,34 @@ describe('rewriteLessonLink', () => {
 
   it('throws on links to a lesson missing from course.yaml (unknown module)', () => {
     expect(() =>
-      rewriteLessonLink('../../99-mystery/lesson/README.md', OPTIONS),
+      rewriteLessonLink(
+        '../../../../99-mystery/lesson/i18n/ru/README.md',
+        OPTIONS,
+      ),
     ).toThrow(/unknown module "99-mystery"/);
   });
 
   it('throws on links to a lesson missing from course.yaml (unknown slug)', () => {
     expect(() =>
-      rewriteLessonLink('../../03-consumer/03-99-not-real/README.md', OPTIONS),
+      rewriteLessonLink(
+        '../../../../03-consumer/03-99-not-real/i18n/ru/README.md',
+        OPTIONS,
+      ),
     ).toThrow(/unknown lesson "03-consumer\/03-99-not-real"/);
   });
 
   it('throws on non-README markdown links', () => {
     expect(() =>
-      rewriteLessonLink('../02-04-batching-and-throughput/notes.md', OPTIONS),
-    ).toThrow(/Only "<module>\/<slug>\/README\.md"/);
+      rewriteLessonLink(
+        '../../../02-04-batching-and-throughput/i18n/ru/notes.md',
+        OPTIONS,
+      ),
+    ).toThrow(/Only "<module>\/<slug>\/i18n\/ru\/README\.md"/);
   });
 
   it('throws when relative path escapes lectures root', () => {
     expect(() =>
-      rewriteLessonLink('../../../outside/file.md', OPTIONS),
+      rewriteLessonLink('../../../../../outside/file.md', OPTIONS),
     ).toThrow(/escapes the lectures root/);
   });
 
@@ -155,19 +164,25 @@ describe('rewriteLessonLink', () => {
   });
 
   it('passes through image links unchanged (image plugin owns them)', () => {
-    const out = rewriteLessonLink('./images/diagram.png', OPTIONS);
-    expect(out).toEqual({ url: './images/diagram.png', external: false });
+    const out = rewriteLessonLink('../../images/diagram.png', OPTIONS);
+    expect(out).toEqual({ url: '../../images/diagram.png', external: false });
   });
 
   it('throws on non-markdown, non-image relative resources', () => {
     expect(() =>
-      rewriteLessonLink('../02-04-batching-and-throughput/script.sh', OPTIONS),
+      rewriteLessonLink(
+        '../../../02-04-batching-and-throughput/script.sh',
+        OPTIONS,
+      ),
     ).toThrow(/non-markdown, non-lesson resource/);
   });
 
   it('reports lesson id in error messages', () => {
     expect(() =>
-      rewriteLessonLink('../../99-mystery/x/README.md', OPTIONS),
+      rewriteLessonLink(
+        '../../../../99-mystery/x/i18n/ru/README.md',
+        OPTIONS,
+      ),
     ).toThrow(/02-producer\/02-03-idempotent-producer/);
   });
 });
@@ -182,7 +197,7 @@ describe('remarkLinkRewrite plugin', () => {
           children: [
             {
               type: 'link',
-              url: '../02-04-batching-and-throughput/README.md',
+              url: '../../../02-04-batching-and-throughput/i18n/ru/README.md',
               children: [{ type: 'text', value: 'next lesson' }],
             },
           ],
@@ -241,7 +256,7 @@ describe('remarkLinkRewrite plugin', () => {
         {
           type: 'definition',
           identifier: 'next',
-          url: '../02-04-batching-and-throughput/README.md',
+          url: '../../../02-04-batching-and-throughput/i18n/ru/README.md',
         },
       ],
     };
@@ -356,7 +371,7 @@ describe('remarkLinkRewrite plugin', () => {
           children: [
             {
               type: 'link',
-              url: '../../99-mystery/x/README.md',
+              url: '../../../../99-mystery/x/i18n/ru/README.md',
               children: [{ type: 'text', value: 'broken' }],
             },
           ],

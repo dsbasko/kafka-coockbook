@@ -8,7 +8,13 @@ let fixtureRoot: string;
 
 beforeAll(() => {
   fixtureRoot = mkdtempSync(path.join(tmpdir(), 'kafka-cookbook-lessons-'));
-  const lessonDir = path.join(fixtureRoot, '02-producer', '02-04-batching');
+  const lessonDir = path.join(
+    fixtureRoot,
+    '02-producer',
+    '02-04-batching',
+    'i18n',
+    'ru',
+  );
   mkdirSync(lessonDir, { recursive: true });
   writeFileSync(
     path.join(lessonDir, 'README.md'),
@@ -49,7 +55,14 @@ describe('getLessonReadmePath', () => {
       lecturesRoot: fixtureRoot,
     });
     expect(p).toBe(
-      path.join(fixtureRoot, '02-producer', '02-04-batching', 'README.md'),
+      path.join(
+        fixtureRoot,
+        '02-producer',
+        '02-04-batching',
+        'i18n',
+        'ru',
+        'README.md',
+      ),
     );
   });
 });
