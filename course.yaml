@@ -1,247 +1,296 @@
 title: Kafka Cookbook
-description: |
-  Курс по Apache Kafka на Go — от первых топиков и партиций до production-grade паттернов:
-  транзакции и exactly-once, outbox, Debezium CDC, гибрид gRPC + Kafka. Весь код запускается
-  на локальном sandbox-стенде (KRaft, Schema Registry, Connect, Kafka UI) и оставляет
-  наблюдаемый эффект — это не лекции «на доске», а рабочие сценарии.
+description:
+  ru: |
+    Курс по Apache Kafka на Go — от первых топиков и партиций до production-grade паттернов:
+    транзакции и exactly-once, outbox, Debezium CDC, гибрид gRPC + Kafka. Весь код запускается
+    на локальном sandbox-стенде (KRaft, Schema Registry, Connect, Kafka UI) и оставляет
+    наблюдаемый эффект — это не лекции «на доске», а рабочие сценарии.
+  en: |
+    An Apache Kafka course in Go — from the first topics and partitions to production-grade
+    patterns: transactions and exactly-once, outbox, Debezium CDC, gRPC + Kafka hybrid. All code
+    runs on a local sandbox (KRaft, Schema Registry, Connect, Kafka UI) and leaves an observable
+    effect — these are working scenarios, not whiteboard lectures.
 basePath: /kafka-cookbook
 repoUrl: https://github.com/dsbasko/kafka-cookbook
 
 modules:
   - id: 01-foundations
-    title: Основы
-    description: |
-      Базовая модель Kafka: брокер, контроллер, топик, партиция, репликация, offset, retention.
-      Первый продьюсер и консьюмер на franz-go — после этого модуля в голове появляется рабочая
-      модель, на которую дальше наслаиваются все остальные темы.
+    title: { ru: Основы, en: Foundations }
+    description:
+      ru: |
+        Базовая модель Kafka: брокер, контроллер, топик, партиция, репликация, offset, retention.
+        Первый продьюсер и консьюмер на franz-go — после этого модуля в голове появляется рабочая
+        модель, на которую дальше наслаиваются все остальные темы.
+      en: |
+        The Kafka base model: broker, controller, topic, partition, replication, offset, retention.
+        The first producer and consumer on franz-go — after this module you have a working mental
+        model that every other topic builds on.
     lessons:
       - slug: 01-01-architecture-and-kraft
-        title: Архитектура и KRaft
+        title: { ru: Архитектура и KRaft, en: Architecture and KRaft }
         duration: 45m
         tags: [architecture, kraft]
       - slug: 01-02-topics-and-partitions
-        title: Топики и партиции
+        title: { ru: Топики и партиции, en: Topics and partitions }
         duration: 40m
         tags: [topics, partitions]
       - slug: 01-03-replication-and-isr
-        title: Репликация и ISR
+        title: { ru: Репликация и ISR, en: Replication and ISR }
         duration: 40m
         tags: [replication, isr]
       - slug: 01-04-offsets-and-retention
-        title: Offsets и retention
+        title: { ru: Offsets и retention, en: Offsets and retention }
         duration: 35m
         tags: [offsets, retention]
       - slug: 01-05-first-producer
-        title: Первый продьюсер на franz-go
+        title: { ru: Первый продьюсер на franz-go, en: First producer on franz-go }
         duration: 45m
         tags: [producer, franz-go]
       - slug: 01-06-first-consumer
-        title: Первый консьюмер на franz-go
+        title: { ru: Первый консьюмер на franz-go, en: First consumer on franz-go }
         duration: 45m
         tags: [consumer, franz-go]
 
   - id: 02-producer
-    title: Продьюсер
-    description: |
-      Где живёт гарантия one-key-one-partition, как acks влияет на durability, зачем нужна
-      идемпотентность, как батчинг и компрессия меняют пропускную способность, и какие классы
-      ошибок продьюсер видит на ретраях.
+    title: { ru: Продьюсер, en: Producer }
+    description:
+      ru: |
+        Где живёт гарантия one-key-one-partition, как acks влияет на durability, зачем нужна
+        идемпотентность, как батчинг и компрессия меняют пропускную способность, и какие классы
+        ошибок продьюсер видит на ретраях.
+      en: |
+        Where the one-key-one-partition guarantee lives, how acks affects durability, why you need
+        idempotency, how batching and compression shift throughput, and which error classes the
+        producer sees on retries.
     lessons:
       - slug: 02-01-keys-and-partitioning
-        title: Ключи и партиционирование
+        title: { ru: Ключи и партиционирование, en: Keys and partitioning }
         duration: 40m
         tags: [keys, partitioning]
       - slug: 02-02-acks-and-durability
-        title: Acks и durability
+        title: { ru: Acks и durability, en: Acks and durability }
         duration: 35m
         tags: [acks, durability]
       - slug: 02-03-idempotent-producer
-        title: Идемпотентный продьюсер
+        title: { ru: Идемпотентный продьюсер, en: Idempotent producer }
         duration: 40m
         tags: [idempotence]
       - slug: 02-04-batching-and-throughput
-        title: Батчинг и пропускная способность
+        title: { ru: Батчинг и пропускная способность, en: Batching and throughput }
         duration: 40m
         tags: [batching, throughput]
       - slug: 02-05-errors-retries-headers
-        title: Ошибки, retries и headers
+        title: { ru: Ошибки, retries и headers, en: Errors, retries, and headers }
         duration: 40m
         tags: [errors, retries, headers]
 
   - id: 03-consumer
-    title: Консьюмер
-    description: |
-      Группы и ребалансы (включая cooperative-sticky), коммиты offset'ов, гарантии обработки
-      на стороне консьюмера, обработка ошибок через retry-топики и DLQ, конкурентность и lag.
+    title: { ru: Консьюмер, en: Consumer }
+    description:
+      ru: |
+        Группы и ребалансы (включая cooperative-sticky), коммиты offset'ов, гарантии обработки
+        на стороне консьюмера, обработка ошибок через retry-топики и DLQ, конкурентность и lag.
+      en: |
+        Consumer groups and rebalances (including cooperative-sticky), offset commits, processing
+        guarantees on the consumer side, error handling via retry topics and DLQ, concurrency and
+        lag.
     lessons:
       - slug: 03-01-groups-and-rebalance
-        title: Группы и ребалансы
+        title: { ru: Группы и ребалансы, en: Groups and rebalances }
         duration: 45m
         tags: [groups, rebalance]
       - slug: 03-02-offset-commits
-        title: Коммиты offset'ов
+        title: { ru: Коммиты offset'ов, en: Offset commits }
         duration: 40m
         tags: [offsets, commits]
       - slug: 03-03-processing-guarantees
-        title: Гарантии обработки
+        title: { ru: Гарантии обработки, en: Processing guarantees }
         duration: 40m
         tags: [guarantees]
       - slug: 03-04-error-handling
-        title: Обработка ошибок
+        title: { ru: Обработка ошибок, en: Error handling }
         duration: 40m
         tags: [errors, dlq]
       - slug: 03-05-concurrency-and-lag
-        title: Конкурентность и lag
+        title: { ru: Конкурентность и lag, en: Concurrency and lag }
         duration: 45m
         tags: [concurrency, lag]
 
   - id: 04-reliability
-    title: Надёжность
-    description: |
-      Транзакции и exactly-once semantics, паттерн consume-process-produce, transactional outbox,
-      retry/DLQ deep dive, доставка во внешние системы (HTTP courier с circuit breaker
-      и backpressure через PauseFetchPartitions).
+    title: { ru: Надёжность, en: Reliability }
+    description:
+      ru: |
+        Транзакции и exactly-once semantics, паттерн consume-process-produce, transactional outbox,
+        retry/DLQ deep dive, доставка во внешние системы (HTTP courier с circuit breaker
+        и backpressure через PauseFetchPartitions).
+      en: |
+        Transactions and exactly-once semantics, the consume-process-produce pattern, transactional
+        outbox, retry/DLQ deep dive, delivery to external systems (an HTTP courier with circuit
+        breaker and backpressure via PauseFetchPartitions).
     lessons:
       - slug: 04-01-transactions-and-eos
-        title: Транзакции и EOS
+        title: { ru: Транзакции и EOS, en: Transactions and EOS }
         duration: 50m
         tags: [transactions, eos]
       - slug: 04-02-consume-process-produce
-        title: Consume-process-produce
+        title: { ru: Consume-process-produce, en: Consume-process-produce }
         duration: 45m
         tags: [transactions, eos]
       - slug: 04-03-outbox-pattern
-        title: Outbox-паттерн
+        title: { ru: Outbox-паттерн, en: Outbox pattern }
         duration: 50m
         tags: [outbox, debezium]
       - slug: 04-04-retry-and-dlq
-        title: Retry и DLQ deep dive
+        title: { ru: Retry и DLQ deep dive, en: Retry and DLQ deep dive }
         duration: 45m
         tags: [retry, dlq]
       - slug: 04-05-external-delivery
-        title: Доставка во внешние системы
+        title: { ru: Доставка во внешние системы, en: External system delivery }
         duration: 45m
         tags: [delivery, http, circuit-breaker]
 
   - id: 05-contracts
-    title: Контракты
-    description: |
-      Зачем нужны схемы и сравнение wire-форматов (JSON / Avro / Protobuf), Protobuf в Go через
-      buf, Schema Registry с magic byte и schema_id, эволюция схем (BACKWARD / FORWARD / FULL)
-      и что считается breaking change в protobuf.
+    title: { ru: Контракты, en: Contracts }
+    description:
+      ru: |
+        Зачем нужны схемы и сравнение wire-форматов (JSON / Avro / Protobuf), Protobuf в Go через
+        buf, Schema Registry с magic byte и schema_id, эволюция схем (BACKWARD / FORWARD / FULL)
+        и что считается breaking change в protobuf.
+      en: |
+        Why schemas matter and a comparison of wire formats (JSON / Avro / Protobuf), Protobuf in
+        Go via buf, Schema Registry with magic byte and schema_id, schema evolution (BACKWARD /
+        FORWARD / FULL), and what counts as a breaking change in protobuf.
     lessons:
       - slug: 05-01-why-contracts-and-wire-formats
-        title: Зачем контракты и wire-форматы
+        title: { ru: Зачем контракты и wire-форматы, en: Why contracts and wire formats }
         duration: 35m
         tags: [contracts, wire-formats]
       - slug: 05-02-protobuf-in-go
-        title: Protobuf в Go
+        title: { ru: Protobuf в Go, en: Protobuf in Go }
         duration: 45m
         tags: [protobuf, buf]
       - slug: 05-03-schema-registry
-        title: Schema Registry
+        title: { ru: Schema Registry, en: Schema Registry }
         duration: 45m
         tags: [schema-registry]
       - slug: 05-04-schema-evolution
-        title: Эволюция схем
+        title: { ru: Эволюция схем, en: Schema evolution }
         duration: 40m
         tags: [schema-evolution]
 
   - id: 06-communication-patterns
-    title: Паттерны коммуникации
-    description: |
-      Для тех, кто проектирует системы: gRPC basics и streaming, синхрон против асинхрона
-      (decision matrix), гибрид gRPC + Kafka в одном сервисе, saga (choreography
-      vs orchestration).
+    title: { ru: Паттерны коммуникации, en: Communication patterns }
+    description:
+      ru: |
+        Для тех, кто проектирует системы: gRPC basics и streaming, синхрон против асинхрона
+        (decision matrix), гибрид gRPC + Kafka в одном сервисе, saga (choreography
+        vs orchestration).
+      en: |
+        For those who design systems: gRPC basics and streaming, sync vs async (a decision matrix),
+        a gRPC + Kafka hybrid in one service, saga (choreography vs orchestration).
     lessons:
       - slug: 06-01-grpc-basics
-        title: "gRPC: основы"
+        title: { ru: "gRPC: основы", en: "gRPC: basics" }
         duration: 40m
         tags: [grpc]
       - slug: 06-02-grpc-streaming
-        title: gRPC streaming
+        title: { ru: gRPC streaming, en: gRPC streaming }
         duration: 45m
         tags: [grpc, streaming]
       - slug: 06-03-sync-vs-async
-        title: "Sync vs async: gRPC и Kafka"
+        title: { ru: "Sync vs async: gRPC и Kafka", en: "Sync vs async: gRPC and Kafka" }
         duration: 45m
         tags: [grpc, kafka]
       - slug: 06-04-hybrid-grpc-and-kafka
-        title: Гибрид gRPC + Kafka
+        title: { ru: Гибрид gRPC + Kafka, en: gRPC + Kafka hybrid }
         duration: 50m
         tags: [grpc, kafka]
       - slug: 06-05-saga-choreography
-        title: "Saga: choreography vs orchestration"
+        title: { ru: "Saga: choreography vs orchestration", en: "Saga: choreography vs orchestration" }
         duration: 50m
         tags: [saga]
 
   - id: 07-streams-and-connect
-    title: Streams и Connect
-    description: |
-      Концепции stream processing (event-time, windowing, watermark, late events), реализация
-      word-count на franz-go + Pebble (заменитель Kafka Streams для Go), Kafka Connect
-      и Debezium CDC.
+    title: { ru: Streams и Connect, en: Streams and Connect }
+    description:
+      ru: |
+        Концепции stream processing (event-time, windowing, watermark, late events), реализация
+        word-count на franz-go + Pebble (заменитель Kafka Streams для Go), Kafka Connect
+        и Debezium CDC.
+      en: |
+        Stream processing concepts (event-time, windowing, watermark, late events), a word-count
+        implementation on franz-go + Pebble (a Kafka Streams replacement for Go), Kafka Connect,
+        and Debezium CDC.
     lessons:
       - slug: 07-01-stream-processing-concepts
-        title: "Stream processing: концепции"
+        title: { ru: "Stream processing: концепции", en: "Stream processing: concepts" }
         duration: 40m
         tags: [streams, windowing]
       - slug: 07-02-stream-processing-in-go
-        title: Stream processing на Go (franz-go + Pebble)
+        title: { ru: Stream processing на Go (franz-go + Pebble), en: Stream processing in Go (franz-go + Pebble) }
         duration: 60m
         tags: [streams, pebble]
       - slug: 07-03-kafka-connect
-        title: Kafka Connect
+        title: { ru: Kafka Connect, en: Kafka Connect }
         duration: 45m
         tags: [connect]
       - slug: 07-04-debezium-cdc
-        title: Debezium CDC
+        title: { ru: Debezium CDC, en: Debezium CDC }
         duration: 50m
         tags: [debezium, cdc]
 
   - id: 08-operations
-    title: Эксплуатация
-    description: |
-      Мониторинг и метрики (kminion + Grafana), retention vs compaction на практике, sizing
-      и tuning топиков под профиль нагрузки, troubleshooting runbook на типовые проблемы.
+    title: { ru: Эксплуатация, en: Operations }
+    description:
+      ru: |
+        Мониторинг и метрики (kminion + Grafana), retention vs compaction на практике, sizing
+        и tuning топиков под профиль нагрузки, troubleshooting runbook на типовые проблемы.
+      en: |
+        Monitoring and metrics (kminion + Grafana), retention vs compaction in practice, topic
+        sizing and tuning for a load profile, a troubleshooting runbook for common problems.
     lessons:
       - slug: 08-01-monitoring-and-metrics
-        title: Мониторинг и метрики
+        title: { ru: Мониторинг и метрики, en: Monitoring and metrics }
         duration: 45m
         tags: [monitoring, kminion, grafana]
       - slug: 08-02-retention-and-compaction
-        title: Retention и compaction
+        title: { ru: Retention и compaction, en: Retention and compaction }
         duration: 40m
         tags: [retention, compaction]
       - slug: 08-03-sizing-and-tuning
-        title: Sizing и tuning
+        title: { ru: Sizing и tuning, en: Sizing and tuning }
         duration: 45m
         tags: [sizing, tuning]
       - slug: 08-04-troubleshooting-runbook
-        title: Troubleshooting runbook
+        title: { ru: Troubleshooting runbook, en: Troubleshooting runbook }
         duration: 45m
         tags: [troubleshooting]
 
   - id: 09-use-cases
-    title: Use cases
-    description: |
-      Сквозные сценарии — связывают всё, что было выше, в работающие приложения с integration-тестами.
-      Use case'ы крупнее лекций: несколько сервисов, proto-схемы, иногда docker-compose.override.yml
-      под Postgres / ClickHouse / Elasticsearch.
+    title: { ru: Use cases, en: Use cases }
+    description:
+      ru: |
+        Сквозные сценарии — связывают всё, что было выше, в работающие приложения с integration-тестами.
+        Use case'ы крупнее лекций: несколько сервисов, proto-схемы, иногда docker-compose.override.yml
+        под Postgres / ClickHouse / Elasticsearch.
+      en: |
+        End-to-end scenarios — they tie everything above into working applications with integration
+        tests. Use cases are larger than lectures: several services, proto schemas, sometimes a
+        docker-compose.override.yml for Postgres / ClickHouse / Elasticsearch.
     lessons:
       - slug: 01-microservices-comm
-        title: Коммуникация микросервисов
+        title: { ru: Коммуникация микросервисов, en: Microservices communication }
         duration: 90m
         tags: [grpc, outbox, kafka]
       - slug: 02-push-notifications
-        title: Push-уведомления
+        title: { ru: Push-уведомления, en: Push notifications }
         duration: 90m
         tags: [push, retry, dlq, circuit-breaker]
       - slug: 03-pg-to-clickhouse
-        title: Postgres → ClickHouse с анонимизацией
+        title: { ru: Postgres → ClickHouse с анонимизацией, en: Postgres → ClickHouse with anonymization }
         duration: 90m
         tags: [debezium, clickhouse, anonymization]
       - slug: 04-pg-to-elasticsearch
-        title: Postgres → Elasticsearch
+        title: { ru: Postgres → Elasticsearch, en: Postgres → Elasticsearch }
         duration: 90m
         tags: [debezium, elasticsearch]
