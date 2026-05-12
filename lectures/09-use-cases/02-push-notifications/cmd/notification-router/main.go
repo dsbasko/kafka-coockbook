@@ -1,8 +1,3 @@
-// notification-router — единый consumer на topic notification-events.
-//
-// Достаёт Notification из payload, читает поле channel и форвардит record
-// в notification-{firebase,apns,webhook}. Дальше каждый канал обслуживает
-// свой sender со своим retry-пайплайном и mock-внешним сервисом.
 package main
 
 import (

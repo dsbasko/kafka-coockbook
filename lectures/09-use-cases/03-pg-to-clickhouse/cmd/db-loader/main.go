@@ -1,10 +1,3 @@
-// db-loader — генератор INSERT/UPDATE/DELETE-нагрузки в Postgres для use case
-// 09-03. Параллельно по таблицам users, orders, events. Каждое изменение —
-// событие в WAL, которое Debezium читает через replication slot.
-//
-// Цели: показать, что снепшот покрывает initial-bulk, а live-стриминг — все
-// последующие изменения. Числа N (по дефолту 50) подбираются для скорости —
-// integration_test использует свой генератор с большими объёмами.
 package main
 
 import (

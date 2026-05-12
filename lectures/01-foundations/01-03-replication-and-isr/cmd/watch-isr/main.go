@@ -1,13 +1,3 @@
-// watch-isr — каждые N секунд опрашивает metadata топика и печатает таблицу
-// per-partition: LEADER, REPLICAS, ISR, UNDER-REPLICATED.
-//
-// Идея лекции 01-03 — посмотреть на ISR глазами клиента, пока в соседнем
-// терминале останавливается и запускается один из брокеров. Программа
-// идемпотентно создаёт топик `lecture-01-03-replicated` с partitions=3, rf=3
-// и в бесконечном цикле опрашивает admin.ListTopics. Между тиками рисует
-// разделитель — так лента наблюдения читается как timeline.
-//
-// Останавливается по SIGINT/SIGTERM (runctx.New).
 package main
 
 import (
@@ -83,9 +73,7 @@ func run(ctx context.Context, topic string, partitions int32, rf int16, interval
 			return nil
 		case <-t.C:
 			if err := tick(ctx, admin, topic); err != nil {
-				// Не выходим по разовой ошибке metadata: если упал брокер,
-				// клиент сам переключится на живого. Просто логируем и
-				// продолжаем — иначе watch-isr теряет смысл при failover'е.
+
 				fmt.Fprintf(os.Stderr, "tick failed: %v\n", err)
 			}
 		}
@@ -112,10 +100,6 @@ func tick(ctx context.Context, admin *kadm.Client, topic string) error {
 	return nil
 }
 
-// ensureTopic создаёт топик, либо считает уже существующий за успех. RF при
-// этом мы не корректируем — если топик когда-то создали с другим rf, лекция
-// просто покажет реальное состояние в таблице. Это сознательно: пересоздание
-// в этой лекции отвлекает от наблюдения за ISR.
 func ensureTopic(ctx context.Context, admin *kadm.Client, topic string, partitions int32, rf int16) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -160,8 +144,6 @@ func printSnapshot(td kadm.TopicDetail) {
 	fmt.Println("---")
 }
 
-// missing возвращает реплики, которые есть в Replicas, но отсутствуют в ISR.
-// Это ровно «отставшие» реплики — те, что брокер исключил из синхрона.
 func missing(replicas, isr []int32) []int32 {
 	in := make(map[int32]struct{}, len(isr))
 	for _, id := range isr {

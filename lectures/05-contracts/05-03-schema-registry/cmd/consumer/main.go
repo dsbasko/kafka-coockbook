@@ -1,19 +1,3 @@
-// consumer — читает заказы из Kafka, доставая schema_id из первых 5
-// байт payload'а через sr.Serde.
-//
-// Что показывает лекция 05-03:
-//
-//   - Confluent wire format: первый байт — magic (0), следующие 4 — id
-//     схемы big-endian, потом message-index (для protobuf) и сам payload;
-//   - sr.Serde.DecodeID разбирает заголовок и возвращает schema_id; по
-//     нему можно либо взять зарегистрированный заранее тип, либо
-//     обратиться в SR за SchemaByID и динамически распарсить;
-//   - в этой лекции consumer знает заранее, что в топике лежит Order,
-//     и регистрирует id вручную после первого fetch'а — так нагляднее
-//     виден сам schema_id. На проде обычно делают разово при старте,
-//     зная subject + получая schema_id через sr.Client.
-//
-// Запуск: см. Makefile.
 package main
 
 import (
@@ -51,7 +35,7 @@ func main() {
 	}
 
 	serde := sr.NewSerde()
-	var registered sync.Map // schema_id -> struct{}, защита от повторной регистрации
+	var registered sync.Map
 
 	cl, err := kafkactl.NewClient(
 		kgo.ConsumerGroup(*group),

@@ -1,23 +1,3 @@
-// event-time-vs-processing-time — демо к лекции 07-01.
-//
-// Один бинарь с двумя ролями:
-//
-//   -role=events     — продьюсер. Каждые `rate` пишет одно событие в топик.
-//                      В header'е "event-time" лежит unix-nano «оригинального»
-//                      времени события — оно отстаёт от wall-clock'а от 0 до
-//                      `event-lag-max` секунд (равномерно). С вероятностью
-//                      `late-prob` событие помечается «поздним»: лаг
-//                      случайно из [late-lag-min, late-lag-max].
-//
-//   -role=aggregator — консьюмер. Считает count событий по 1-минутным
-//                      tumbling-окнам в двух системах координат:
-//                      (а) по event-time (header), (б) по processing-time
-//                      (wall-clock в момент чтения). Раз в `print` печатает
-//                      обе таблицы side-by-side — видно, что одни и те же
-//                      сообщения попадают в разные минутные ведра.
-//
-// Топик создаётся идемпотентно при любом старте (партиций=3, RF=3).
-// Останавливается по SIGINT/SIGTERM (runctx.New).
 package main
 
 import (
@@ -45,18 +25,18 @@ import (
 )
 
 const (
-	defaultTopic         = "lecture-07-01-events"
-	defaultPartitions    = 3
-	defaultReplication   = 3
-	defaultGroup         = "lecture-07-01-aggregator"
-	defaultRate          = 50 * time.Millisecond
-	defaultLateProb      = 0.10
-	defaultEventLagMax   = 60 * time.Second
-	defaultLateLagMin    = 90 * time.Second
-	defaultLateLagMax    = 240 * time.Second
-	defaultPrintInterval = 5 * time.Second
-	defaultWindow        = 1 * time.Minute
-	defaultPrintWindows  = 8
+	defaultTopic           = "lecture-07-01-events"
+	defaultPartitions      = 3
+	defaultReplication     = 3
+	defaultGroup           = "lecture-07-01-aggregator"
+	defaultRate            = 50 * time.Millisecond
+	defaultLateProb        = 0.10
+	defaultEventLagMax     = 60 * time.Second
+	defaultLateLagMin      = 90 * time.Second
+	defaultLateLagMax      = 240 * time.Second
+	defaultPrintInterval   = 5 * time.Second
+	defaultWindow          = 1 * time.Minute
+	defaultPrintWindows    = 8
 	defaultUserCardinality = 50
 )
 
@@ -328,11 +308,9 @@ func runAggregator(ctx context.Context, o aggregatorOpts) error {
 	cl, err := kafka.NewClient(
 		kgo.ConsumerGroup(o.group),
 		kgo.ConsumeTopics(o.topic),
-		// Новые группы стартуют с конца — старые тестовые сообщения не интересны;
-		// видим только то, что producer пишет прямо сейчас.
+
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()),
-		// Демо без commit'ов — состояние живёт в памяти aggregator'а, после
-		// рестарта окна всё равно начнутся заново.
+
 		kgo.DisableAutoCommit(),
 	)
 	if err != nil {

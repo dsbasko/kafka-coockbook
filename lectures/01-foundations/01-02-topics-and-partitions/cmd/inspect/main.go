@@ -1,13 +1,3 @@
-// inspect — создаёт топик `lecture-01-02-orders` с 3 партициями и
-// печатает per-partition картину: leader, replicas, ISR.
-//
-// По умолчанию топик создаётся идемпотентно — если он уже есть с тем же
-// числом партиций, считаем это успехом и просто описываем. Replication factor
-// фиксируем в 3 (сколько нод в стенде, столько и реплик), чтобы лекция
-// иллюстрировала RF=3 и соответствовала default'у docker-compose.yml.
-//
-// Через флаг -recreate=true можно сначала удалить топик и пересоздать заново —
-// удобно, чтобы посмотреть, как меняется ассайнмент leader'ов.
 package main
 
 import (
@@ -94,10 +84,6 @@ func run(ctx context.Context, topic string, partitions int32, rf int16, recreate
 	return nil
 }
 
-// ensureTopic пытается создать топик. Если топик уже есть с любой
-// конфигурацией — возвращает (false, nil); число партиций и rf проверяет
-// describe ниже. Это нужно, чтобы make run был идемпотентным и не падал на
-// втором запуске.
 func ensureTopic(ctx context.Context, admin *kadm.Client, topic string, partitions int32, rf int16) (bool, error) {
 	resp, err := admin.CreateTopic(ctx, partitions, rf, nil, topic)
 	if err == nil && resp.Err == nil {
@@ -114,8 +100,6 @@ func ensureTopic(ctx context.Context, admin *kadm.Client, topic string, partitio
 	return false, cause
 }
 
-// deleteTopic тихо игнорирует ErrUnknownTopicOrPartition — для recreate-режима
-// это не ошибка, а штатная ситуация (топика просто не было).
 func deleteTopic(ctx context.Context, admin *kadm.Client, topic string) error {
 	resp, err := admin.DeleteTopic(ctx, topic)
 	if err == nil && resp.Err == nil {

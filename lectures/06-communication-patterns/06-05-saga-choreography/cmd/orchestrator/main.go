@@ -1,25 +1,3 @@
-// orchestrator — центральная state-machine саги в orchestration-варианте.
-//
-// Подписан на 4 топика: place-order и три *-reply. Каждое сообщение — это
-// перевод саги в следующее состояние. saga_state в Postgres хранит
-// current_step, status и последнее событие; шаги перевода:
-//
-//	(none) + place-order            → AWAITING_PAYMENT, отправляет payment.AUTHORIZE
-//	AWAITING_PAYMENT + payment.ok   → AWAITING_INVENTORY, отправляет inventory.RESERVE
-//	AWAITING_PAYMENT + payment.fail → DONE/FAILED
-//	AWAITING_INVENTORY + inv.ok     → AWAITING_SHIPMENT, отправляет shipment.SCHEDULE
-//	AWAITING_INVENTORY + inv.fail   → COMPENSATING_PAYMENT, отправляет payment.REFUND
-//	AWAITING_SHIPMENT + ship.ok     → DONE/SUCCESS
-//	AWAITING_SHIPMENT + ship.fail   → COMPENSATING_INVENTORY, отправляет inventory.RELEASE
-//	COMPENSATING_INVENTORY + inv reply → COMPENSATING_PAYMENT, отправляет payment.REFUND
-//	COMPENSATING_PAYMENT + payment reply → DONE/FAILED
-//
-// Что мы упрощаем относительно production: UPDATE saga_state и Produce
-// next-cmd идут двумя последовательными вызовами без транзакционного
-// outbox'а. Если оркестратор крашнется ровно между UPDATE и Produce —
-// сага зависнет. В production это закрывается outbox'ом или EOS-транзакцией
-// (см. лекции 04-01 и 04-03). Здесь намеренно проще, чтобы фокус был на
-// state-машине, а не на инфраструктуре.
 package main
 
 import (
@@ -205,7 +183,7 @@ func onPlaceOrder(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, r *kg
 		stepAwaitingPayment, statusRunning, "place-order",
 	).Scan(&got)
 	if errors.Is(err, pgx.ErrNoRows) {
-		// сага уже существует — это retry place-order'а, игнорируем
+
 		fmt.Printf("PLACE     saga=%s already-exists, skip\n", short(po.GetSagaId()))
 		return nil
 	}
@@ -259,7 +237,7 @@ func onPaymentReply(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, r *
 					AmountCents: row.amountCents,
 				})
 		}
-		// payment.AUTHORIZE failed — компенсаций не нужно, ничего не делалось
+
 		reason := rep.GetReason()
 		if err := updateSaga(ctx, pool, rep.GetSagaId(),
 			stepDone, statusFailed, "payment.failed", nil, nil, nil, &reason); err != nil {
@@ -269,9 +247,7 @@ func onPaymentReply(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, r *
 		return nil
 
 	case sagav1.PaymentAction_PAYMENT_ACTION_REFUND:
-		// REFUND приходит в фазе компенсации. Это финальный шаг — что бы ни
-		// ответил сервис refund'а, оркестратор переводит сагу в FAILED;
-		// если рефанд не удался, дальше начинается ручной разбор.
+
 		failure := row.failure
 		if !rep.GetOk() {
 			failure = "refund-failed: " + rep.GetReason()
@@ -317,7 +293,7 @@ func onInventoryReply(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, r
 					CustomerId: row.customerID,
 				})
 		}
-		// inventory.RESERVE failed → надо рефанднуть payment
+
 		reason := "inventory-failed: " + rep.GetReason()
 		if err := updateSaga(ctx, pool, rep.GetSagaId(),
 			stepCompensatingPayment, statusRunning, "inventory.failed", nil, nil, nil, &reason); err != nil {
@@ -334,7 +310,7 @@ func onInventoryReply(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, r
 			})
 
 	case sagav1.InventoryAction_INVENTORY_ACTION_RELEASE:
-		// RELEASE — компенсация после shipment.failed. Дальше — payment refund.
+
 		if err := updateSaga(ctx, pool, rep.GetSagaId(),
 			stepCompensatingPayment, statusRunning, "inventory.released", nil, nil, nil, nil); err != nil {
 			return err
@@ -375,7 +351,7 @@ func onShipmentReply(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, r 
 		fmt.Printf("SHIP.OK   saga=%s shipment_id=%s → DONE/SUCCESS\n", short(rep.GetSagaId()), sid)
 		return nil
 	}
-	// shipment.SCHEDULE failed → надо отпустить резерв, потом рефанд
+
 	reason := "shipment-failed: " + rep.GetReason()
 	if err := updateSaga(ctx, pool, rep.GetSagaId(),
 		stepCompensatingInventory, statusRunning, "shipment.failed", nil, nil, nil, &reason); err != nil {

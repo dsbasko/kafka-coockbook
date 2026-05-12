@@ -1,17 +1,3 @@
-// producer — пишет N заказов в Kafka, упакованные через
-// google.golang.org/protobuf/proto.Marshal.
-//
-// Что показывает лекция 05-02:
-//
-//   - сгенерированные через buf+protoc-gen-go типы (Order, OrderItem,
-//     OrderStatus) — обычные Go-структуры с *proto.Message-методами;
-//   - well-known types (Timestamp, Duration) — лежат в timestamppb и
-//     durationpb, инициализируются хелперами .Now() / durationpb.New;
-//   - сериализация в кафку — это просто proto.Marshal до []byte;
-//   - schema_id, magic byte и Schema Registry — отдельная история (05-03),
-//     здесь Kafka видит сырые protobuf-байты как opaque value.
-//
-// Запуск: см. Makefile.
 package main
 
 import (
@@ -94,9 +80,6 @@ func main() {
 	logger.Info("producer done", "count", *count, "topic", *topic)
 }
 
-// mockOrder собирает Order с заполненными well-known types, чтобы было
-// видно, что Timestamp и Duration действительно сериализуются и проходят
-// round-trip до consumer'а.
 func mockOrder(i int) *ordersv1.Order {
 	statuses := []ordersv1.OrderStatus{
 		ordersv1.OrderStatus_ORDER_STATUS_CREATED,

@@ -1,14 +1,3 @@
-// load-and-watch — наполняет топик пачкой сообщений, потом каждые N секунд
-// дёргает earliest и latest offset'ы и печатает дрейф границы лога.
-//
-// Идея лекции 01-04 — посмотреть на retention глазами клиента. Создаём топик
-// с retention.ms=60s и маленьким segment.ms, чтобы сегменты крутились часто
-// и старые могли быть удалены. Стартуем с 100 сообщений, дальше тикаем
-// каждые 10 секунд: пишем один heartbeat (это толкает segment roll) и
-// печатаем earliest/latest per-partition. Через несколько минут retention
-// сметёт старые сегменты — earliest ползёт вверх к latest, лог «тает» снизу.
-//
-// Останавливается по SIGINT/SIGTERM (runctx.New).
 package main
 
 import (
@@ -128,8 +117,7 @@ func run(ctx context.Context, o runOpts) error {
 		case <-t.C:
 			hb++
 			if err := writeHeartbeat(ctx, cl, o.topic, hb); err != nil {
-				// heartbeat нужен только чтобы сегменты крутились — если
-				// не записался, не критично. Логируем и продолжаем.
+
 				fmt.Fprintf(os.Stderr, "heartbeat write failed: %v\n", err)
 			}
 			if err := tick(ctx, admin, o.topic, hb); err != nil {
@@ -139,10 +127,6 @@ func run(ctx context.Context, o runOpts) error {
 	}
 }
 
-// ensureTopic создаёт топик с заданным retention и segment, либо подгоняет
-// конфигурацию существующего топика — это нужно, чтобы повторный запуск
-// после `make run` без recreate работал ожидаемо: те же значения, что в
-// аргументах.
 func ensureTopic(ctx context.Context, admin *kadm.Client, o runOpts) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -185,8 +169,6 @@ func ensureTopic(ctx context.Context, admin *kadm.Client, o runOpts) error {
 	return nil
 }
 
-// deleteTopic тихо игнорирует UnknownTopicOrPartition — для recreate-режима
-// это норма: топика просто не было.
 func deleteTopic(ctx context.Context, admin *kadm.Client, topic string) error {
 	resp, err := admin.DeleteTopic(ctx, topic)
 	if err == nil && resp.Err == nil {
@@ -202,8 +184,6 @@ func deleteTopic(ctx context.Context, admin *kadm.Client, topic string) error {
 	return cause
 }
 
-// loadInitial пишет messages штук синхронно, чтобы к моменту первого тика
-// все 100 уже лежали в логе и earliest/latest показывали известную картину.
 func loadInitial(ctx context.Context, cl *kgo.Client, topic string, messages int) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -221,9 +201,6 @@ func loadInitial(ctx context.Context, cl *kgo.Client, topic string, messages int
 	return nil
 }
 
-// writeHeartbeat пишет одно сообщение, чтобы у активного сегмента был свежий
-// timestamp, и segment.ms триггернул roll на следующем тике. Без этого
-// активный сегмент может жить бесконечно — а удаляется только закрытый.
 func writeHeartbeat(ctx context.Context, cl *kgo.Client, topic string, n int) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

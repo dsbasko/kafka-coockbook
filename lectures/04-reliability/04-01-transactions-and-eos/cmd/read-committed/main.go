@@ -1,19 +1,3 @@
-// read-committed — consumer с FetchIsolationLevel(ReadCommitted()).
-//
-// Читает три транзакционных топика и печатает только те записи, у которых
-// есть commit marker. Aborted batch'и фильтруются на стороне fetch — до
-// прикладного кода они вообще не доходят. Control records (transaction
-// markers) тоже не отдаются, но они занимают offset'ы в логе — поэтому
-// «end-offset 100, прочитал 70» при mix'е committed/aborted транзакций
-// — норма, не баг.
-//
-// Запуск с -isolation=uncommitted переключает в read_uncommitted: это
-// чтобы было с чем сравнить. Тогда видны все записи, включая те, что
-// потом аборнутся (но всё ещё без control records).
-//
-// При -count=N процесс выходит, когда насчитал N записей; это удобно для
-// демо «запустил producer на 10 транзакций — посмотри, сколько докатилось
-// в read_committed».
 package main
 
 import (
@@ -84,7 +68,7 @@ func run(ctx context.Context, o runOpts) error {
 		kgo.ConsumeTopics(o.topics...),
 		kgo.FetchIsolationLevel(level),
 		kgo.ClientID("lecture-04-01-rc"),
-		kgo.DisableAutoCommit(), // в этой лекции offset'ы не нужны
+		kgo.DisableAutoCommit(),
 	}
 	if o.fromStart {
 		opts = append(opts, kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
@@ -149,7 +133,7 @@ func run(ctx context.Context, o runOpts) error {
 			fmt.Printf("[%-13s p%d o%-6d] key=%-3s value=%s\n",
 				r.Topic, r.Partition, r.Offset, string(r.Key), string(r.Value))
 			if o.count > 0 && total >= o.count {
-				// флаг через total + проверка ниже после EachRecord
+
 			}
 		})
 		if batchHadRecords {

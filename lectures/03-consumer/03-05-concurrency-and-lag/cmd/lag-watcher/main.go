@@ -1,12 +1,3 @@
-// lag-watcher — раз в interval опрашивает kadm.Lag по группе и печатает
-// per-partition разрыв между LEO (log end offset) и committed offset'ом.
-//
-// Запускается параллельно sequential / concurrent-pool: сидим на той же
-// группе, видим, как растёт lag, когда в топик льётся больше, чем
-// консьюмер успевает обработать. С concurrent-pool lag растёт медленнее
-// или вовсе не растёт — в этом и пуанта.
-//
-// Запуск: см. Makefile (run-lag).
 package main
 
 import (
@@ -118,7 +109,7 @@ func tick(ctx context.Context, admin *kadm.Client, group string) error {
 			m.Topic, m.Partition, m.Lag, m.Commit.At, m.End.Offset,
 		))
 	}
-	sort.Strings(parts) // стабильный порядок вывода
+	sort.Strings(parts)
 	fmt.Printf("[%s] group=%q state=%s total-lag=%d\n  %s\n",
 		now, group, dl.State, total, strings.Join(parts, "\n  "),
 	)

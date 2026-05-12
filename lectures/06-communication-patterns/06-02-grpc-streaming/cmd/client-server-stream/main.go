@@ -1,11 +1,3 @@
-// client-server-stream — клиент к Subscribe (server-stream).
-//
-// Один Send вызывает RPC, дальше клиент крутит Recv() в цикле и печатает
-// каждый OrderEvent. Завершение — два варианта: сервер закрыл stream
-// (Recv вернёт io.EOF) или мы поймали SIGINT и отменили контекст
-// (Recv вернёт ошибку с кодом Canceled).
-//
-// Запуск: см. Makefile (`make run-subscribe`).
 package main
 
 import (

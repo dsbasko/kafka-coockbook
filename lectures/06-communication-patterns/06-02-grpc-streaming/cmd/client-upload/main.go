@@ -1,11 +1,3 @@
-// client-upload — клиент к UploadOrders (client-stream).
-//
-// Открывает stream, шлёт N сообщений через Send(), часть из них
-// специально невалидные (amount <= 0), чтобы увидеть как сервер их
-// rejected'ит без падения. После последнего Send зовём CloseSend и
-// получаем UploadSummary одним вызовом CloseAndRecv.
-//
-// Запуск: см. Makefile (`make run-upload`).
 package main
 
 import (
@@ -58,7 +50,7 @@ func main() {
 			AmountCents: int64(100 + i*10),
 			Currency:    "USD",
 		}
-		// первые `bad` записей делаем невалидными, чтобы посмотреть на rejected
+
 		if i < *bad {
 			input.AmountCents = 0
 		}

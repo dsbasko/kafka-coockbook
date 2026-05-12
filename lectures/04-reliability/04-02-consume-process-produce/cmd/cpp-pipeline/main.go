@@ -1,26 +1,3 @@
-// cpp-pipeline — consume-process-produce пайплайн с exactly-once семантикой
-// поверх kgo.GroupTransactSession.
-//
-// Сценарий: читаем сырые заказы из topic-input, обогащаем (mock lookup —
-// добавляем поле "vip" по префиксу ключа и считаем "total"), пишем результат
-// в topic-output. Commit offset'а в группе и публикация обогащённой записи —
-// одна Kafka-транзакция.
-//
-// Что показывает демо:
-//
-//   - между Produce и End случается «крах» (os.Exit(1) с заданной
-//     вероятностью). Незавершённая транзакция тайм-аутнется на координаторе
-//     и будет отброшена. Записи попали в лог output-топика, но read_committed
-//     консьюмер их не увидит — пометки commit нет.
-//
-//   - после рестарта group consumer вернётся на committed offset,
-//     перечитает те же входные записи, выполнит обработку заново и
-//     закоммитит транзакцию. На стороне output ровно одна копия каждого
-//     уникального ключа.
-//
-// Запускать через `make run-pipeline` повторно, пока в input не кончатся
-// записи. По завершении сравнить downstream count с числом seed'ов: count
-// == seed → EOS работает.
 package main
 
 import (
@@ -102,10 +79,9 @@ func run(ctx context.Context, o runOpts) error {
 
 		kgo.ConsumerGroup(o.group),
 		kgo.ConsumeTopics(o.input),
-		// EOS-чтение: не отдавать записи из ещё не закоммиченных транзакций.
+
 		kgo.FetchIsolationLevel(kgo.ReadCommitted()),
-		// На первом запуске группы — с начала. Дальше группа сама хранит
-		// committed offset и возвращается к нему после рестарта.
+
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 	}
 
@@ -194,19 +170,10 @@ func run(ctx context.Context, o runOpts) error {
 			batchOut++
 		})
 
-		// Принудительно сбрасываем буфер на брокер до решения о crash.
-		// Без этого Produce — асинхронный батчинг — может не успеть
-		// добраться до лога к моменту os.Exit, и read_uncommitted
-		// демонстрация (видны записи аборнутых транзакций) не сработает.
-		// End() сделает Flush сам, но нам он нужен ДО возможного краха.
 		if err := sess.Client().Flush(ctx); err != nil {
 			return fmt.Errorf("flush: %w", err)
 		}
 
-		// Симулируем падение pod'а после Flush, но до End. Это самый
-		// показательный сценарий: записи уже в логе output, но без
-		// commit marker'а — read_committed их не увидит, координатор по
-		// таймауту эту транзакцию аборнет.
 		if o.crashProb > 0 && rand.Float64() < o.crashProb && batchOut > 0 {
 			fmt.Fprintf(os.Stderr, "💥 crash перед End: %d записей уже в логе output, транзакция уйдёт в abort на координаторе\n", batchOut)
 			os.Exit(2)
@@ -239,9 +206,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// enrich — mock-обогащение: добавляем поле vip по префиксу key,
-// фиксируем processed_at и source. Тяжёлой логики намеренно нет — лекция
-// про транзакцию вокруг шага, а не про сам шаг.
 func enrich(r *kgo.Record) []byte {
 	vip := strings.HasPrefix(string(r.Key), "vip-")
 	return fmt.Appendf(nil,

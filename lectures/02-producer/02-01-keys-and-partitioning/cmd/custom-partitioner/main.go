@@ -1,19 +1,3 @@
-// custom-partitioner — демонстрация собственного partitioner'а для franz-go.
-//
-// Сценарий: топик заказов с тремя партициями. Премиум-юзеры (ключ начинается
-// на "prem-") получают выделенную партицию 0 — это наша приоритетная очередь,
-// которую отдельный консьюмер обрабатывает с минимальным lag'ом. Все
-// остальные ключи раскидываются round-robin между партициями 1 и 2.
-//
-// Зачем такое в принципе нужно: дефолтный partitioner равномерно размазывает
-// нагрузку по всем партициям, что отлично для throughput'а, но не помогает,
-// когда у тебя есть жёсткое требование уровня сервиса для подмножества
-// клиентов. Свой partitioner — ровно тот рычаг, который изолирует горячий
-// поток от холодного.
-//
-// Интерфейс kgo.Partitioner = kgo.TopicPartitioner — это всего две функции
-// (RequiresConsistency, Partition) плюс ForTopic-фабрика. Реализуем их
-// руками, без BasicConsistentPartitioner — так видно структуру.
 package main
 
 import (
@@ -50,39 +34,20 @@ const (
 	rrSecond      = 2
 )
 
-// premiumPartitioner — реализация kgo.Partitioner.
-//
-// ForTopic возвращает свежий topicPartitioner на каждый топик. У одного
-// клиента на разные топики — независимые состояния round-robin'а.
 type premiumPartitioner struct{}
 
 func (premiumPartitioner) ForTopic(string) kgo.TopicPartitioner {
 	return &premiumTopicPartitioner{}
 }
 
-// premiumTopicPartitioner — TopicPartitioner: решает, в какую партицию
-// положить конкретную запись. Гарантировано вызывается без конкурентности
-// внутри одного топика (см. doc.go franz-go), поэтому без mutex'а.
 type premiumTopicPartitioner struct {
-	rr int // счётчик round-robin между партициями rrFirst и rrSecond
+	rr int
 }
 
-// RequiresConsistency: для премиум-ключей true — мы ОБЯЗАНЫ положить запись
-// именно в партицию 0, даже если она временно недоступна; запись просто
-// будет ждать. Для остальных false — round-robin'у безразлично, в какую из
-// двух партиций летит конкретное сообщение, можно прыгнуть на доступную.
 func (p *premiumTopicPartitioner) RequiresConsistency(r *kgo.Record) bool {
 	return bytes.HasPrefix(r.Key, []byte(premiumPrefix))
 }
 
-// Partition — основной метод. n — число партиций, доступных в данный момент
-// (в реальности оно равно количеству партиций топика; брокеры могут
-// временно «прятать» партиции при rebalance'е, но тут не углубляемся).
-//
-// Если в топике меньше трёх партиций — мы пишем в (n-1) и (0). Это
-// сознательно сделано так, чтобы partitioner не падал на маленьких
-// учебных топиках, но в проде такой fallback стоит обсуждать с тимлидом —
-// возможно, безопаснее отказать на старте.
 func (p *premiumTopicPartitioner) Partition(r *kgo.Record, n int) int {
 	if n <= 0 {
 		return 0
@@ -296,7 +261,7 @@ func checkInvariants(prem, reg map[int32]int, partitions int32) {
 		return
 	}
 	skew := abs(reg[rrFirst] - reg[rrSecond])
-	bound := (reg[rrFirst] + reg[rrSecond]) / 20 // 5% толерантности
+	bound := (reg[rrFirst] + reg[rrSecond]) / 20
 	if bound < 5 {
 		bound = 5
 	}

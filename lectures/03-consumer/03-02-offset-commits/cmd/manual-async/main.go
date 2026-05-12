@@ -1,32 +1,3 @@
-// manual-async — гибридный режим: AutoCommitMarks + явный MarkCommitRecords
-// после каждой обработанной записи. Фоновая горутина auto-commit'ит только
-// то, что мы пометили. Дополнительно — пинаем CommitMarkedOffsets вручную
-// между батчами, чтобы дать гарантию: «по выходу из батча всё, что я
-// пометил, ушло на брокер».
-//
-// Зачем так:
-//   - дешевле, чем sync-commit на каждый батч — фоновый flush идёт
-//     параллельно с обработкой следующих сообщений;
-//   - честнее, чем чистый auto-commit — коммитятся только те записи,
-//     которые приложение реально пометило как «обработана»;
-//   - проще, чем самому таскать map[topic]map[partition]offset для
-//     CommitOffsetsSync — franz-go держит state внутри.
-//
-// Что делает программа:
-//   1. AutoCommitMarks() + AutoCommitInterval(commit-every) — пометить
-//      mark-commit можно, обычный auto-commit на «что было поллено» —
-//      выключен.
-//   2. Каждый PollFetches возвращает батч. Для каждой записи: спим,
-//      пишем в processed-async.log, вызываем MarkCommitRecords.
-//   3. После батча зовём CommitMarkedOffsets — синхронный поход на
-//      брокер за всё, что было помечено к этому моменту.
-//   4. -crash-after симулирует падение между mark и commit. Тут как раз
-//      есть интересный «разрыв»: помеченные, но ещё не закоммиченные
-//      offset'ы теряются и при рестарте даю те же записи как дубли.
-//
-// Дубли тут возможны, но окно меньше: только то, что пометили в
-// последнем интервале commit-every. С -commit-every=200ms это десятки
-// миллисекунд работы, а не весь батч.
 package main
 
 import (
@@ -132,8 +103,7 @@ func run(ctx context.Context, o runOpts) error {
 		if errs := fetches.Errors(); len(errs) > 0 {
 			for _, e := range errs {
 				if errors.Is(e.Err, context.Canceled) {
-					// Финальный синхронный commit — вытолкнем то, что
-					// успело пометиться, но ещё не было flush'нуто фоном.
+
 					flushCtx, flushCancel := context.WithTimeout(context.Background(), 5*time.Second)
 					_ = cl.CommitMarkedOffsets(flushCtx)
 					flushCancel()
@@ -160,9 +130,6 @@ func run(ctx context.Context, o runOpts) error {
 			}
 		})
 
-		// Между батчами явно пинаем flush. Фоновый коммит и так сработает,
-		// но дополнительный пинок гарантирует: на выходе из этой итерации
-		// то, что мы успели пометить, гарантированно ушло.
 		flushCtx, flushCancel := context.WithTimeout(ctx, 5*time.Second)
 		err := cl.CommitMarkedOffsets(flushCtx)
 		flushCancel()

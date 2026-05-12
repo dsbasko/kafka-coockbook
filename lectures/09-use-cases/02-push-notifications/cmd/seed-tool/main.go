@@ -1,7 +1,3 @@
-// seed-tool — заливалка тестовых уведомлений в notification-events.
-//
-// Round-robin'ит каналы (firebase/apns/webhook), генерит N штук с
-// предсказуемыми id'шниками и шлёт ProduceSync. Используется make seed.
 package main
 
 import (

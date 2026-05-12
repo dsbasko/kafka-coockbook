@@ -1,24 +1,3 @@
-// transactional-producer — пишет в три топика в одной Kafka-транзакции,
-// случайно решает commit или abort и под конец печатает счётчики из всех
-// трёх топиков.
-//
-// Идея сценария — order pipeline. На каждый «заказ» нужно атомарно
-// положить три записи: сам заказ в tx-orders, платёж в tx-payments,
-// отгрузку в tx-shipments. Без транзакций — три отдельных Produce, и в
-// случае краха между ними получаем расхождение состояния. С транзакцией
-// — либо все три появятся (после commit), либо ни одной (после abort).
-//
-// Что требуется на стенде:
-//   - идемпотентность включена (acks=all + EnableIdempotency автоматически);
-//   - TransactionalID — уникальный для процесса, иначе zombie fencing
-//     (см. zombie-fence) выгонит этого продьюсера, как только взлетит
-//     второй с тем же id;
-//   - все три топика должны быть min.insync.replicas <= число живых
-//     реплик, иначе AddPartitionsToTxn упадёт.
-//
-// Записи внутри транзакции попадают в логи топиков сразу. Но read_committed
-// консьюмер их не отдаст до тех пор, пока не появится transaction marker
-// (control record). См. read-committed.
 package main
 
 import (
@@ -81,9 +60,7 @@ type runOpts struct {
 func run(ctx context.Context, o runOpts) error {
 	cl, err := kafka.NewClient(
 		kgo.TransactionalID(o.txnID),
-		// TransactionTimeout — на сколько координатор готов ждать
-		// EndTransaction. После таймаута он сам аборнет транзакцию,
-		// и producer поймает InvalidTxnState на следующем шаге.
+
 		kgo.TransactionTimeout(60*time.Second),
 		kgo.ClientID("lecture-04-01-tx-producer"),
 	)
@@ -149,11 +126,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// tryOnce — одна транзакция: Begin → 3× Produce → решение commit/abort →
-// EndTransaction.
-//
-// При возврате (true, nil) — commit прошёл (записи увидит read_committed
-// клиент). При (false, nil) — abort. err != nil — фатально, выходим.
 func tryOnce(ctx context.Context, cl *kgo.Client, attempt int, commitProb float64) (bool, error) {
 	if err := cl.BeginTransaction(); err != nil {
 		return false, fmt.Errorf("BeginTransaction: %w", err)
@@ -163,8 +135,7 @@ func tryOnce(ctx context.Context, cl *kgo.Client, attempt int, commitProb float6
 	produceErr := produceTriple(ctx, cl, orderID)
 
 	wantCommit := rand.Float64() < commitProb
-	// Если хотя бы одно Produce вернуло non-retriable ошибку — abort
-	// обязателен; commit в этом состоянии всё равно бы не прошёл.
+
 	if produceErr != nil {
 		fmt.Fprintf(os.Stderr, "[#%02d] produce error → forcing abort: %v\n", attempt, produceErr)
 		wantCommit = false
@@ -181,9 +152,6 @@ func tryOnce(ctx context.Context, cl *kgo.Client, attempt int, commitProb float6
 	return wantCommit, nil
 }
 
-// produceTriple шлёт три связанных записи параллельно через ProduceSync.
-// franz-go сам прицепит все партиции к транзакции через AddPartitionsToTxn
-// до отправки самих записей.
 func produceTriple(ctx context.Context, cl *kgo.Client, orderID string) error {
 	results := cl.ProduceSync(ctx,
 		&kgo.Record{

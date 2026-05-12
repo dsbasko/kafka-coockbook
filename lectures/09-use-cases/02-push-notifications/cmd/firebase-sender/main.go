@@ -1,5 +1,3 @@
-// firebase-sender — sender для канала Firebase. Тонкая обёртка над
-// sender.Main с дефолтами канала.
 package main
 
 import "github.com/dsbasko/kafka-sandbox/lectures/09-use-cases/02-push-notifications/internal/sender"

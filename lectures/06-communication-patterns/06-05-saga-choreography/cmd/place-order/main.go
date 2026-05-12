@@ -1,15 +1,3 @@
-// place-order — триггер саги, общий для обоих вариантов. Публикует в
-// нужный топик одно или несколько сообщений и выходит. Это не «сервис»,
-// а тестовая ручка: имитирует входящий запрос «оформить заказ».
-//
-// Запуск:
-//
-//	go run ./cmd/place-order -mode=choreo -count=3
-//	go run ./cmd/place-order -mode=orch   -count=3
-//
-// В choreo-варианте публикуется OrderRequested в saga-choreo.order-requested,
-// первый звено цепочки. В orch-варианте — PlaceOrder в saga-orch.place-order,
-// его подбирает оркестратор.
 package main
 
 import (

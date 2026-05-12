@@ -1,14 +1,3 @@
-// producer — первый продьюсер курса. Пишет 10 сообщений в топик через
-// ProduceSync и печатает partition+offset, который вернул брокер.
-//
-// Идея лекции 01-05 — увидеть, как kgo.Record превращается в запись в логе.
-// Топик создаётся идемпотентно через kadm перед записью, чтобы первый запуск
-// не упал на UNKNOWN_TOPIC_OR_PARTITION. Дальше идут 10 синхронных produce'ов
-// с ключами k-0..k-9 и значениями hello-0..hello-9. Для каждого вернувшегося
-// результата печатается partition/offset/timestamp — это та самая пара
-// (partition, offset), про которую говорили в 01-04.
-//
-// Останавливается по SIGINT/SIGTERM (runctx.New) или после 10 сообщений сам.
 package main
 
 import (
@@ -117,8 +106,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// ensureTopic создаёт топик, либо тихо игнорирует TopicAlreadyExists. Конфиги
-// специально не задаём — это лекция «первый продьюсер», retention не трогаем.
 func ensureTopic(ctx context.Context, admin *kadm.Client, o runOpts) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -139,9 +126,6 @@ func ensureTopic(ctx context.Context, admin *kadm.Client, o runOpts) error {
 	return cause
 }
 
-// printEndOffsets печатает latest offset на каждой партиции — на свежесозданном
-// топике это ровно «сколько сообщений лежит в партиции». Удобно сверить с
-// тем, что вернул ProduceSync.
 func printEndOffsets(ctx context.Context, admin *kadm.Client, topic string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

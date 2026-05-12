@@ -1,19 +1,3 @@
-// consumer — читает заказы из Kafka, распаковывает через proto.Unmarshal
-// и печатает в stdout как структуру.
-//
-// Что показывает лекция 05-02:
-//
-//   - kgo.Record.Value — сырые protobuf-байты, schema на стороне consumer'а
-//     зашита в коде (через generated тип ordersv1.Order); если producer
-//     поменяет схему — без Schema Registry consumer обнаружит это только
-//     по error'у Unmarshal или по неожиданному zero-value;
-//   - well-known types (Timestamp, Duration) распаковываются обратно в
-//     time.Time / time.Duration через .AsTime() и .AsDuration();
-//   - generated getter'ы (GetStatus, GetCreatedAt, GetItems) — безопасно
-//     возвращают zero-value для nil-message, поэтому в коде они приятнее
-//     прямого доступа к полям.
-//
-// Запуск: см. Makefile.
 package main
 
 import (

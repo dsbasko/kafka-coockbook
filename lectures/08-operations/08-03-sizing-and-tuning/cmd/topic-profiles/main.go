@@ -1,20 +1,3 @@
-// topic-profiles — три топика с разными профилями нагрузки.
-//
-// Идея лекции 08-03 — увидеть, что «правильный» topic-config это не
-// набор магических чисел, а отражение профиля нагрузки. Программа
-// создаёт три топика с разными политиками (CDC / metrics / events) и
-// печатает их финальный конфиг через DescribeTopicConfigs — рядом стоят
-// cleanup.policy, retention, segment, compression, min.insync.replicas
-// и max.message.bytes. Сравнивая профили, видно, как одни и те же ручки
-// крутят в разные стороны под разный сценарий.
-//
-// Профили:
-//   - cdc      — compact + min.ISR=2 + retention=-1 + zstd
-//                long-lived state (Debezium CDC, конфигурации, профили).
-//   - metrics  — delete + retention=24h + segment.ms=10m + lz4
-//                короткоживущие точки, объём важнее длительности.
-//   - events   — delete + retention=7d  + segment.ms=1d + lz4
-//                бизнес-события с rebroadcast окном в неделю.
 package main
 
 import (
@@ -36,10 +19,6 @@ import (
 	"github.com/dsbasko/kafka-sandbox/lectures/internal/runctx"
 )
 
-// shownConfigs — ключи, которые мы вытаскиваем из DescribeTopicConfigs
-// и печатаем рядом для сравнения. Список выбран по разделам README:
-// cleanup-политика, retention, segment, compression, надёжность,
-// размер сообщения, поведение при отказе, тип таймстампа.
 var shownConfigs = []string{
 	"cleanup.policy",
 	"retention.ms",
@@ -220,9 +199,6 @@ func dropTopic(ctx context.Context, admin *kadm.Client, topic string) error {
 	return cause
 }
 
-// describeAll достаёт DescribeTopicConfigs одним запросом и печатает
-// табличку: одна колонка на профиль, одна строка на каждую важную ручку.
-// Пустые ячейки означают «дефолт брокера, явно не выставлено».
 func describeAll(ctx context.Context, admin *kadm.Client, prof []profile) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -232,16 +208,11 @@ func describeAll(ctx context.Context, admin *kadm.Client, prof []profile) error 
 		names = append(names, p.topic)
 	}
 
-	// Свежесозданный топик иногда не успевает попасть на все брокеры до
-	// первого DescribeConfigs. Поэтому при UNKNOWN_TOPIC_OR_PARTITION для
-	// одного из имён ждём короткий хвост и повторяем — обычно одного-двух
-	// заходов хватает.
 	rcs, err := describeWithRetry(rpcCtx, admin, names)
 	if err != nil {
 		return err
 	}
 
-	// topic -> key -> value
 	values := make(map[string]map[string]string, len(prof))
 	for _, rc := range rcs {
 		if rc.Err != nil {
@@ -312,9 +283,6 @@ func describeWithRetry(ctx context.Context, admin *kadm.Client, names []string) 
 	return nil, fmt.Errorf("describe: max attempts reached")
 }
 
-// describePartitions печатает количество партиций и replication factor.
-// ListTopics — отдельный вызов, потому что DescribeConfigs возвращает
-// только конфиги, не layout.
 func describePartitions(ctx context.Context, admin *kadm.Client, prof []profile) error {
 	names := make([]string, 0, len(prof))
 	for _, p := range prof {
@@ -339,9 +307,6 @@ func describePartitions(ctx context.Context, admin *kadm.Client, prof []profile)
 	return tw.Flush()
 }
 
-// formatVal делает значения чуть читабельнее: переводит миллисекунды
-// retention.ms / segment.ms в человекочитаемое (1d / 7d / 24h), не теряя
-// «сырое» значение в скобках. -1 для retention.ms означает «без TTL».
 func formatVal(key, raw string) string {
 	if raw == "" {
 		return "—"

@@ -1,17 +1,3 @@
-// inventory-service — пример «второго сервиса», который слушает order.created
-// и ведёт собственную локальную проекцию: таблицу inventory_reservations.
-//
-// В реальном sharded-stack у inventory была бы отдельная БД, тут мы шарим
-// один Postgres ради компактности лекции — поведение от этого не меняется,
-// важно: write-side про inventory ничего не знает, никаких прямых вызовов
-// inventory из order-service нет. Это и есть decoupling, ради которого
-// в гибрид добавили Kafka.
-//
-// Гарантии: at-least-once на стороне Kafka (manual commit после успешной
-// записи в БД) + dedup по outbox-id из header'а сообщения. Двойная
-// обработка одного outbox-id невозможна.
-//
-// Запуск: см. Makefile (`make run-inventory`).
 package main
 
 import (
@@ -168,9 +154,6 @@ func run(ctx context.Context, o runOpts) error {
 				return fmt.Errorf("unmarshal p=%d off=%d: %w", r.Partition, r.Offset, err)
 			}
 
-			// Дедуп-гейт и INSERT в inventory_reservations должны быть атомарны:
-			// иначе между ними может случиться краш и при рестарте гейт скажет
-			// «уже обработано», а резерв так и не появится.
 			var newRow bool
 			err = pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 				tag, err := tx.Exec(ctx, dedupSQL, consumerName, outboxID)

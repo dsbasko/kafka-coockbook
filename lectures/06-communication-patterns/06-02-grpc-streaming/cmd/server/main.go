@@ -1,19 +1,3 @@
-// server — реализация StreamingService с тремя стримами.
-//
-// Subscribe (server-stream): тикает раз в секунду и шлёт OrderEvent.
-// Завершается когда отправлено `limit` событий или клиент отвалился
-// (это видно через stream.Context().Done()).
-//
-// UploadOrders (client-stream): крутит Recv() в цикле, считает
-// принятые/отвергнутые записи, в конце (io.EOF) отвечает SendAndClose
-// с UploadSummary. Отвергает записи с amount <= 0 — но не падает,
-// чтобы клиент мог дослать остальное.
-//
-// Chat (bidi): два независимых goroutine'а — один читает Recv(), один
-// шлёт в Send() с throttling в 200ms. Завершается когда клиент закрыл
-// send-сторону (io.EOF в Recv) или контекст отменился.
-//
-// Запуск: см. Makefile (`make run-server`).
 package main
 
 import (
@@ -81,10 +65,6 @@ type streamingServer struct {
 	echoDelay    time.Duration
 }
 
-// Subscribe — server-stream. Один входящий request, дальше только Send.
-// Цикл выходит по трём причинам: достигли limit, клиент отвалился
-// (stream.Context().Done()) или встретили ошибку Send. Никаких goroutine'ов
-// тут не нужно — server-stream однонаправленный, поток управления линейный.
 func (s *streamingServer) Subscribe(req *ordersv1.SubscribeRequest, stream grpc.ServerStreamingServer[ordersv1.OrderEvent]) error {
 	s.logger.Info("subscribe started", "customer_id", req.GetCustomerId(), "limit", req.GetLimit())
 
@@ -113,9 +93,6 @@ func (s *streamingServer) Subscribe(req *ordersv1.SubscribeRequest, stream grpc.
 	}
 }
 
-// UploadOrders — client-stream. Recv в цикле, EOF = клиент закончил —
-// отвечаем SendAndClose. Любая другая ошибка Recv = клиент отвалился
-// или сеть, возвращаем ошибку gRPC поднимет её на клиенте.
 func (s *streamingServer) UploadOrders(stream grpc.ClientStreamingServer[ordersv1.OrderInput, ordersv1.UploadSummary]) error {
 	var summary ordersv1.UploadSummary
 	for {
@@ -139,11 +116,6 @@ func (s *streamingServer) UploadOrders(stream grpc.ClientStreamingServer[ordersv
 	}
 }
 
-// Chat — bidi. Два направления — два goroutine. Read-сторона ловит EOF
-// (клиент закрыл send) и сигналит главному циклу через канал. Send-сторона
-// тикает с throttling и шлёт echo. Если в read случилось не-EOF — логируем,
-// возвращаем эту ошибку. Контекст stream'а закрывается gRPC автоматически
-// при отвале клиента — обе стороны это увидят.
 func (s *streamingServer) Chat(stream grpc.BidiStreamingServer[ordersv1.ChatMessage, ordersv1.ChatMessage]) error {
 	type incoming struct {
 		msg *ordersv1.ChatMessage
@@ -181,8 +153,6 @@ func (s *streamingServer) Chat(stream grpc.BidiStreamingServer[ordersv1.ChatMess
 				return ev.err
 			}
 
-			// throttling: echo не сразу, чтобы было видно — потоки независимы,
-			// клиент может уже слать следующее сообщение пока мы спим.
 			time.Sleep(s.echoDelay)
 
 			reply := &ordersv1.ChatMessage{

@@ -1,18 +1,3 @@
-// producer — пишет N заказов в Kafka, используя Confluent wire format
-// через franz-go sr.Serde.
-//
-// Что показывает лекция 05-03:
-//
-//   - sr.Client регистрирует Protobuf-схему в Schema Registry под
-//     subject'ом "<topic>-value" (TopicNameStrategy);
-//   - sr.Serde знает schema_id и Encode-функцию (proto.Marshal); она
-//     сама добавляет magic byte (0) + 4 байта big-endian schema_id +
-//     обязательный для protobuf message-index перед payload'ом;
-//   - получившиеся байты — это Confluent wire format. Любой клиент,
-//     который умеет SR (Java, Python, kcat -s value=s -r ...), такие
-//     сообщения прочитает не зная заранее, какая схема использовалась.
-//
-// Запуск: см. Makefile.
 package main
 
 import (
@@ -144,9 +129,6 @@ func main() {
 	logger.Info("producer done", "count", *count, "topic", *topic, "schema_id", id)
 }
 
-// registerSchema публикует Protobuf-схему в SR под нужным subject'ом и
-// возвращает globally-unique schema_id. Если схема уже зарегистрирована
-// под этим subject'ом — SR вернёт тот же id, без создания новой версии.
 func registerSchema(ctx context.Context, url, subject string) (int, error) {
 	cl, err := sr.NewClient(sr.URLs(url))
 	if err != nil {

@@ -1,36 +1,3 @@
-// orders-consumer — потребитель событий заказа с дедупликацией по outbox.id.
-//
-// Зачем dedup, если идемпотентный producer уже даёт «без дублей»: outbox-publisher
-// падает между Produce и UPDATE published_at. Запись в Kafka улетела, но в БД
-// помечена как «не опубликована». Перезапустился publisher — он берёт её снова,
-// шлёт ещё раз. Идемпотентность producer'а тут не работает: новый процесс →
-// новый producer-id, для брокера это новая запись.
-//
-// Defence-in-depth — на consumer'е. Из header'а `outbox-id` берём
-// сквозной идентификатор события. Перед обработкой:
-//
-//	INSERT INTO processed_outbox_ids (outbox_id) VALUES ($1)
-//	ON CONFLICT DO NOTHING
-//	RETURNING outbox_id;
-//
-// RowsAffected = 1 → новое событие, обрабатываем. = 0 → видели раньше,
-// тихо пропускаем. Гарантия от двойной обработки on-the-wire дубликата.
-//
-// Что делает программа:
-//
-//  1. Подключается к Postgres и Kafka.
-//  2. Читает топик в группе с manual sync commit.
-//  3. На каждое сообщение пытается вставить outbox.id в processed_outbox_ids.
-//     Если новый — печатает INSERT. Если дубль — печатает DUP.
-//  4. После батча — CommitRecords.
-//
-// Запуск (типичный сценарий с дублями):
-//
-//	make up && make db-init && make topic-create
-//	make run-service COUNT=20         # 20 заказов в БД
-//	make chaos-kill-publisher          # publisher с -crash-after-produce, упадёт
-//	make run-publisher                 # запустится снова, переотправит → дубли в Kafka
-//	make run-consumer                  # схлопнет дубли, итог 20 уникальных
 package main
 
 import (

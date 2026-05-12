@@ -1,15 +1,3 @@
-// client-bidi — клиент к Chat (bidi-stream).
-//
-// Bidi — это два независимых потока поверх одного HTTP/2 stream'а.
-// Поэтому в клиенте два goroutine'а: один Send'ит сообщения с интервалом,
-// второй Recv'ит echo. Координация — через контекст и канал done.
-//
-// Сценарий: шлём -count сообщений, каждое с -interval, в фоне читаем echo.
-// Сервер throttling'ит ответы (по умолчанию 200ms задержка), поэтому при
-// маленьком interval видно, что Send и Recv не синхронные — клиент успеет
-// зашить три-четыре message'а раньше, чем сервер начнёт отвечать.
-//
-// Запуск: см. Makefile (`make run-chat`).
 package main
 
 import (
@@ -83,9 +71,6 @@ func main() {
 		time.Sleep(*interval)
 	}
 
-	// Закрываем send-сторону — сервер увидит io.EOF в Recv и завершит
-	// свою сторону. Дальше ждём, пока read-горутина дочитает оставшиеся
-	// echo и тоже завершится.
 	if err := stream.CloseSend(); err != nil {
 		logger.Warn("close send", "err", err)
 	}

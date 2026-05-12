@@ -1,10 +1,3 @@
-// db-loader заливает products/articles/users в Postgres. Каждый INSERT
-// попадает в WAL, Debezium читает через replication slot и пишет в
-// search.public.<table>; ES Sink (через RegexRouter SMT) кладёт в
-// products_v1 / articles_v1 / users_v1.
-//
-// Дополнительно — UPDATE половины products (name + price), DELETE четверти
-// articles. На них смотрим, что в ES долетает upsert и tombstone-delete.
 package main
 
 import (

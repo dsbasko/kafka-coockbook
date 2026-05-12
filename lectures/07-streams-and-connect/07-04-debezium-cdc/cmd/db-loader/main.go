@@ -1,23 +1,3 @@
-// db-loader — генератор изменений в Postgres'е для лекции 07-04.
-//
-// Что делает: вставляет N пользователей, потом обновляет половину из них,
-// потом удаляет четверть. Параллельно (по флагу -outbox) кладёт в таблицу
-// outbox доменные события в одной транзакции с изменением users — это нужно,
-// чтобы посмотреть, как Debezium + EventRouter SMT раскладывают строки
-// по топикам events.<aggregate_type>.
-//
-// Каждое INSERT/UPDATE/DELETE в users порождает событие в WAL'е, которое
-// Debezium читает через replication slot и пишет в `cdc.public.users`. По
-// умолчанию ключ Kafka-сообщения — primary key (поле id), value — JSON-объект
-// со структурой {before, after, op, source, ts_ms}. Колонка op принимает
-// 'c' для INSERT, 'u' для UPDATE, 'd' для DELETE, 'r' для строк из snapshot'а.
-//
-// Запуск:
-//
-//	make up && make db-init && make connector-create-source
-//	make run-loader COUNT=20
-//	# в другом терминале:
-//	make run-cdc-consumer
 package main
 
 import (
@@ -68,8 +48,7 @@ func main() {
 
 func run(ctx context.Context, pool *pgxpool.Pool, count int, withOutbox bool) error {
 	fmt.Printf("\n=== INSERT %d пользователей ===\n", count)
-	// Стартовать выше текущего MAX(id), иначе повторный запуск ловит PK violation:
-	// одного `time.Now().Unix() % 1_000_000` мало, чтобы развести соседние запуски.
+
 	var startID int64
 	if err := pool.QueryRow(ctx, `SELECT COALESCE(MAX(id), 0) + 1 FROM users`).Scan(&startID); err != nil {
 		return fmt.Errorf("seed startID: %w", err)

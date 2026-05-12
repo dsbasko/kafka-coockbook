@@ -1,16 +1,3 @@
-// grpc-listener — приёмник UserSignedUp в синхронной схеме.
-//
-// Запускается на отдельном порту, реализует UserEventService.Notify.
-// В fan-out схеме sender (cmd/grpc-broadcast) держит список URL'ов
-// всех таких приёмников и дёргает их по очереди. Приёмник никак не
-// узнаёт о других приёмниках и не может «сам подписаться» — он лежит
-// и ждёт пока его позовут.
-//
-// Имя экземпляра берётся из флага -name (или env LISTENER_NAME) и
-// просто печатается рядом с входящим event'ом — нужно чтобы при
-// одновременном запуске трёх копий было видно «кто что получил».
-//
-// Запуск: см. Makefile (`make run-grpc-listeners-3`).
 package main
 
 import (
@@ -68,10 +55,6 @@ func main() {
 	}
 }
 
-// listenerServer — мок-приёмник. Никаких retry, dedup, idempotency —
-// на этом уровне разговора нам важно только увидеть, что событие до
-// него дошло. Возвращает InvalidArgument на пустые поля, чтобы у
-// sender'а был хоть один failure-сценарий для демонстрации.
 type listenerServer struct {
 	usersv1.UnimplementedUserEventServiceServer
 	name string

@@ -1,36 +1,3 @@
-// outbox-publisher — поллер, который читает таблицу outbox, шлёт каждую
-// неопубликованную запись в Kafka через идемпотентный producer, помечает
-// published_at = NOW().
-//
-// Запрос забора батча:
-//
-//	SELECT id, aggregate_id, topic, payload
-//	  FROM outbox
-//	 WHERE published_at IS NULL
-//	 ORDER BY id
-//	 LIMIT $1
-//	 FOR UPDATE SKIP LOCKED;
-//
-// FOR UPDATE SKIP LOCKED тут — must-have. Без него два publisher'а на одной
-// БД толкутся: первый берёт row, второй ждёт по `FOR UPDATE`, всё
-// сериализуется в один поток. С `SKIP LOCKED` второй процесс тихо
-// пролистывает занятые row'ы и берёт следующие — параллельность есть,
-// дублей публикации в нормальной работе нет.
-//
-// Гарантия — at-least-once. Между Produce и UPDATE published_at есть окно,
-// в которое падение процесса даёт ровно один сценарий: запись ушла в Kafka,
-// но в БД она всё ещё «не опубликована». На рестарте мы её отправим заново.
-// Дубль в Kafka. Идемпотентный producer на уровне franz-go тут не спасает —
-// у перезапущенного процесса другой producer-id и sequence number, для
-// брокера это новая запись.
-//
-// Защита от этого дубля живёт на стороне consumer'а — там dedup по outbox.id.
-// См. cmd/orders-consumer/main.go.
-//
-// Флаг -crash-after-produce запускает имитацию падения: после успешного
-// ProduceSync, ДО UPDATE — os.Exit(2). Запусти второй раз без флага → второй
-// publisher получит ту же outbox-row, отправит её повторно, и в Kafka будет
-// два события с одинаковым outbox.id. Consumer должен схлопнуть дубль.
 package main
 
 import (
@@ -57,9 +24,6 @@ const (
 	defaultDSN = "postgres://lecture:lecture@localhost:15433/lecture_04_03?sslmode=disable"
 )
 
-// SELECT FOR UPDATE SKIP LOCKED — параллельные publisher'ы не блокируют
-// друг друга. Тот, кто первым взял row, видит её под локом до COMMIT;
-// второй процесс молча пропускает и идёт дальше.
 const fetchBatchSQL = `
 SELECT id, aggregate_id, topic, payload::text
   FROM outbox
@@ -127,10 +91,6 @@ func run(ctx context.Context, o runOpts) error {
 		return fmt.Errorf("pg ping: %w", err)
 	}
 
-	// Идемпотентный producer (acks=all + ProducerID) — дефолт franz-go.
-	// Он защищает от дублей в рамках ОДНОЙ сессии producer'а: ретраи внутри
-	// Produce'а не дублируют записи. Между сессиями (рестарт publisher'а)
-	// идемпотентность не работает — другой producer-id, другие sequence numbers.
 	cl, err := kafka.NewClient(
 		kgo.ClientID("lecture-04-03-publisher"),
 	)
@@ -176,9 +136,6 @@ func run(ctx context.Context, o runOpts) error {
 	}
 }
 
-// publishOnce — одна итерация поллера: BEGIN, забираем батч под локом,
-// шлём в Kafka, помечаем published_at, COMMIT. Между Produce и UPDATE —
-// то самое окно, в котором crash порождает дубль (out of band к БД).
 func publishOnce(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, o runOpts) (int, error) {
 	tx, err := pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -232,10 +189,6 @@ func publishOnce(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, o runO
 			r.id, r.aggregateID, records[i].Partition, records[i].Offset)
 	}
 
-	// Окно для crash-симуляции. Записи уже в Kafka. Если упасть тут — на
-	// рестарте мы заберём их снова, выпустим повторно, и consumer увидит
-	// дубль. На уровне БД при rollback'е: published_at остался NULL —
-	// то есть запись «не опубликована», хотя физически в Kafka она есть.
 	if o.crashAfterProduce {
 		fmt.Fprintf(os.Stderr, "\n=== CRASH SIMULATION после ProduceSync, ДО UPDATE published_at: os.Exit(2) ===\n")
 		fmt.Fprintf(os.Stderr, "%d записей улетели в Kafka, но в outbox они всё ещё published_at IS NULL\n", len(batch))

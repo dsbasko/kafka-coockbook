@@ -1,17 +1,3 @@
-// headers-demo — компактная демонстрация Kafka headers. Один бинарник с
-// двумя режимами:
-//
-//   - mode=producer: пишет N сообщений в топик. На каждом — headers с
-//     traceparent (W3C trace-id+span-id), correlation-id (UUID-like),
-//     message-type ("order.created.v1"), source-service ("lecture-02-05").
-//
-//   - mode=consumer: читает топик, печатает headers и payload. Видно, что
-//     headers — отдельная секция record'а, не часть value, и что брокер
-//     их хранит как массив key-value байт без интерпретации.
-//
-// По умолчанию main запускает оба сценария последовательно: producer пишет 5
-// записей, потом consumer читает их и завершается. Это удобно для запуска
-// `make run-headers` без двух терминалов.
 package main
 
 import (
@@ -133,10 +119,6 @@ func ensureAndProduce(ctx context.Context, topic string, n int, service, msgType
 	return nil
 }
 
-// consume читает топик в группе и печатает headers вместе с payload. waitFor —
-// сколько ждать пустых fetch'ей перед выходом (для режима roundtrip нужен
-// конечный консьюмер; для режима consumer передаём 0 — значит «жди вечно,
-// пока не SIGINT»).
 func consume(ctx context.Context, topic, group string, waitFor time.Duration) error {
 	cl, err := kafka.NewClient(
 		kgo.ConsumerGroup(group),
@@ -156,8 +138,6 @@ func consume(ctx context.Context, topic, group string, waitFor time.Duration) er
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "  PART\tOFFSET\tKEY\tHEADERS\tVALUE")
 
-	// idleStart обновляется на каждой пачке записей; если waitFor>0 и с
-	// момента idleStart прошло больше waitFor — выходим.
 	idleStart := time.Now()
 	for {
 		pollCtx := ctx
@@ -228,8 +208,6 @@ func formatHeaders(hs []kgo.RecordHeader) string {
 	return out
 }
 
-// newTraceparent — W3C traceparent: "00-<trace-id 32 hex>-<span-id 16 hex>-01".
-// Не валидируем по спеке, нам нужны просто разные значения от записи к записи.
 func newTraceparent() string {
 	traceID := newRandomHex(16)
 	spanID := newRandomHex(8)
@@ -239,8 +217,7 @@ func newTraceparent() string {
 func newRandomHex(n int) string {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
-		// На локальном стенде crypto/rand почти не падает; если упало —
-		// пусть будет всё равно уникально, без блокировки демки.
+
 		for i := range b {
 			b[i] = byte(time.Now().UnixNano() >> uint(i))
 		}

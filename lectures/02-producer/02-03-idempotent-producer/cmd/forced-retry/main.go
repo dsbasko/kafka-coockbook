@@ -1,15 +1,3 @@
-// forced-retry демонстрирует, что делает идемпотентный продьюсер на самом
-// деле. Сценарий: пишем N сообщений через сетевую обёртку, которая случайно
-// рвёт TCP-соединение **после** того, как запрос уже улетел брокеру.
-// Брокер успевает записать батч в лог, а ответ к клиенту не приходит —
-// клиент думает, что запрос провалился, и ретраит. Без идемпотентности
-// каждый успешный ретрай добавляет в лог ещё одну копию. С идемпотентностью
-// брокер дедуплицирует на стороне партиции по (producer-id, sequence-number)
-// — в логе ровно столько же записей, сколько мы намеревались отправить.
-//
-// Метрика — log delta (kadm.ListEndOffsets до и после прогона). Без
-// идемпотентности дельта обычно заметно больше intended; с ней — равна
-// числу успешных ProduceSync.
 package main
 
 import (
@@ -98,8 +86,6 @@ func run(ctx context.Context, o runOpts) error {
 		return fmt.Errorf("ensure topic %s: %w", o.topic, err)
 	}
 
-	// Дельту считаем относительно текущих end offsets — топик можно гонять
-	// несколько прогонов подряд, накопленная история нам не мешает.
 	before, err := totalEndOffsets(ctx, admin, o.topic)
 	if err != nil {
 		return fmt.Errorf("ListEndOffsets before: %w", err)
@@ -117,8 +103,7 @@ func run(ctx context.Context, o runOpts) error {
 		kgo.RecordRetries(o.retries),
 	}
 	if !o.idempotent {
-		// Без идемпотентности обязаны явно указать acks (иначе клиент
-		// проверит несовместимые дефолты) и отключить ProducerID-обмен.
+
 		opts = append(opts,
 			kgo.DisableIdempotentWrite(),
 			kgo.RequiredAcks(kgo.AllISRAcks()),
@@ -138,14 +123,10 @@ func run(ctx context.Context, o runOpts) error {
 
 	res := produceLoop(ctx, cl, o)
 
-	// Flush, чтобы все in-flight ретраи устаканились, и докинутый брокером
-	// дубль (если был) уже сидел в логе к моменту замера.
 	flushCtx, flushCancel := context.WithTimeout(ctx, 30*time.Second)
 	_ = cl.Flush(flushCtx)
 	flushCancel()
 
-	// Гасим dropper и ждём пару секунд — даём брокеру дописать
-	// возможно зависшие батчи перед тем, как смотреть на end offsets.
 	dropper.disable()
 	time.Sleep(500 * time.Millisecond)
 
@@ -187,10 +168,6 @@ type produceResult struct {
 	errs    map[string]int64
 }
 
-// produceLoop — последовательный ProduceSync на каждый record. Без батчинга
-// внутри: каждый record должен пройти свой собственный путь retry/timeout,
-// иначе несколько разных record'ов попадут в один батч и общая судьба
-// сольётся.
 func produceLoop(ctx context.Context, cl *kgo.Client, o runOpts) produceResult {
 	res := produceResult{errs: make(map[string]int64)}
 	start := time.Now()
@@ -217,11 +194,6 @@ func produceLoop(ctx context.Context, cl *kgo.Client, o runOpts) produceResult {
 	return res
 }
 
-// lossyDialer — обёртка над net.Dialer. Возвращает соединения, которые с
-// заданной вероятностью обрывают Read после первой пары успешных чтений
-// (warmup). Это имитирует «брокер ответил, но ответ потерялся в сети» —
-// франц-go видит EOF, считает запрос неуспешным и ретраит. Сам брокер уже
-// записал батч в лог.
 type lossyDialer struct {
 	base        net.Dialer
 	dropRate    float64
@@ -275,9 +247,6 @@ func ensureTopic(ctx context.Context, admin *kadm.Client, topic string, partitio
 	return cause
 }
 
-// totalEndOffsets суммирует latest по всем партициям топика. Это и есть
-// «сколько физических записей лежит в логе» (с учётом retention — но здесь
-// retention дефолтный, ничего не отрезается).
 func totalEndOffsets(ctx context.Context, admin *kadm.Client, topic string) (int64, error) {
 	rpcCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

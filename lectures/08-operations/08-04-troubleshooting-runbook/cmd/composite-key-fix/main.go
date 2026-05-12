@@ -1,12 +1,3 @@
-// composite-key-fix — тот же сценарий, что в hot-partition-demo, но с
-// composite-ключом. Вместо ключа 'hot' пишем 'hot:bucket-0', 'hot:bucket-1',
-// ..., 'hot:bucket-N' — и murmur2 раскладывает их по разным партициям.
-// Логически это всё ещё «горячий поток одного типа», но физически он
-// размазан по N партициям, и consumer-группа из N воркеров работает
-// параллельно, а не упирается в один воркер.
-//
-// В конце так же печатается per-partition delta — теперь распределение
-// ровное, без выбросов.
 package main
 
 import (
@@ -105,10 +96,6 @@ func run(ctx context.Context, o runOpts) error {
 	loadCtx, loadCancel := context.WithTimeout(ctx, o.duration)
 	defer loadCancel()
 
-	// hotRate — суммарный темп на 'hot'. Когда мы раскладываем его по
-	// bucket'ам, на каждый ключ приходится hotRate/buckets — иначе
-	// программа бы при 4 бакетах писала в 4 раза больше, чем версия без
-	// fix'а, и сравнение по перекосу было бы нечестное.
 	hotPerKey := o.hotRate / o.buckets
 	if hotPerKey < 1 {
 		hotPerKey = 1

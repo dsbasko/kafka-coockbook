@@ -1,13 +1,3 @@
-// bench гоняет матрицу (linger × compression) и сравнивает throughput,
-// latency P50/P99/P99.9 и размер на диске. Каждая комбинация пишется в свой
-// топик `<prefix>-l<linger>-<comp>`, иначе размеры на диске смешаются.
-//
-// Запись идёт асинхронно через cl.Produce + per-record callback. Это
-// принципиально: ProduceSync на каждый record блокирует клиента и убивает
-// батчинг — мы тогда измерим не «эффект от linger», а пинг до брокера.
-// Latency мерим как «время от cl.Produce до callback», throughput — как
-// `messages / cl.Flush_elapsed`. Размер берём из kadm.DescribeAllLogDirs
-// после прогона.
 package main
 
 import (
@@ -76,8 +66,6 @@ type runOpts struct {
 	timeout     time.Duration
 }
 
-// scenario — одна точка матрицы: какой linger, какой кодек, как назвать
-// суффикс топика и как выглядеть в таблице.
 type scenario struct {
 	name      string
 	topicTail string
@@ -86,9 +74,7 @@ type scenario struct {
 }
 
 func run(ctx context.Context, o runOpts) error {
-	// Полезные комбинации: 0/5/50ms × none/lz4/zstd. Snappy и gzip оставлены
-	// за кадром — snappy ведёт себя ~как lz4 по соотношению скорость/ratio,
-	// gzip медленнее и в проде используется реже остальных.
+
 	lingers := []struct {
 		name string
 		dur  time.Duration
@@ -124,9 +110,6 @@ func run(ctx context.Context, o runOpts) error {
 	}
 	defer admin.Close()
 
-	// Все топики создаём заранее — DescribeLogDirs в конце прогона видит сразу
-	// всё, и у каждого прогона стартовая позиция партиции одинакова (нам
-	// важно сравнивать дельту, а не абсолют).
 	topics := make([]string, len(scenarios))
 	for i, s := range scenarios {
 		topics[i] = fmt.Sprintf("%s-%s", o.topicPrefix, s.topicTail)
@@ -135,11 +118,6 @@ func run(ctx context.Context, o runOpts) error {
 		}
 	}
 
-	// Генерим messages уникальных JSON-шаблонов размером ~payload. JSON
-	// выбран намеренно: на нём кодеки показывают реалистичный ratio
-	// (структура сжимается, случайные id/payload — нет). Переиспользовать
-	// один и тот же блок нельзя — иначе zstd/lz4 закодировали бы его как
-	// «повтор N раз», ratio поплыл бы в небо.
 	payloads, err := makeJSONPayloads(o.messages, o.payload)
 	if err != nil {
 		return fmt.Errorf("makeJSONPayloads: %w", err)
@@ -148,7 +126,6 @@ func run(ctx context.Context, o runOpts) error {
 	fmt.Printf("матрица %d сценариев, %d JSON-сообщений по ~%d B, partitions=%d, rf=%d\n\n",
 		len(scenarios), o.messages, o.payload, o.partitions, o.rf)
 
-	// Снимок размеров до прогона — чтобы повторные запуски не накапливались.
 	sizesBefore, err := topicSizes(ctx, admin, topics)
 	if err != nil {
 		return fmt.Errorf("DescribeLogDirs before: %w", err)
@@ -164,9 +141,6 @@ func run(ctx context.Context, o runOpts) error {
 			results[i].sent, results[i].failed, results[i].elapsed.Round(time.Millisecond))
 	}
 
-	// Брокеру нужна доля секунды, чтобы досинхронизировать сегменты после
-	// последнего fetch ответа: без задержки бывает, что Size возвращается на
-	// 1–2 батча меньше реального.
 	time.Sleep(500 * time.Millisecond)
 	sizesAfter, err := topicSizes(ctx, admin, topics)
 	if err != nil {
@@ -193,7 +167,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// benchResult копит latency и счётчики по одному сценарию.
 type benchResult struct {
 	name       string
 	topic      string
@@ -205,8 +178,6 @@ type benchResult struct {
 	deltaBytes int64
 }
 
-// runScenario гоняет один сценарий: создаёт клиент с нужными опциями,
-// async-производит len(payloads) сообщений, ждёт Flush, собирает результаты.
 func runScenario(ctx context.Context, s scenario, topic string, payloads [][]byte) benchResult {
 	msgs := len(payloads)
 	res := benchResult{name: s.name, errs: make(map[string]int64)}
@@ -215,10 +186,8 @@ func runScenario(ctx context.Context, s scenario, topic string, payloads [][]byt
 		kgo.DefaultProduceTopic(topic),
 		kgo.ProducerLinger(s.linger),
 		kgo.ProducerBatchCompression(s.codec),
-		// Достаточно большой батч и буфер, чтобы linger реально успел
-		// набрать сообщений: на 100k×1KB при дефолтных 10000 буферных
-		// записей мы упирались бы не в linger, а в backpressure.
-		kgo.ProducerBatchMaxBytes(1 << 20), // 1 MiB
+
+		kgo.ProducerBatchMaxBytes(1 << 20),
 		kgo.MaxBufferedRecords(200_000),
 	}
 
@@ -255,9 +224,7 @@ func runScenario(ctx context.Context, s scenario, topic string, payloads [][]byt
 				mu.Unlock()
 				return
 			}
-			// Слот в latencies резервируем только для успешных, иначе
-			// failed-callback'и оставляли бы нули в массиве и сбивали
-			// перцентили вниз.
+
 			i := idx.Add(1) - 1
 			if i < int64(len(res.latencies)) {
 				res.latencies[i] = took
@@ -274,16 +241,10 @@ func runScenario(ctx context.Context, s scenario, topic string, payloads [][]byt
 	res.failed = failed.Load()
 	res.errs = errsLoc
 
-	// Подрезаем latencies до фактически записанных (на случай ранней отмены).
 	res.latencies = res.latencies[:idx.Load()]
 	return res
 }
 
-// makeJSONPayloads генерит count уникальных JSON-сообщений размером
-// примерно targetSize байт. Структура — фиксированная (поля повторяются),
-// id и payload — случайные. Это даёт реалистичный compression-ratio:
-// структура жмётся (zstd/lz4 видят повторяющиеся ключи), random-часть нет.
-// Если бы мы переиспользовали один буфер, ratio был бы фиктивным.
 func makeJSONPayloads(count, targetSize int) ([][]byte, error) {
 	out := make([][]byte, count)
 	for i := 0; i < count; i++ {
@@ -296,11 +257,8 @@ func makeJSONPayloads(count, targetSize int) ([][]byte, error) {
 	return out, nil
 }
 
-// buildJSONRecord собирает JSON-запись фиксированной структуры. Поле
-// `payload` дополняется hex-байтами до приблизительного размера.
 func buildJSONRecord(seq, targetSize int) ([]byte, error) {
-	// Структурные накладные расходы: фиксированные ключи плюс id/ts.
-	// Остаток до targetSize забиваем random hex'ом (2 hex char = 1 byte).
+
 	header := fmt.Sprintf(
 		`{"seq":%d,"id":"`, seq,
 	)
@@ -317,7 +275,7 @@ func buildJSONRecord(seq, targetSize int) ([]byte, error) {
 	if pad < 0 {
 		pad = 0
 	}
-	// hex-кодирование: pad байт hex'а = pad/2 случайных байт.
+
 	rawN := (pad + 1) / 2
 	raw := make([]byte, rawN)
 	if _, err := rand.Read(raw); err != nil {
@@ -465,11 +423,6 @@ func ensureTopic(ctx context.Context, admin *kadm.Client, topic string, partitio
 	return cause
 }
 
-// topicSizes суммирует размер партиций по каждому топику через
-// DescribeAllLogDirs. На rf=3 у каждого партиционного логфайла три реплики;
-// мы считаем строго по одной реплике на партицию (первая найденная),
-// чтобы сравнение сценариев читалось как «сколько байт на диске у одного
-// брокера», а не «суммарно у всего кластера».
 func topicSizes(ctx context.Context, admin *kadm.Client, topics []string) (map[string]int64, error) {
 	rpcCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -479,9 +432,6 @@ func topicSizes(ctx context.Context, admin *kadm.Client, topics []string) (map[s
 		wanted[t] = true
 	}
 
-	// Передаём nil — у API «nil = все log dirs»: это надёжнее, чем
-	// TopicsSet с пустым списком партиций (брокеры разных версий по-разному
-	// интерпретируют пустой partitions[]). Лишние топики просто отфильтруем.
 	all, err := admin.DescribeAllLogDirs(rpcCtx, nil)
 	if err != nil {
 		return nil, err

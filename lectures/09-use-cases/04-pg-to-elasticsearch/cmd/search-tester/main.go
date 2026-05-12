@@ -1,14 +1,3 @@
-// search-tester проверяет, что данные доехали из Postgres в Elasticsearch
-// и full-text-search возвращает осмысленные результаты.
-//
-// Делает четыре шага:
-//   - count в Postgres по таблице products;
-//   - count в Elasticsearch по индексу products_v1 (или другому через -alias);
-//   - match-query по полю name по слову (по дефолту "alpha");
-//   - сравнение чисел и печать топ-5 хитов.
-//
-// Это диагностическая утилита для лекции, не часть pipeline'а. Если расхождение —
-// значит CDC отстал или Sink упал, дальше смотри `make connector-status`.
 package main
 
 import (
@@ -96,8 +85,7 @@ func main() {
 
 func countPostgres(ctx context.Context, pool *pgxpool.Pool, table string) (int64, error) {
 	var c int64
-	// Имя таблицы нельзя параметризовать через $1, но и подставлять
-	// сырьём — давать SQLi. pgx.Identifier.Sanitize квотирует.
+
 	safeTable := pgx.Identifier{table}.Sanitize()
 	err := pool.QueryRow(ctx, fmt.Sprintf("SELECT count(*) FROM %s", safeTable)).Scan(&c)
 	return c, err

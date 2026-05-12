@@ -1,35 +1,3 @@
-// multi-strategy — consumer на топик payments с двумя стратегиями
-// обработки ошибок:
-//
-//   - transient (временная ошибка, типа моргнула сеть): повторить тут же,
-//     с exponential backoff. Несколько попыток в этом же worker-loop'е.
-//     Если за -max-retries попыток успеха нет — отправляем в DLQ.
-//   - permanent (битый payload, не парсится, или явно помечено): сразу в DLQ
-//     с заголовками error.class / error.message / original.* / retry.count.
-//
-// Классификация ошибки идёт по типу: handle() возвращает permError для
-// «невозвратных» ошибок и обычную error для transient. errors.As различает.
-//
-// Для имитации:
-//   - mode=ok        → handle сразу возвращает nil;
-//   - mode=transient → handle падает первые N раз (по in-memory счётчику
-//     на (partition, offset)), на (N+1)-й попытке возвращает nil;
-//   - mode=permanent → handle всегда возвращает permError;
-//   - битый JSON     → permError (poison-pill).
-//
-// Что важно:
-//   - retry-in-place выполняется ВНУТРИ цикла обработки одного record'а,
-//     БЕЗ commit'а offset'а посередине. Если процесс упадёт во время
-//     retry — на рестарте получим тот же record заново. Это at-least-once.
-//   - DLQ-publish + commit — две операции, между ними возможен разрыв.
-//     Если упасть после publish, до commit'а — на рестарте отправим в DLQ
-//     повторно (см. README про дубли в DLQ).
-//   - max-retries специально маленький (3). Большие backoff'ы блокируют
-//     poll-loop и могут превысить max.poll.interval.ms — тогда group
-//     отбалансируется. Длинный retry — это уже retry-topic с задержкой
-//     (модуль 04-04), не in-place.
-//
-// Запуск: см. Makefile (run-processor / seed / topic-create-all).
 package main
 
 import (
@@ -57,19 +25,15 @@ const (
 	defaultRetries   = 3
 	defaultBackoff   = 200 * time.Millisecond
 	defaultWorkDelay = 50 * time.Millisecond
-	transientFails   = 3 // сколько раз handle() даст «transient» прежде чем «исцелиться»
+	transientFails   = 3
 )
 
-// payment — формат входного сообщения. Битый JSON ловится unmarshal'ом
-// и тут же классифицируется как permanent (poison-pill).
 type payment struct {
 	ID     string  `json:"id"`
 	Amount float64 `json:"amount,omitempty"`
-	Mode   string  `json:"mode"` // ok | transient | permanent
+	Mode   string  `json:"mode"`
 }
 
-// permError — обёртка для «невозвратных» ошибок. Всё, что не permError,
-// считается transient (есть смысл повторить).
 type permError struct{ msg string }
 
 func (e *permError) Error() string { return e.msg }
@@ -162,7 +126,7 @@ func run(ctx context.Context, o runOpts) error {
 	fmt.Println("transient → in-place retry; permanent / exhausted → DLQ. Ctrl+C — выход.")
 	fmt.Println()
 
-	attempts := make(map[string]int) // (partition,offset) → attempts уже потраченные на «исцеление» transient
+	attempts := make(map[string]int)
 	c := &counters{}
 
 	for {
@@ -210,10 +174,6 @@ func run(ctx context.Context, o runOpts) error {
 	}
 }
 
-// processWithRetry — обрабатывает одну запись по правилам:
-//   - permanent с первого раза → сразу DLQ;
-//   - transient → in-place retry с exponential backoff, до o.maxRetries попыток;
-//   - если все попытки выгорели → DLQ как «exhausted».
 func processWithRetry(
 	ctx context.Context,
 	cl *kgo.Client,
@@ -240,7 +200,6 @@ func processWithRetry(
 		return forwardToDLQ(ctx, cl, o.dlqTopic, r, err, usedAttempts)
 	}
 
-	// transient → in-place retry с exponential backoff
 	for attempt := 1; attempt <= o.maxRetries; attempt++ {
 		backoff := o.baseBackoff * (1 << (attempt - 1))
 		fmt.Printf("RETRY  p=%d off=%d key=%s attempt=%d backoff=%s err=%v\n",
@@ -271,7 +230,6 @@ func processWithRetry(
 		}
 	}
 
-	// исчерпали попытки — в DLQ как exhausted retries
 	fmt.Printf("EXH    p=%d off=%d key=%s last-err=%v → DLQ (исчерпали %d retry)\n",
 		r.Partition, r.Offset, string(r.Key), err, o.maxRetries)
 	c.dlqExh.Add(1)
@@ -280,17 +238,6 @@ func processWithRetry(
 	return forwardToDLQ(ctx, cl, o.dlqTopic, r, fmt.Errorf("exhausted retries: %w", err), usedAttempts)
 }
 
-// handle — мок-обработчик платежа.
-//
-//   - битый JSON          → permError;
-//   - mode=ok             → nil;
-//   - mode=transient      → permError если что-то странное; иначе обычный error
-//     до тех пор пока attempts[key] < transientFails; после — nil;
-//   - mode=permanent      → permError;
-//   - неизвестный mode    → permError.
-//
-// Inkrement счётчика attempts[key] происходит ДО возврата ошибки —
-// это и обеспечивает «исцеление» через transientFails попыток.
 func handle(r *kgo.Record, attempts map[string]int, key string) error {
 	var p payment
 	if err := json.Unmarshal(r.Value, &p); err != nil {
@@ -313,9 +260,6 @@ func handle(r *kgo.Record, attempts map[string]int, key string) error {
 	}
 }
 
-// forwardToDLQ — отправляет запись в DLQ с диагностическими headers.
-// Топик поведения от исходного: payload идентичный, key тот же,
-// добавлены headers, по которым DLQ-reader потом ориентируется.
 func forwardToDLQ(
 	ctx context.Context,
 	cl *kgo.Client,

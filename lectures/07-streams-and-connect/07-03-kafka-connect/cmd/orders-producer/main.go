@@ -1,32 +1,3 @@
-// orders-producer — поставщик данных для JDBC sink connector'а из лекции 07-03.
-//
-// Connect — это среда выполнения, в которую загружают коннекторы, и которая
-// сама занимается консьюмингом из Kafka, конвертацией значений и записью в
-// целевую систему. Наша задача в этой лекции — положить в топик
-// `lecture-07-03-orders` сообщения такого формата, чтобы JDBC sink connector
-// мог их распарсить и сделать UPSERT в таблицу `orders` Postgres'а.
-//
-// Формат — JSON с embedded schema. JsonConverter с schemas.enable=true ждёт
-// каждое value как объект с двумя полями: `schema` (Connect Schema вручную)
-// и `payload` (сами данные по этой схеме). Без схемы sink не знает типов
-// колонок и валится с DataException. Avro/Protobuf через Schema Registry
-// решают ту же проблему меньшим объёмом байт — но тут специально без SR,
-// чтобы wire-format был руками виден в kafka-console-consumer.
-//
-// Что делает программа:
-//
-//  1. Создаёт топик `lecture-07-03-orders` (3 партиции, RF=3) идемпотентно.
-//  2. Пишет -count заказов через ProduceSync. Ключ — id (как строка) для
-//     стабильного партиционирования и UPSERT по pk; value — JSON-envelope.
-//  3. Печатает таблицу partition/offset/id, чтобы потом сверить с
-//     `SELECT COUNT(*)` в Postgres.
-//
-// Запуск:
-//
-//	make up && make db-init && make topic-create
-//	make connector-create
-//	make run-producer COUNT=200
-//	make db-count
 package main
 
 import (
@@ -90,8 +61,6 @@ type runOpts struct {
 	startID    int64
 }
 
-// orderEnvelope — структура value в Kafka. Внешний слой — Connect-формат
-// (schema + payload), внутренний payload — собственно строка таблицы.
 type orderEnvelope struct {
 	Schema  connectSchema `json:"schema"`
 	Payload orderPayload  `json:"payload"`
@@ -105,10 +74,6 @@ type orderPayload struct {
 	CreatedAt  string  `json:"created_at"`
 }
 
-// connectSchema — то, что JsonConverter ожидает в поле "schema". Это не Avro
-// и не JSON Schema, это собственный формат Kafka Connect (см. JsonConverter
-// исходники). Достаточно один раз вкрутить руками — каждое сообщение несёт
-// одну и ту же копию.
 type connectSchema struct {
 	Type     string         `json:"type"`
 	Optional bool           `json:"optional"`

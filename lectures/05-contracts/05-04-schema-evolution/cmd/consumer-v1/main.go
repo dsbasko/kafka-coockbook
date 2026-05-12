@@ -1,22 +1,3 @@
-// consumer-v1 — читает указанный топик так, будто в мире существует
-// только Order схемы v1 (id, customer_id, amount_cents).
-//
-// По умолчанию подписан на `lecture-05-04-orders-v3` — туда пишет
-// producer-v3 сообщения со всеми пятью полями. Это и есть демонстрация:
-//
-//   - consumer-v1 не зовёт SR и не использует schema_id для разбора.
-//     Он срезает первые 5 байт Confluent wire format'а плюс protobuf
-//     message-index, остаток подаёт в proto.Unmarshal в *v1.Order;
-//   - тэги 4 (currency) и 5 (shipping_address) уходят в unknown
-//     fields структуры — это и есть forward compatibility Protobuf'а
-//     на wire-уровне;
-//   - rolling deployment: новый producer выкатился, старые consumer'ы
-//     ничего не знают про новые поля и не падают.
-//
-// Можно переключить на `lecture-05-04-orders-v1` — там лежат сообщения
-// от producer-v1, читаются они идентично, но без unknown fields.
-//
-// Запуск: см. Makefile (`make run-consumer-v1`).
 package main
 
 import (
@@ -88,15 +69,6 @@ func main() {
 	}
 }
 
-// stripWireFormatHeader разбирает Confluent wire format вручную:
-//
-//	[0]      magic byte (всегда 0)
-//	[1..4]   schema_id big-endian
-//	[5..]    для protobuf — message-index varint(0) или массив, потом payload
-//
-// На уровне consumer-v1 нам не нужен schema_id для разбора (мы намеренно
-// притворяемся старым клиентом), но удобно вывести его в лог — видно,
-// что одни и те же байты приходили под разными schema_id.
 func stripWireFormatHeader(raw []byte) (int, []byte, error) {
 	if len(raw) < 5 {
 		return 0, nil, errors.New("payload too short for confluent wire format")
@@ -112,17 +84,12 @@ func stripWireFormatHeader(raw []byte) (int, []byte, error) {
 		return 0, nil, fmt.Errorf("message index: %w", err)
 	}
 	if idx != 0 && idx != -1 {
-		// Для одного top-level message в файле SR обычно пишет 0
-		// (один varint). Многосообщенные файлы и nested сюда не
-		// доехали — лекция этим случаем не занимается.
+
 		return 0, nil, fmt.Errorf("неподдержанный message-index: %d", idx)
 	}
 	return id, rest[n:], nil
 }
 
-// readMessageIndex читает либо одиночный varint(0) (большинство случаев),
-// либо length-префикс + N varint'ов (Confluent формат). Возвращает первый
-// индекс и сколько байт занял заголовок.
 func readMessageIndex(b []byte) (int, int, error) {
 	if len(b) == 0 {
 		return 0, 0, errors.New("empty payload")

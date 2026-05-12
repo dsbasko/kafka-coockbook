@@ -1,20 +1,3 @@
-// grpc-broadcast — sender в синхронной fan-out схеме.
-//
-// Читает список URL'ов получателей из флага -targets (через запятую) или
-// из env LISTENER_URLS. Для каждого «зарегистрировавшегося пользователя»
-// делает unary-call Notify по очереди в каждый URL.
-//
-// Что важно увидеть в этой реализации (это и обсуждается в README):
-//
-//   - sender ЗНАЕТ все URL'ы. Чтобы добавить нового получателя — нужно
-//     передеплоить sender с новым флагом. Это и есть «tight coupling»;
-//   - latency сценария = сумма (или max при параллели) latency всех
-//     получателей. Один медленный получатель тормозит весь broadcast;
-//   - если получатель упал — событие потеряно, retry надо городить
-//     руками; никакой durable-очереди тут нет;
-//   - порядок дёргания получателей фиксирован, никакой replay тоже нет.
-//
-// Запуск: см. Makefile (`make run-grpc-broadcast`).
 package main
 
 import (
@@ -100,9 +83,7 @@ func dialAll(urls []string) ([]targetClient, func(), error) {
 		}
 	}
 	for _, u := range urls {
-		// grpc.NewClient — lazy: реальный TCP-connect ляжет только на
-		// первом RPC. Для лекции этого достаточно: если получатель не
-		// запущен, мы это увидим в Notify, а не на этапе dial.
+
 		conn, err := grpc.NewClient(u, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			closeAll()
@@ -114,10 +95,6 @@ func dialAll(urls []string) ([]targetClient, func(), error) {
 	return out, closeAll, nil
 }
 
-// broadcast — собственно fan-out. В sequential-режиме видно «эффект цепи»:
-// общая latency = сумма всех Notify, один медленный получатель удлиняет
-// всё. В parallel-режиме общая latency ≈ max, но падают изолированно
-// (через WaitGroup) и каждый промах надо обрабатывать отдельно.
 func broadcast(
 	ctx context.Context,
 	clients []targetClient,

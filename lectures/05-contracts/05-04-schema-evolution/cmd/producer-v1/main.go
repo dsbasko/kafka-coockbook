@@ -1,13 +1,3 @@
-// producer-v1 — пишет Order'ы по схеме v1 (id, customer_id, amount_cents)
-// в топик `lecture-05-04-orders-v1`, регистрирует свою схему в subject
-// `<topic>-value`.
-//
-// Это базовая ситуация «всё началось с v1»: один producer, один
-// consumer, одна схема. Дальше из неё будет вырастать v3 (см.
-// producer-v3); здесь специально показано, что v1 — это нормальный,
-// валидный, законченный контракт сам по себе.
-//
-// Запуск: см. Makefile (`make run-producer-v1`).
 package main
 
 import (

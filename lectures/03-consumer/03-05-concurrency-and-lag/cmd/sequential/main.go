@@ -1,12 +1,3 @@
-// sequential — baseline-консьюмер с последовательной обработкой записей.
-//
-// Читает топик `lecture-03-05-events`, на каждом record'е делает sleep
-// (имитация работы), коммитит после каждого батча. Никаких goroutines:
-// одна очередь, один поток обработки. Используется в паре с lag-watcher
-// и concurrent-pool — на нём видно, как throughput упирается в work-delay,
-// а lag начинает расти при большом seed-fast.
-//
-// Запуск: см. Makefile (run-seq).
 package main
 
 import (
@@ -76,8 +67,6 @@ func run(ctx context.Context, topic, group string, workDelay time.Duration, from
 	var processed atomic.Int64
 	start := time.Now()
 
-	// throughput — печатаем раз в секунду, отдельной горутиной, чтобы
-	// не плодить вывода в самом цикле обработки.
 	tickerCtx, tickerCancel := context.WithCancel(ctx)
 	defer tickerCancel()
 	go reportThroughput(tickerCtx, &processed)

@@ -1,7 +1,3 @@
-// mock-webhook — учебный HTTP-приёмник для канала webhook use case'а 09-02.
-// Имитирует сломанный downstream через FAIL_RATE_503 / FAIL_RATE_TIMEOUT.
-// Stdlib-only, без зависимостей курса — Dockerfile собирает его в go-модуле,
-// сгенерированном на лету.
 package main
 
 import (

@@ -1,17 +1,3 @@
-// retention-demo — практическая демонстрация cleanup.policy=delete.
-//
-// Создаём топик с retention.ms=60s и segment.ms=10s, пишем фоновый поток
-// сообщений и каждые несколько секунд печатаем earliest/latest. Старые
-// сегменты должны закрываться по segment.ms и удаляться по retention.ms —
-// earliest монотонно ползёт вверх к latest, лог «тает» снизу.
-//
-// От лекции 01-04 этот демо отличается настройкой и фокусом: тут смотрим
-// на retention как на оператор, а не как на клиент. Параметры подобраны
-// так, чтобы эффект был виден за минуту-две: segment.ms=10s закрывает
-// сегмент быстро, retention.ms=60s стирает закрытый сегмент после
-// retention-checker'а (по дефолту он бегает раз в 5 минут — здесь
-// помогает log.retention.check.interval.ms на брокере, но нам хватит и
-// дефолта, если ждать достаточно).
 package main
 
 import (
@@ -125,10 +111,6 @@ func run(ctx context.Context, o runOpts) error {
 	}
 }
 
-// ensureRetentionTopic создаёт топик с retention/segment либо подгоняет
-// конфиг существующего. cleanup.policy=delete явно прописан, потому что
-// 08-02 запускается в одной директории с compaction-demo и хочется
-// гарантировать, что мы не «унаследовали» compact от предыдущего запуска.
 func ensureRetentionTopic(ctx context.Context, admin *kadm.Client, topic string, retention, segment time.Duration) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -200,9 +182,6 @@ func dropTopic(ctx context.Context, admin *kadm.Client, topic string) error {
 	return cause
 }
 
-// produceLoop пишет одно сообщение каждые 1/rate секунды. Размер payload'а
-// — 256 байт, чтобы при rate=5 каждый сегмент за segment.ms=10s набирал
-// заметную массу и был визуально различим в DescribeAllLogDirs.
 func produceLoop(ctx context.Context, cl *kgo.Client, topic string, rate int) {
 	interval := time.Second / time.Duration(rate)
 	if interval < time.Millisecond {
@@ -232,11 +211,6 @@ func produceLoop(ctx context.Context, cl *kgo.Client, topic string, rate int) {
 	}
 }
 
-// tick печатает earliest/latest/records-in-log и общий размер на диске.
-// Earliest для cleanup.policy=delete — это offset первого ещё живого
-// сегмента; когда retention срезает старый сегмент, earliest скачет на
-// начало следующего (запись по записи там не двигается — это всегда
-// прыжок «по сегменту»).
 func tick(ctx context.Context, admin *kadm.Client, topic string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

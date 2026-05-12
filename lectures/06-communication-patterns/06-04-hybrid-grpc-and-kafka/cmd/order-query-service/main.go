@@ -1,30 +1,3 @@
-// order-query-service — read-side гибрида.
-//
-// Что внутри одного процесса:
-//
-//  1. gRPC-сервер с QueryService.Get. Читает orders_view из Postgres.
-//     Никакого Kafka внутри RPC, никакого write-доступа к orders.
-//  2. Projector как горутина. Consumer на топик order.created, на каждое
-//     сообщение делает UPSERT в orders_view с dedup'ом по outbox-id.
-//
-// Лекция демонстрирует CQRS на минимуме:
-//   - write-side и read-side — разные API (CommandService vs QueryService),
-//     разные сервисы, разные таблицы (orders vs orders_view);
-//   - между ними — Kafka как единственная точка соединения;
-//   - Get сразу после Create может вернуть NotFound — читай: лекция не врёт
-//     про eventual consistency, она показывает её пальцем. Так оно и
-//     устроено в проде, пока проектор не догнал лог.
-//
-// В реальности read-side обычно стоит за CDN или кэшем, отвечает быстрее
-// write-side, легко масштабируется по чтению независимо от записи.
-//
-// Запуск:
-//
-//	make up && make db-init && make topic-create
-//	make run-order
-//	make run-query        # в другом терминале
-//	make grpcurl-create   # потом
-//	make grpcurl-get ID=<uuid>
 package main
 
 import (
@@ -201,8 +174,8 @@ func (s *queryServer) Get(ctx context.Context, req *ordersv1.GetRequest) (*order
 
 	var (
 		id, customerID, currency, statusStr string
-		amountCents                          int64
-		createdAt                            time.Time
+		amountCents                         int64
+		createdAt                           time.Time
 	)
 	err := s.pool.QueryRow(ctx, selectViewSQL, req.GetId()).Scan(
 		&id, &customerID, &amountCents, &currency, &statusStr, &createdAt,
@@ -232,10 +205,6 @@ func (s *queryServer) Get(ctx context.Context, req *ordersv1.GetRequest) (*order
 	}, nil
 }
 
-// runProjector — тот же at-least-once паттерн, что у inventory: dedup по
-// outbox-id, UPSERT в orders_view, manual commit после успеха. Гарантия
-// projector'а: на каждый outbox-id orders_view гарантированно содержит
-// последнее видимое состояние из payload, дубли не вызывают повторного UPSERT.
 func runProjector(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client) error {
 	var processed atomic.Int64
 	var projected atomic.Int64
@@ -282,9 +251,6 @@ func runProjector(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client) error
 				return fmt.Errorf("parse created_at %q: %w", evt.CreatedAt, err)
 			}
 
-			// Дедуп-гейт и UPSERT в orders_view должны быть атомарны: иначе
-			// между ними может случиться краш и при рестарте гейт скажет
-			// «уже обработано», а view так и не получит запись.
 			var newRow bool
 			err = pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 				tag, err := tx.Exec(ctx, dedupSQL, consumerName, outboxID)

@@ -1,26 +1,3 @@
-// compaction-demo — практическая демонстрация log compaction.
-//
-// Идея лекции 08-02 — увидеть, как Kafka «уплотняет» лог по ключу. Создаём
-// топик с cleanup.policy=compact, очень агрессивным segment.ms, низким
-// min.cleanable.dirty.ratio и нулевым min.compaction.lag.ms. На один и тот
-// же набор ключей пишем много обновлений (по умолчанию 100k обновлений на
-// 1k ключей — 99 дубликатов на каждый ключ). После записи активный сегмент
-// должен прокрутиться (segment.ms=5s), компактор брокера видит закрытые
-// сегменты и сжимает каждую партицию до «по одному значению на ключ».
-//
-// Программа запускается в одном процессе и проходит пять стадий:
-//  1. создаёт топик с compaction-конфигом (idempotent);
-//  2. пишет updates штук обновлений на keys ключей;
-//  3. опрашивает DescribeAllLogDirs, печатает размер до;
-//  4. ждёт wait, чтобы компактор успел отработать (опционально дожимает
-//     fresh-record'ом для force-roll активного сегмента);
-//  5. печатает размер после плюс earliest/latest offset'ы.
-//
-// Tombstone-сценарий включается флагом -tombstones (по умолчанию on).
-// Тогда после первой компакции пишем nil-value для tombstoneKeys ключей,
-// ждём ещё одну итерацию, и в финале пробегаемся по топику от earliest до
-// latest и считаем уникальные ключи — должно остаться keys минус
-// tombstoneKeys.
 package main
 
 import (
@@ -163,10 +140,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// ensureCompactTopic создаёт топик с агрессивным compaction-конфигом или
-// подгоняет конфиг, если топик уже есть. Параметры подобраны так, чтобы
-// компактор сработал в пределах нескольких десятков секунд: короткий
-// segment.ms, низкий dirty.ratio, нулевой compaction.lag.
 func ensureCompactTopic(ctx context.Context, admin *kadm.Client, topic string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -207,14 +180,14 @@ func ensureCompactTopic(ctx context.Context, admin *kadm.Client, topic string) e
 
 func compactionConfig() map[string]*string {
 	return map[string]*string{
-		"cleanup.policy":               kadm.StringPtr("compact"),
-		"segment.ms":                   kadm.StringPtr(strconv.Itoa(defaultSegmentMs)),
-		"segment.bytes":                kadm.StringPtr("1048576"),
-		"min.cleanable.dirty.ratio":    kadm.StringPtr(defaultDirtyRatio),
-		"min.compaction.lag.ms":        kadm.StringPtr("0"),
-		"max.compaction.lag.ms":        kadm.StringPtr("10000"),
-		"delete.retention.ms":          kadm.StringPtr("5000"),
-		"min.insync.replicas":          kadm.StringPtr("2"),
+		"cleanup.policy":            kadm.StringPtr("compact"),
+		"segment.ms":                kadm.StringPtr(strconv.Itoa(defaultSegmentMs)),
+		"segment.bytes":             kadm.StringPtr("1048576"),
+		"min.cleanable.dirty.ratio": kadm.StringPtr(defaultDirtyRatio),
+		"min.compaction.lag.ms":     kadm.StringPtr("0"),
+		"max.compaction.lag.ms":     kadm.StringPtr("10000"),
+		"delete.retention.ms":       kadm.StringPtr("5000"),
+		"min.insync.replicas":       kadm.StringPtr("2"),
 	}
 }
 
@@ -249,10 +222,6 @@ func dropTopic(ctx context.Context, admin *kadm.Client, topic string) error {
 	return cause
 }
 
-// produceUpdates пишет updates штук на keys ключей в режиме round-robin.
-// Каждое сообщение — JSON-подобная строка вида `{"v":<n>,"ts":<ms>}`,
-// payload намеренно короткий: лекция про сжатие лога по ключам, а не про
-// размер payload'а.
 func produceUpdates(ctx context.Context, cl *kgo.Client, topic string, keys, updates int) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
@@ -276,9 +245,6 @@ func produceUpdates(ctx context.Context, cl *kgo.Client, topic string, keys, upd
 	return nil
 }
 
-// produceTombstones пишет n записей с Value=nil — для compactor'а это сигнал
-// «после delete.retention.ms эту запись можно убрать совсем». До истечения
-// delete.retention tombstone живёт в логе, после — пропадает.
 func produceTombstones(ctx context.Context, cl *kgo.Client, topic string, n int) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -296,10 +262,6 @@ func produceTombstones(ctx context.Context, cl *kgo.Client, topic string, n int)
 	return nil
 }
 
-// waitWithHeartbeats спит wait и периодически пишет «толкающее» сообщение,
-// чтобы активный сегмент закрывался по segment.ms. Без этого segment.ms
-// не срабатывает, пока в активный сегмент идут записи — а компактор трогает
-// только закрытые сегменты.
 func waitWithHeartbeats(ctx context.Context, cl *kgo.Client, topic string, wait time.Duration) error {
 	deadline := time.Now().Add(wait)
 	tick := time.NewTicker(2 * time.Second)
@@ -330,10 +292,6 @@ func waitWithHeartbeats(ctx context.Context, cl *kgo.Client, topic string, wait 
 	}
 }
 
-// snapshot печатает earliest/latest и размер на диске. Эти три числа
-// показывают всё, что нужно: latest растёт монотонно, earliest у compact-
-// топика сдвигается только tombstone'ами, а размер скачет вниз после
-// очередной компакции.
 func snapshot(ctx context.Context, admin *kadm.Client, topic, label string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -370,9 +328,6 @@ func snapshot(ctx context.Context, admin *kadm.Client, topic, label string) erro
 	return nil
 }
 
-// topicSize суммирует размер партиций топика по одной реплике (первой
-// найденной), чтобы число читалось как «размер у одного брокера», а не
-// «суммарно по rf=3 копиям».
 func topicSize(ctx context.Context, admin *kadm.Client, topic string) (int64, error) {
 	all, err := admin.DescribeAllLogDirs(ctx, nil)
 	if err != nil {
@@ -395,9 +350,6 @@ func topicSize(ctx context.Context, admin *kadm.Client, topic string) (int64, er
 	return size, nil
 }
 
-// countDistinctKeys читает топик с earliest до latest и считает уникальные
-// ключи. После полной компакции и истечения delete.retention.ms ключи с
-// tombstone'ами не должны попадать в выдачу.
 func countDistinctKeys(ctx context.Context, topic string) error {
 	cl, err := kafka.NewClient(
 		kgo.ClientID("lecture-08-02-counter"),

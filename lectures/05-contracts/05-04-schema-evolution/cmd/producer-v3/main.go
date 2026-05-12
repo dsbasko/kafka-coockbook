@@ -1,27 +1,3 @@
-// producer-v3 — пишет Order'ы по схеме v3 (id, customer_id,
-// amount_cents, currency, shipping_address) в топик
-// `lecture-05-04-orders-v3`. Регистрирует свою схему в subject
-// `<topic>-value`.
-//
-// Зачем эта связка:
-//
-//   - топик и subject у v3 свои, потому что Confluent SR требует
-//     одного package per subject — а у v1 и v3 пакеты разные. Это
-//     даёт нам два independent subject'а и не ломает compat-проверку
-//     внутри каждого;
-//   - consumer-v1 запускается с `-topic=lecture-05-04-orders-v3`
-//     поверх этого producer'а. Он не зовёт SR и парсит payload как
-//     v1.Order. Wire format Protobuf'а forward-совместим: тэги 4 и 5
-//     уедут в unknown fields, тэги 1..3 разберутся;
-//   - registрация v3 в его subject'е — это позиция «версия 1» в
-//     subject'е v3. Дальше `make try-register-v4` попробует встать
-//     версией 2 в этот же subject и получит 409.
-//
-// Так выглядит сразу два разреза одной темы: wire-level совместимость
-// при чтении новых сообщений старым кодом плюс subject-level compat
-// check внутри одного логического контракта.
-//
-// Запуск: см. Makefile (`make run-producer-v3`).
 package main
 
 import (

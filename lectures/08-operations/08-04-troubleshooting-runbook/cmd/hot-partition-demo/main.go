@@ -1,17 +1,3 @@
-// hot-partition-demo — пишем смешанный поток (один «горячий» ключ + куча
-// мелких) и смотрим, как одна партиция получает 90% записи, пока остальные
-// простаивают. Это базовый антипаттерн «hot partition», который ломает
-// scaling consumer-группы независимо от числа партиций.
-//
-// Сценарий — топик из -partitions=4 (по умолчанию), параллельно бегут два
-// генератора:
-//
-//   - hot:    ключ 'hot' с темпом ~hotRate сообщений/сек.
-//   - normal: 10 ключей user-0..user-9 по ~normalPerKey сообщений/сек.
-//
-// В конце программа дёргает kadm.ListEndOffsets и печатает per-partition
-// counts. Перекос виден сразу — на той партиции, куда murmur2(hot) попал,
-// сидит несоразмерно много, а остальные равномерно делят нормальный поток.
 package main
 
 import (
@@ -38,8 +24,8 @@ const (
 	defaultPartitions  = 4
 	defaultReplication = 3
 	defaultDuration    = 10 * time.Second
-	defaultHotRate     = 1000 // сообщений/сек на ключ 'hot'
-	defaultNormalRate  = 10   // сообщений/сек на каждого из 10 user-ключей
+	defaultHotRate     = 1000
+	defaultNormalRate  = 10
 )
 
 func main() {
@@ -135,10 +121,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// produceLoop крутит цикл «спать tick + отправить по сообщению на каждый ключ».
-// rate здесь — целевой темп per-key. Если не успевает — просто отстаёт, не
-// блокируется. Это лекционная демка, нам важно увидеть перекос, а не выжать
-// throughput.
 func produceLoop(ctx context.Context, cl *kgo.Client, topic string, keys []string, rate int) int64 {
 	if rate <= 0 || len(keys) == 0 {
 		return 0

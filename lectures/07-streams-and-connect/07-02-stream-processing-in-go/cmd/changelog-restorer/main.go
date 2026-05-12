@@ -1,13 +1,3 @@
-// changelog-restorer — реконструкция Pebble state из changelog topic.
-//
-// Сценарий: word-count крашнулся вместе с диском. Pebble директория
-// потеряна. Чтобы не пересчитывать word-count'ы с нуля по `text-events`,
-// мы читаем `word-count-changelog` (compacted-топик) с beginning'а
-// и заливаем последние значения в свежий Pebble.
-//
-// Читаем без consumer-group: это разовая операция, нам не нужен
-// commit'нутый offset, нужен снэпшот текущего состояния compacted-лога.
-// Заканчиваем, когда дошли до high-watermark на каждой партиции.
 package main
 
 import (
@@ -122,7 +112,7 @@ func restore(ctx context.Context, store *pebble.DB, topic string) error {
 				return
 			}
 			if len(rec.Value) == 0 {
-				// tombstone в compacted-логе означает «ключа больше нет»
+
 				if err := store.Delete(rec.Key, pebble.NoSync); err != nil {
 					writeErr = fmt.Errorf("pebble delete %q: %w", rec.Key, err)
 				}
@@ -170,8 +160,7 @@ func readEndOffsets(ctx context.Context, topic string) (map[int32]int64, error) 
 	if err != nil {
 		return nil, err
 	}
-	// Партишн-уровневые ошибки иначе тихо проглатываются — partition выпадает
-	// из target-карты, и reachedEnd возвращает true на дырявом state-store.
+
 	out := map[int32]int64{}
 	var firstErr error
 	end.Each(func(o kadm.ListedOffset) {

@@ -1,13 +1,3 @@
-// shipment-service — последний шаг саги.
-//
-// choreo:
-//
-//	inventory.reserved → shipment.scheduled | shipment.failed
-//
-// orch: subscribed to shipment-cmd, отвечает в shipment-reply.
-//
-// shipment.failed запускает каскад компенсаций: inventory отпускает резерв,
-// payment рефаундит — это то, что показывает make chaos-fail-shipment.
 package main
 
 import (

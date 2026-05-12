@@ -1,16 +1,3 @@
-// under-replicated-watch — дашборд кластера в одном цикле. Каждые N секунд
-// дёргает ListBrokers + ListTopics, считает under-replicated partitions и
-// печатает summary: кто живой, сколько UR-партиций, какие топики «горят».
-//
-// Сценарий лекции — запустить watcher, потом в соседнем терминале
-// `make kill-broker`. На первом тике видно, что брокер из metadata пропал
-// и часть партиций просела (ISR < Replicas). После `make restore-broker` —
-// восстанавливается обратно.
-//
-// Под капотом — обычный admin.ListTopics(...). UnderReplicatedPartitions
-// в kadm нет как отдельной метрики; считаем сами как `len(ISR) < len(Replicas)`.
-// Это та же формула, что у JMX-метрики `UnderReplicatedPartitions` на брокере,
-// просто наблюдаем со стороны клиента.
 package main
 
 import (
@@ -87,9 +74,6 @@ func run(ctx context.Context, interval time.Duration, topics []string, once bool
 	}
 }
 
-// tick — один проход опроса metadata. Запросы ListBrokers и ListTopics
-// делаются с коротким timeout'ом, чтобы остановленный брокер не подвешивал
-// весь watcher.
 func tick(ctx context.Context, admin *kadm.Client, topics []string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
@@ -129,9 +113,6 @@ func printBrokers(brokers kadm.BrokerDetails) {
 	_ = tw.Flush()
 }
 
-// printSummary — total topics, total partitions, total under-replicated.
-// Это аналог трёх главных циферок на любом kafka-дашборде: сколько всего
-// и сколько проблемных.
 func printSummary(td kadm.TopicDetails) {
 	var totalParts, urParts int
 	for _, t := range td {

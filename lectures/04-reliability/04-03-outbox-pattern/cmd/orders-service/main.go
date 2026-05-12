@@ -1,32 +1,3 @@
-// orders-service — пишущая сторона outbox-паттерна.
-// На каждый создаваемый заказ открываем транзакцию, INSERT в orders +
-// INSERT в outbox в одной БД-транзакции. Никакой Kafka на этом шаге нет.
-// Если процесс упадёт между двумя INSERT'ами — Postgres откатит обе
-// записи и состояние останется консистентным.
-//
-// Почему так, а не «сначала в Kafka, потом в БД»: тогда на crash после
-// успешного Produce и до COMMIT'а в БД у нас есть событие в Kafka про
-// заказ, которого в БД нет. Никакая идемпотентность producer'а это
-// не лечит — событие физически в логе, потребители его уже видят.
-//
-// Outbox решает это так: пишем В БД И факт заказа, И намерение опубликовать
-// событие — и то, и то под одним COMMIT. Дальше за публикацию отвечает
-// отдельный publisher (cmd/outbox-publisher), который читает outbox и шлёт
-// в Kafka. Публикация → отдельный шаг, со своей retry-семантикой.
-//
-// Что делает программа:
-//
-//  1. Подключается к Postgres (DATABASE_URL).
-//  2. Создаёт -count заказов. Каждый заказ — одна транзакция:
-//     INSERT в orders → INSERT в outbox(payload=JSON заказа) → COMMIT.
-//  3. Печатает прогресс: id заказа, id outbox-записи.
-//
-// Запуск:
-//
-//	make up && make db-init
-//	make run-service COUNT=100
-//	# в другом терминале:
-//	make run-publisher
 package main
 
 import (
@@ -154,10 +125,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// createOrder — главное место лекции: одна BEGIN/COMMIT, два INSERT'а внутри.
-// Ни один из них не «торчит наружу» наполовину: либо обе записи появляются,
-// либо ни одной. Outbox-запись — это «надо позже опубликовать», а не сама
-// публикация. Сама публикация → отдельный процесс.
 func createOrder(ctx context.Context, pool *pgxpool.Pool, topic, customerID string, amount float64) (orderID, outboxID int64, err error) {
 	err = pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		if err := tx.QueryRow(ctx, insertOrderSQL, customerID, amount).Scan(&orderID); err != nil {

@@ -1,17 +1,3 @@
-// courier — consumer на topic notifications с доставкой во внешний HTTP.
-//
-// Что показывает лекция 04-05:
-//
-//   - exponential backoff с jitter внутри одной доставки;
-//   - circuit breaker (sony/gobreaker/v2) — на уровне HTTP-вызова: после
-//     серии подряд неуспехов CB переходит в Open и режет дальнейшие звонки;
-//   - Kafka-уровневый backpressure через PauseFetchPartitions: когда CB
-//     держится в Open дольше -pause-after, перестаём фетчить вообще; когда
-//     CB переходит в Half-Open/Closed — резюмим.
-//   - HMAC-подпись тела через X-Signature и Idempotency-Key для replay-safety.
-//
-// Без override.yml: webhook стартует через docker compose (см. README) на
-// :8090, либо через `make run-mock` как локальный go-процесс.
 package main
 
 import (
@@ -73,7 +59,7 @@ func main() {
 
 	c.cb = gobreaker.NewCircuitBreaker[deliveryResult](gobreaker.Settings{
 		Name:        "courier-webhook",
-		MaxRequests: 1, // в Half-Open пускаем строго одну пробу
+		MaxRequests: 1,
 		Timeout:     *cbOpenTimeout,
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
 			return counts.ConsecutiveFailures >= uint32(*cbConsecutive)
@@ -118,11 +104,11 @@ type courier struct {
 	maxBackoff     time.Duration
 	pauseAfter     time.Duration
 
-	openSince atomic.Int64 // unix-нано момента, когда CB ушёл в Open. 0 — не Open.
+	openSince atomic.Int64
 	paused    atomic.Bool
 
-	delivered atomic.Int64
-	failed    atomic.Int64
+	delivered  atomic.Int64
+	failed     atomic.Int64
 	dropped4xx atomic.Int64
 }
 
@@ -131,9 +117,6 @@ type deliveryResult struct {
 	attempts   int
 }
 
-// run — главный цикл: backpressure-check → poll → деливери батча → commit
-// успешно доставленных. Транзитные неуспехи не коммитятся: запись остаётся
-// на партиции, при следующем poll'е (после resume) попробуем снова.
 func (c *courier) run(ctx context.Context) error {
 	c.logger.Info("courier started", "topics", c.topics, "target", c.target)
 
@@ -144,9 +127,6 @@ func (c *courier) run(ctx context.Context) error {
 
 		c.maybePauseOnLongOpen()
 
-		// Poll с таймаутом — нужно, чтобы цикл крутился даже когда партиции
-		// паузнуты и записей нет: иначе вызов c.cb.State() ниже не отработает,
-		// а gobreaker сам Open→HalfOpen не переключится (см. maybePauseOnLongOpen).
 		pollCtx, pollCancel := context.WithTimeout(ctx, time.Second)
 		fetches := c.cl.PollFetches(pollCtx)
 		pollCancel()
@@ -193,9 +173,7 @@ func (c *courier) run(ctx context.Context) error {
 					"key", string(r.Key),
 					"offset", r.Offset,
 					"err", err)
-				// Прерываем разбор батча: бессмысленно стучать, пока CB Open.
-				// Остальные записи batch'а тоже не коммитим — они вернутся
-				// при следующем poll'е (или после resume).
+
 				break processBatch
 			default:
 				c.failed.Add(1)
@@ -219,28 +197,12 @@ func (c *courier) run(ctx context.Context) error {
 	}
 }
 
-// deliver выполняет одну доставку под защитой CB. Внутри — retry с
-// экспоненциальным backoff + jitter. Один Execute() = одно «событие»
-// для CB; сколько внутри было ретраев, ему всё равно.
 func (c *courier) deliver(ctx context.Context, r *kgo.Record) (deliveryResult, error) {
 	return c.cb.Execute(func() (deliveryResult, error) {
 		return c.deliverWithRetries(ctx, r)
 	})
 }
 
-// deliverWithRetries — стандартный backoff-с-джиттером цикл.
-//
-// Классификация:
-//
-//   - 2xx                 → успех;
-//   - 4xx (кроме 408/429) → permanent; не ретраим, наружу errPermanent;
-//   - 408 / 429 / 5xx /
-//     net error / timeout → retriable; ждём backoff, повторяем;
-//   - context canceled    → возвращается как есть, не считается фейлом CB
-//     через IsExcluded (но проще — наружу как ctx.Err, наружу не идёт в CB,
-//     потому что Execute() уже не запустится после отмены ctx).
-//
-// jitter — full-jitter по формуле AWS: sleep = rand[0..backoff].
 func (c *courier) deliverWithRetries(ctx context.Context, r *kgo.Record) (deliveryResult, error) {
 	backoff := c.initialBackoff
 	var lastErr error
@@ -288,16 +250,6 @@ func (c *courier) deliverWithRetries(ctx context.Context, r *kgo.Record) (delive
 		fmt.Errorf("retries exhausted: %w", lastErr)
 }
 
-// send — один HTTP-запрос. Тело — payload record'а. Headers:
-//
-//	Idempotency-Key  стабильный id (topic:partition:offset) — receiver
-//	                 узнаёт повтор того же сообщения, даже если courier
-//	                 рестартанул и переотправил;
-//	X-Signature      HMAC-SHA256(hmacKey, body) в hex — receiver проверяет
-//	                 подлинность, чтобы кто угодно с :8090 не насыпал ему
-//	                 левых уведомлений;
-//	X-Origin-Topic   topic исходного record'а — для diagnostics receiver'а;
-//	X-Origin-Key     key исходного record'а.
 func (c *courier) send(ctx context.Context, r *kgo.Record) (int, error) {
 	body := r.Value
 	mac := hmac.New(sha256.New, c.hmacKey)
@@ -328,8 +280,8 @@ func (c *courier) send(ctx context.Context, r *kgo.Record) (int, error) {
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
 		return resp.StatusCode, nil
-	case resp.StatusCode == http.StatusRequestTimeout, // 408
-		resp.StatusCode == http.StatusTooManyRequests, // 429
+	case resp.StatusCode == http.StatusRequestTimeout,
+		resp.StatusCode == http.StatusTooManyRequests,
 		resp.StatusCode >= 500:
 		return resp.StatusCode, fmt.Errorf("retriable status %d", resp.StatusCode)
 	default:
@@ -337,13 +289,8 @@ func (c *courier) send(ctx context.Context, r *kgo.Record) (int, error) {
 	}
 }
 
-// errPermanent — sentinel для неретриабельных HTTP-ответов (4xx кроме
-// 408/429). Через errors.Is его опознаёт run() и решает закоммитить
-// запись, не пытаясь больше.
 var errPermanent = errors.New("permanent http failure")
 
-// classifyTransport отделяет таймауты/сетевые ошибки от прочего.
-// На лекции это делает явным: net error и timeout всегда retriable.
 func classifyTransport(err error) error {
 	var netErr net.Error
 	if errors.As(err, &netErr) {
@@ -352,17 +299,6 @@ func classifyTransport(err error) error {
 	return fmt.Errorf("http: %w", err)
 }
 
-// onStateChange — один из самых важных кусков лекции. Здесь мы
-// связываем состояние CB с состоянием Kafka-консьюмера:
-//
-//   - Closed → Open    : фиксируем openSince. Сама пауза партиций
-//                        не делается тут — только если Open держится
-//                        дольше pauseAfter (см. maybePauseOnLongOpen).
-//   - Open → Half-Open : сбрасываем openSince. Если партиции были
-//                        паузнуты — резюмим: дальше CB сам решит,
-//                        пускать ли новые запросы.
-//   - Half-Open → Closed: всё хорошо, openSince уже сброшен.
-//   - Half-Open → Open  : CB не оправдался, фиксируем новый openSince.
 func (c *courier) onStateChange(name string, from, to gobreaker.State) {
 	c.logger.Warn("CB state change", "name", name, "from", from, "to", to)
 	switch to {
@@ -377,15 +313,6 @@ func (c *courier) onStateChange(name string, from, to gobreaker.State) {
 	}
 }
 
-// maybePauseOnLongOpen вызывается перед каждым PollFetches. Если CB
-// уже pauseAfter секунд в Open — паузим топики, чтобы не качать заведомо
-// мусорные fetch'и при сломанном downstream'е.
-//
-// Дополнительно дёргаем c.cb.State(): пока партиции паузнуты, Execute()
-// никто не зовёт, и gobreaker сам Open → HalfOpen по Timeout не переключит
-// (внутренний state-machine тикает только из beforeRequest/State()).
-// Без этого вызова курьер мог зависнуть в Open навечно — даже если
-// downstream вернулся живым.
 func (c *courier) maybePauseOnLongOpen() {
 	since := c.openSince.Load()
 	if since == 0 {
@@ -409,10 +336,6 @@ func (c *courier) printSummary() {
 		c.delivered.Load(), c.failed.Load(), c.dropped4xx.Load(), c.cb.State())
 }
 
-// newHTTPClient — http.Client с тайм-аутами на все этапы. По умолчанию
-// http.DefaultClient ждёт ответ бесконечно — для лекции про backpressure
-// это сценарий, где «висящий downstream съедает producer-буфер». Поэтому
-// явный таймаут.
 func newHTTPClient(timeout time.Duration) *http.Client {
 	return &http.Client{
 		Timeout: timeout,

@@ -1,22 +1,3 @@
-// format-bench — записывает один и тот же набор Order'ов в три топика,
-// сериализуя их JSON / Avro / Protobuf, и потом печатает таблицу с
-// размерами на диске.
-//
-// Что показывает лекция 05-01:
-//
-//   - один и тот же Order, та же модель, три разных wire-формата;
-//   - JSON через encoding/json — тут схема живёт только в head'е автора;
-//   - Avro через hamba/avro — schema-driven, .avsc парсится в рантайме;
-//   - Protobuf через protowire — тут мы НЕ генерируем код, а вручную
-//     раскладываем поля по wire-формату по тегам из proto/order.proto.
-//     Полноценный buf-pipeline — в 05-02; в 05-01 показываем, что
-//     protobuf-байты — это просто структурированный wire-формат.
-//
-// После записи зовём kadm.DescribeAllLogDirs и считаем размер каждого
-// топика на диске. Реплики суммируются по всем брокерам — это и есть то,
-// что Kafka хранит на самом деле.
-//
-// Запуск: см. Makefile.
 package main
 
 import (
@@ -39,7 +20,6 @@ import (
 	"github.com/dsbasko/kafka-sandbox/lectures/internal/runctx"
 )
 
-// Order — модель в Go. Поля повторяют proto/order.proto и avro/order.avsc.
 type Order struct {
 	ID            string      `json:"id" avro:"id"`
 	CustomerID    string      `json:"customer_id" avro:"customer_id"`
@@ -55,9 +35,6 @@ type OrderItem struct {
 	PriceCents int64  `json:"price_cents" avro:"price_cents"`
 }
 
-// avroSchemaJSON — содержимое avro/order.avsc одной строкой. На прод-проектах
-// её обычно грузят из файла или из Schema Registry; для лекции встроено,
-// чтобы бинарь был самодостаточным.
 const avroSchemaJSON = `{
 	"type": "record",
 	"name": "Order",
@@ -115,11 +92,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Один и тот же набор Order'ов уйдёт во все три топика — это критично
-	// для честного сравнения форматов.
 	orders := generateOrders(*count, *itemsPerOrder)
 
-	// Чистый прогон каждый раз — пересоздаём топики.
 	for _, t := range []string{*jsonTopic, *avroTopic, *protoTopic} {
 		if err := recreateTopic(ctx, adm, t); err != nil {
 			logger.Error("recreate topic", "topic", t, "err", err)
@@ -157,7 +131,6 @@ func main() {
 		stats[i].duration = time.Since(t0)
 	}
 
-	// Дать брокеру дописать сегменты на диск перед DescribeLogDirs.
 	time.Sleep(2 * time.Second)
 
 	fmt.Println()
@@ -250,9 +223,6 @@ func encodeJSON(o *Order) ([]byte, error) {
 	return json.Marshal(o)
 }
 
-// encodeProto — раскладывает Order в protobuf wire-формат вручную, по тегам
-// из proto/order.proto. Никакого код-гена. Видно, как в реальности устроен
-// бинарный protobuf: tag (field_number << 3 | wire_type), потом value.
 func encodeProto(o *Order) ([]byte, error) {
 	var buf []byte
 	buf = appendString(buf, 1, o.ID)
@@ -278,7 +248,7 @@ func encodeOrderItem(it *OrderItem) []byte {
 
 func appendString(buf []byte, fieldNum protowire.Number, v string) []byte {
 	if v == "" {
-		return buf // proto3: пустые строки на wire не пишутся
+		return buf
 	}
 	buf = protowire.AppendTag(buf, fieldNum, protowire.BytesType)
 	return protowire.AppendString(buf, v)
@@ -300,18 +270,15 @@ func appendInt32(buf []byte, fieldNum protowire.Number, v int32) []byte {
 	return protowire.AppendVarint(buf, uint64(int64(v)))
 }
 
-// recreateTopic удаляет топик (если есть) и создаёт заново с 1 партицией.
-// Одна партиция — чтобы DescribeLogDirs давал чистое число без размазывания
-// по партициям.
 func recreateTopic(ctx context.Context, adm *kadm.Client, topic string) error {
 	resp, err := adm.DeleteTopic(ctx, topic)
 	if err == nil && resp.Err != nil {
-		// Ошибка из самого ответа — обычно UnknownTopicOrPartition, нас устраивает.
+
 		if !strings.Contains(resp.Err.Error(), "UNKNOWN_TOPIC_OR_PARTITION") {
 			return fmt.Errorf("DeleteTopic %s: %w", topic, resp.Err)
 		}
 	}
-	// Дать controller'у обработать удаление.
+
 	time.Sleep(800 * time.Millisecond)
 
 	cresp, err := adm.CreateTopic(ctx, 1, 3, nil, topic)
@@ -324,9 +291,6 @@ func recreateTopic(ctx context.Context, adm *kadm.Client, topic string) error {
 	return nil
 }
 
-// topicDiskSizes собирает суммарный размер на диске для каждого топика по всем
-// репликам. На стенде RF=3, так что итог делится примерно на 3, чтобы получить
-// размер «полезной нагрузки на одну реплику».
 func topicDiskSizes(ctx context.Context, adm *kadm.Client, topics []string) (map[string]int64, error) {
 	want := make(map[string]struct{}, len(topics))
 	out := make(map[string]int64, len(topics))

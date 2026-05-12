@@ -1,30 +1,3 @@
-// cdc-consumer — читает CDC-события Debezium из топика `cdc.public.users`
-// и печатает их в человекочитаемом виде.
-//
-// Формат Debezium event'а (JsonConverter без schemas.enable):
-//
-//	{
-//	  "before": { "id": 42, "email": "...", "status": "active", ... } | null,
-//	  "after":  { "id": 42, "email": "...", "status": "blocked", ... } | null,
-//	  "source": { "version": "...", "connector": "...", "ts_ms": ..., "lsn": ... },
-//	  "op":     "c" | "u" | "d" | "r" | "t",
-//	  "ts_ms":  1714723200000
-//	}
-//
-// op:
-//   - "c" — INSERT (create)
-//   - "u" — UPDATE (before и after оба заполнены, потому что REPLICA IDENTITY FULL)
-//   - "d" — DELETE (after = null)
-//   - "r" — read (snapshot, начальное наполнение)
-//   - "t" — truncate
-//
-// Tombstone — отдельный record с value=null после "d", специально для compact'а.
-// Параметр tombstones.on.delete=true в connector-конфиге включает их.
-//
-// Параллельно подписываемся на outbox-роутер: для каждого aggregate_type
-// создаётся свой топик events.<type>. Подписываемся по wildcard через
-// regex-форму ConsumerGroup'а с topics=events.*. Это удобный паттерн,
-// когда заранее не знаешь все aggregate-типы.
 package main
 
 import (
@@ -45,9 +18,7 @@ import (
 const (
 	cdcTopic     = "cdc.public.users"
 	defaultGroup = "lecture-07-04-cdc-consumer"
-	// Один регэксп покрывает и cdc-топик users, и весь набор outbox-топиков
-	// events.<aggregate_type>. ConsumeRegex включает интерпретацию строк
-	// в ConsumeTopics как регулярных выражений.
+
 	subscribeRegex = `^cdc\.public\.users$|^events\..+$`
 )
 
@@ -104,8 +75,6 @@ func handle(r *kgo.Record) {
 	printDebezium(r)
 }
 
-// debeziumEnvelope покрывает только то, что нам нужно для печати; остальные
-// поля молча игнорируются.
 type debeziumEnvelope struct {
 	Before map[string]any `json:"before"`
 	After  map[string]any `json:"after"`

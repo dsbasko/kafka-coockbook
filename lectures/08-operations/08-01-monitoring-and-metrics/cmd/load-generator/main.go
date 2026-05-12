@@ -1,18 +1,3 @@
-// load-generator — простой нагрузчик для иллюстрации метрик.
-//
-// Внутри один процесс делает две вещи:
-//   - producer: пишет в lecture-08-01-events со скоростью -rate msg/sec
-//   - consumer: читает тот же топик группой lecture-08-01-slow с задержкой
-//     -consume-delay на каждое сообщение
-//
-// Цель — создать наблюдаемые метрики в kminion и Grafana:
-//   - ненулевой rate на kminion_kafka_topic_high_water_mark_sum
-//   - постоянно растущий lag на kminion_kafka_consumer_group_topic_lag
-//     (потому что consumer медленнее producer'а)
-//
-// Меняй -rate и -consume-delay, чтобы увидеть, как двигаются графики.
-//
-// Запуск: см. Makefile (run-load).
 package main
 
 import (

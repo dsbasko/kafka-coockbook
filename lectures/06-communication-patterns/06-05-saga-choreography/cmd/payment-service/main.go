@@ -1,18 +1,3 @@
-// payment-service — обрабатывает оплату в обоих вариантах.
-//
-// В choreo-режиме слушает три choreo-топика и пишет в три choreo-топика:
-//
-//	order.requested        → payment.completed | payment.failed
-//	inventory.failed       → payment.refunded     (компенсация)
-//	inventory.released     → payment.refunded     (компенсация в каскаде)
-//
-// В orch-режиме — пара cmd/reply: подписан на payment-cmd, отвечает в
-// payment-reply. Action в command говорит, что делать (AUTHORIZE/REFUND).
-//
-// Для демонстрации failure path есть FAIL_RATE — вероятность сорвать
-// AUTHORIZE; FAIL_RATE=1.0 значит «всегда отказ». На REFUND и компенсации
-// в choreo-варианте FAIL_RATE не действует — компенсация в саге обязана
-// удаваться, иначе нужен ручной разбор и алёрт.
 package main
 
 import (
@@ -90,8 +75,6 @@ func shouldFail(rate float64) bool {
 	}
 	return rand.Float64() < rate
 }
-
-// === choreography ===
 
 func runChoreo(ctx context.Context, failRate float64) error {
 	cl, err := kafka.NewClient(
@@ -182,8 +165,7 @@ func handleChoreo(ctx context.Context, cl *kgo.Client, r *kgo.Record, failRate f
 		if err := sagaio.Unmarshal(r, &evt); err != nil {
 			return err
 		}
-		// inventory.failed случается ПОСЛЕ payment.completed — деньги уже
-		// списаны, надо вернуть. Это compensation: всегда успех.
+
 		fmt.Printf("REFUND    saga=%s reason=inventory:%s\n", sagaio.Short(evt.GetSagaId()), evt.GetReason())
 		return sagaio.Produce(ctx, cl, sagaio.TopicChoreoPaymentRefunded, evt.GetSagaId(),
 			&sagav1.PaymentRefunded{
@@ -197,8 +179,7 @@ func handleChoreo(ctx context.Context, cl *kgo.Client, r *kgo.Record, failRate f
 		if err := sagaio.Unmarshal(r, &evt); err != nil {
 			return err
 		}
-		// inventory.released приходит после shipment.failed: inventory уже
-		// откатилось, теперь очередь payment откатить себя.
+
 		fmt.Printf("REFUND    saga=%s reason=shipment-cascade\n", sagaio.Short(evt.GetSagaId()))
 		return sagaio.Produce(ctx, cl, sagaio.TopicChoreoPaymentRefunded, evt.GetSagaId(),
 			&sagav1.PaymentRefunded{
@@ -209,8 +190,6 @@ func handleChoreo(ctx context.Context, cl *kgo.Client, r *kgo.Record, failRate f
 	}
 	return nil
 }
-
-// === orchestration ===
 
 func runOrch(ctx context.Context, failRate float64) error {
 	cl, err := kafka.NewClient(

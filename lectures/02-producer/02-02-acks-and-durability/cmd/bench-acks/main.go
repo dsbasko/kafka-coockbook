@@ -1,18 +1,3 @@
-// bench-acks параллельно гоняет три продьюсера с acks=0/1/all и сравнивает
-// latency P50/P99/P99.9 и throughput. Видны две вещи: acks=0 быстрее всего и
-// без гарантий, acks=all дороже на круг и устойчив к падению брокера ровно до
-// порога min.insync.replicas.
-//
-// Каждый режим пишет в свой топик (`<prefix>-<mode>`), все три топика созданы
-// идемпотентно с min.insync.replicas=3 на RF=3 — это важно для демки
-// kill-broker: упадёт kafka-2, ISR падает до 2, для acks=all включаются
-// NotEnoughReplicas, для acks=0/1 ничего не меняется.
-//
-// Запись идёт через ProduceSync на каждый отдельный record. Это даёт честную
-// per-record latency (а не «время отдачи целого батча»). Throughput тут
-// получается ниже теоретического максимума — у клиента всегда не больше
-// одного сообщения в полёте, — зато P50/P99 показывают, сколько занимает
-// один полный round-trip с конкретными acks.
 package main
 
 import (
@@ -81,22 +66,18 @@ type runOpts struct {
 }
 
 type ackMode struct {
-	name      string // отображаемое имя режима
-	topicTail string // суффикс к topicPrefix
+	name      string
+	topicTail string
 	opts      []kgo.Opt
 }
 
 func run(ctx context.Context, o runOpts) error {
-	// RecordDeliveryTimeout — общий потолок на полную доставку одного record'а:
-	// при kill-broker'е acks=all иначе ретраит NotEnoughReplicas вечно (а
-	// rpcCtx ловит DEADLINE_EXCEEDED раньше брокерского ответа). С 5 секундами
-	// успех укладывается всегда, а под degraded ISR клиент честно отдаёт
-	// NOT_ENOUGH_REPLICAS наружу.
+
 	deliveryTimeout := kgo.RecordDeliveryTimeout(5 * time.Second)
 	modes := []ackMode{
 		{"acks=0", "0", []kgo.Opt{kgo.RequiredAcks(kgo.NoAck()), kgo.DisableIdempotentWrite(), deliveryTimeout}},
 		{"acks=1", "1", []kgo.Opt{kgo.RequiredAcks(kgo.LeaderAck()), kgo.DisableIdempotentWrite(), deliveryTimeout}},
-		{"acks=all", "all", []kgo.Opt{deliveryTimeout}}, // дефолт franz-go: idempotent + AllISRAcks
+		{"acks=all", "all", []kgo.Opt{deliveryTimeout}},
 	}
 
 	admin, err := kafka.NewAdmin()
@@ -154,9 +135,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// benchResult копит latency и счётчики по одному режиму acks.
-// latencies накапливаем только для успешных produce'ов — иначе таймаутные
-// ретраи смазывают P99.
 type benchResult struct {
 	name      string
 	sent      int64
@@ -166,9 +144,6 @@ type benchResult struct {
 	errs      map[string]int64
 }
 
-// runMode синхронно гоняет msgs сообщений через ProduceSync, фиксирует
-// latency каждого отдельного round-trip'а. Без параллелизма внутри одного
-// режима — мы хотим честную per-record latency, не throughput-batch'инг.
 func runMode(ctx context.Context, m ackMode, topic string, msgs int, payload []byte) benchResult {
 	res := benchResult{name: m.name, errs: make(map[string]int64)}
 
@@ -205,7 +180,6 @@ func runMode(ctx context.Context, m ackMode, topic string, msgs int, payload []b
 	return res
 }
 
-// makePayload — фиксированный набор байт. Содержимое не важно, важна длина.
 func makePayload(n int) []byte {
 	if n <= 0 {
 		return nil
@@ -223,7 +197,7 @@ func classifyErr(err error) string {
 	}
 	var ke *kerr.Error
 	if errors.As(err, &ke) {
-		return ke.Message // например, NOT_ENOUGH_REPLICAS, REQUEST_TIMED_OUT
+		return ke.Message
 	}
 	if errors.Is(err, context.Canceled) {
 		return "CONTEXT_CANCELED"
@@ -294,8 +268,6 @@ func printErrTable(w *os.File, errs map[string]int64) {
 	_ = tw.Flush()
 }
 
-// fmtDur округляет до читаемых единиц: миллисекунды для коротких latency,
-// секунды — для elapsed.
 func fmtDur(d time.Duration) string {
 	switch {
 	case d == 0:
@@ -311,9 +283,6 @@ func fmtDur(d time.Duration) string {
 	}
 }
 
-// ensureTopic создаёт топик с min.insync.replicas=3. Если топик уже есть —
-// alter-конфигом приводит к нужному значению, чтобы повторные запуски работали
-// детерминированно.
 func ensureTopic(ctx context.Context, admin *kadm.Client, topic string, partitions int32, rf int16, minISR string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()

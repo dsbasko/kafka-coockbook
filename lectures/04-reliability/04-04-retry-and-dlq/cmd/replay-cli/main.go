@@ -1,41 +1,3 @@
-// replay-cli — переотправка сообщений из DLQ обратно в основной топик.
-//
-// Сценарий, ради которого этот CLI существует:
-//
-//   - даунстрим неделю лежал → DLQ накопил тысячу сообщений с
-//     error.class=transient;
-//   - даунстрим починили; хочется переподать тот же payload в основной
-//     pipeline, чтобы не терять заказы;
-//   - руками написать «cat dlq | producer» — рискованно: легко переслать
-//     лишнего или, наоборот, потерять headers.
-//
-// Что делает CLI:
-//
-//   - читает -from-topic (по умолчанию payments-dlq) с -group-suffix
-//     (даёт уникальную консьюмер-группу, не пересекаясь с dlq-processor);
-//   - фильтрует записи по -since (timestamp >= now() - since) и опционально
-//     по -error-class (transient | permanent);
-//   - для каждой подходящей перепаковывает в новый record для -to-topic
-//     (ключ и payload без изменений; headers сохраняются, retry.count
-//     обнуляется, добавляется replay.from-dlq=<dlqOffset>);
-//   - идёт ProduceSync, при ошибке возвращает ненулевой код выхода;
-//   - завершается, когда либо достиг конца партиций, либо встретил
-//     запись старше -since и больше нет «свежих» (см. флаг -idle).
-//
-// Использование:
-//
-//	replay -since 1h
-//	replay -from-topic payments-dlq -to-topic payments -since 24h \
-//	       -error-class transient -dry-run
-//
-// Что НЕ делает:
-//
-//   - не удаляет ничего из DLQ. DLQ — append-only, retention отрабатывает
-//     по обычным правилам топика (см. 08-02);
-//   - не дедуплицирует. Если запустить replay дважды подряд — отправит
-//     дважды. На consumer-стороне всё равно нужна идемпотентность.
-//
-// Запуск: см. Makefile (replay).
 package main
 
 import (
@@ -120,10 +82,7 @@ func run(ctx context.Context, o opts) error {
 		kgo.ConsumeTopics(o.fromTopic),
 		kgo.ClientID(defaultClientID),
 		kgo.DisableAutoCommit(),
-		// Фильтр по времени работает с earliest: мы должны увидеть и
-		// старые записи, чтобы пропустить их по condition `record.Time < cutoff`.
-		// Альтернатива — kadm.OffsetsForTimes по cutoff, но для лекции
-		// проще-и-понятнее так.
+
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 	}
 	cl, err := kafka.NewClient(consumeOpts...)
@@ -150,9 +109,7 @@ func run(ctx context.Context, o opts) error {
 	defer idleTimer.Stop()
 
 	for {
-		// Сбрасываем idle-таймер: каждый успешный poll возвращает данные
-		// → значит, дочитываем; пустой fetch → таймер тикает.
-		// Реализуем «idle» через PollFetches с коротким poll'ом или select.
+
 		pollCtx, pollCancel := context.WithTimeout(ctx, o.idle)
 		fetches := cl.PollFetches(pollCtx)
 		pollCancel()
@@ -164,7 +121,7 @@ func run(ctx context.Context, o opts) error {
 						printSummary(c)
 						return nil
 					}
-					// pollCtx истёк — это idle, не реальная отмена.
+
 					printSummary(c)
 					fmt.Printf("idle %s — DLQ дочитан, выходим.\n", o.idle)
 					return nil
@@ -226,18 +183,13 @@ func run(ctx context.Context, o opts) error {
 					c.replayed.Add(1)
 				}
 			}
-			// Если хоть одна запись не уехала — не двигаем offset, иначе
-			// при рестарте мы пропустим её навсегда (она в DLQ останется,
-			// но replay-cli уже не вернётся к ней).
+
 			if sendErrs > 0 {
 				printSummary(c)
 				return fmt.Errorf("%d записей не удалось отправить — offset не закоммичен, можно перезапустить replay", sendErrs)
 			}
 		}
 
-		// На dry-run мы ничего не публикуем — значит и offset двигать не имеем
-		// права. Иначе повторный запуск с тем же -group-suffix начнёт после
-		// «просмотренных» записей и реальный replay увидит пустоту.
 		if o.dryRun {
 			continue
 		}
@@ -254,10 +206,6 @@ func run(ctx context.Context, o opts) error {
 	}
 }
 
-// replayRecord перепаковывает DLQ-запись в новый record для основного топика.
-// Сохраняем все headers, обнуляем retry.count (новая попытка пайплайна
-// начинается с нуля), добавляем replay.from-dlq и replay.timestamp —
-// чтобы при повторном падении в DLQ было видно, что это replay.
 func replayRecord(r *kgo.Record, toTopic string) *kgo.Record {
 	headers := append([]kgo.RecordHeader(nil), r.Headers...)
 	headers = setHeader(headers, "retry.count", "0")

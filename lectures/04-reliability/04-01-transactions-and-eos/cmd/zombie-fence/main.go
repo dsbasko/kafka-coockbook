@@ -1,23 +1,3 @@
-// zombie-fence — демонстрация zombie fencing.
-//
-// Сценарий: один и тот же transactional.id у двух процессов. Тот, кто
-// стартует позже, забирает себе следующий producer epoch на координаторе
-// транзакций. Старый процесс при попытке писать получает на свою сторону
-// kerr.InvalidProducerEpoch (или ProducerFenced) и больше не может ничего
-// закоммитить — он zombie.
-//
-// Зачем нужно: если старый процесс «завис» (GC pause, network partition),
-// мы запускаем нового, и нам нужна гарантия, что старый, очнувшись, не
-// дольёт половину транзакции в Kafka и не сломает atomicity. Fencing
-// решает это per design — двух «живых» владельцев одного TransactionalID
-// быть не может.
-//
-// Запуск (см. Makefile):
-//
-//   make run-zombie-1    # терминал 1 — стартует первым, в цикле пишет
-//   # пауза 5 секунд
-//   make run-zombie-2    # терминал 2 — тот же txn-id; первый видит
-//                          # InvalidProducerEpoch и завершается
 package main
 
 import (
@@ -124,9 +104,7 @@ func oneTxn(ctx context.Context, cl *kgo.Client, o runOpts, attempt int) error {
 		Value: []byte(fmt.Sprintf(`{"role":%q,"attempt":%d}`, o.role, attempt)),
 	})
 	if produceErr := results.FirstErr(); produceErr != nil {
-		// При abort'е через EndTransaction(TryAbort) franz-go всё
-		// равно отправит EndTxn запрос координатору; этого достаточно,
-		// чтобы корректно сбросить состояние клиента.
+
 		_ = cl.EndTransaction(ctx, kgo.TryAbort)
 		return produceErr
 	}
@@ -134,12 +112,6 @@ func oneTxn(ctx context.Context, cl *kgo.Client, o runOpts, attempt int) error {
 	return cl.EndTransaction(ctx, kgo.TryCommit)
 }
 
-// isFenced — true, если ошибка — это вытеснение нашего producer epoch
-// другим процессом с тем же TransactionalID. Конкретно ловим:
-//
-//   - kerr.ProducerFenced (Kafka 2.5+, явный код) — каноничный fencing;
-//   - kerr.InvalidProducerEpoch — старший брат, может прилетать в более
-//     старых сценариях и до сих пор используется на некоторых путях.
 func isFenced(err error) bool {
 	return errors.Is(err, kerr.ProducerFenced) ||
 		errors.Is(err, kerr.InvalidProducerEpoch)

@@ -1,14 +1,3 @@
-// quorum-status — программный аналог `kafka-metadata-quorum.sh describe --status`.
-//
-// Спрашивает у любой ноды стенда:
-//   - метаданные кластера (cluster id, broker id/host/port/rack) через kadm,
-//   - состояние Raft-кворума топика __cluster_metadata через kmsg.DescribeQuorum.
-//
-// Печатает обе картинки таблицами. В KRaft `BrokerMetadata.Controller` — это
-// broker, через которого можно роутить controller-запросы (proxy), а не
-// настоящий Raft-leader. Настоящий leader приходит только из DescribeQuorum.
-// Эта лекция показывает оба числа явно — так понятнее, что в Go доступно
-// то же самое, что в kafka-metadata-quorum.sh, и что они означают разное.
 package main
 
 import (
@@ -50,8 +39,6 @@ func run(ctx context.Context) error {
 
 	admin := kadm.NewClient(cl)
 
-	// На холодном старте стенда метаданные иногда подтягиваются дольше
-	// дефолтного таймаута клиента — ставим явный дедлайн на оба запроса.
 	rpcCtx, rpcCancel := context.WithTimeout(ctx, 15*time.Second)
 	defer rpcCancel()
 
@@ -96,9 +83,6 @@ func run(ctx context.Context) error {
 	return tw.Flush()
 }
 
-// describeQuorumLeader спрашивает у кластера, кто текущий Raft-leader для
-// топика __cluster_metadata. Возвращает leaderID, отсортированный список
-// id'ов voters и ошибку, если запрос не прошёл.
 func describeQuorumLeader(ctx context.Context, cl kmsg.Requestor) (int32, []int32, error) {
 	req := kmsg.NewPtrDescribeQuorumRequest()
 	topic := kmsg.NewDescribeQuorumRequestTopic()

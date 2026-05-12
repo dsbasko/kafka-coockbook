@@ -1,8 +1,3 @@
-// anonymizer — consumer на cdc.public.* (Debezium output),
-// применяет anonymize.yaml и пишет очищенные события в analytics.* топики.
-//
-// Для удобства тестов вся логика вынесена в internal/anonymizer; здесь —
-// только CLI-обёртка с разбором флагов и запуском Run.
 package main
 
 import (

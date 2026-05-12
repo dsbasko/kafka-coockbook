@@ -1,19 +1,3 @@
-// mock-webhook — учебный HTTP-приёмник для лекции 04-05.
-//
-// Имитирует сломанный downstream через два процента отказов:
-//
-//   - FAIL_RATE_503    — доля запросов, на которые отвечаем 503 Service Unavailable;
-//   - FAIL_RATE_TIMEOUT — доля запросов, которые «висим» — спим 30s, не отдавая ответ
-//     (короче ничего не отдадим, courier ловит таймаут на своей стороне).
-//
-// Остальное — обычный 200 OK с маленькой latency через LATENCY_MS.
-//
-// HMAC и idempotency-key мы не валидируем по-настоящему: это тренажёр,
-// не приёмник. Но логируем оба заголовка, чтобы при наблюдении за логами
-// было видно, что courier их посылает.
-//
-// Без внешних зависимостей — собирается под любой Go 1.21+ из своего
-// микро-go.mod в этой же директории, без подключения к workspace курса.
 package main
 
 import (
@@ -72,9 +56,6 @@ func main() {
 			time.Sleep(time.Duration(latencyMS) * time.Millisecond)
 		}
 
-		// Решение принимается per-запрос, на основе rand. Доля
-		// FAIL_RATE_503 + FAIL_RATE_TIMEOUT не превышает 1.0,
-		// остаток — ok.
 		dice := rand.Float64()
 		switch {
 		case dice < fail503:
@@ -83,8 +64,7 @@ func main() {
 			http.Error(w, `{"error":"upstream temporarily unavailable"}`, http.StatusServiceUnavailable)
 		case dice < fail503+failTimeout:
 			stats.failTimeout.Add(1)
-			// Имитируем зависший downstream — courier должен поймать
-			// свой http.Client timeout и обработать как retriable.
+
 			select {
 			case <-time.After(time.Duration(timeoutHangSec) * time.Second):
 				w.WriteHeader(http.StatusGatewayTimeout)

@@ -1,39 +1,3 @@
-// order-service — write-side гибрида gRPC + Kafka.
-//
-// Что внутри одного процесса:
-//
-//  1. gRPC-сервер с CommandService.Create. На каждый Create открывает
-//     транзакцию Postgres: INSERT в orders + INSERT в outbox под одним
-//     COMMIT. Никакого Produce внутри RPC.
-//  2. Outbox-publisher как горутина. Каждые -poll-interval читает
-//     неопубликованные записи через FOR UPDATE SKIP LOCKED, шлёт в Kafka
-//     через ProduceSync, помечает published_at = NOW().
-//
-// Почему два узла в одном процессе: лекция про паттерн, а не про деплой.
-// В проде publisher часто отдельный — чтобы не масштабировать gRPC API
-// и outbox-flow вместе. Тут компактнее: один main.go, обе ответственности.
-//
-// Что попадает в outbox.payload:
-//
-//	{
-//	  "id":           "<uuid>",
-//	  "customer_id":  "...",
-//	  "amount_cents": 12300,
-//	  "currency":     "EUR",
-//	  "status":       "ORDER_STATUS_NEW",
-//	  "created_at":   "2026-05-01T12:34:56Z",
-//	  "trace_id":     "...",     -- propagation
-//	  "tenant_id":    "..."      -- propagation
-//	}
-//
-// trace_id и tenant_id попадают и в payload, и в Kafka headers — чтобы
-// downstream-сервисы могли продолжить логи без парсинга тела.
-//
-// Запуск:
-//
-//	make up && make db-init && make topic-create
-//	make run-order
-//	# в другом терминале — grpcurl-create / run-inventory / run-query
 package main
 
 import (
@@ -202,9 +166,6 @@ func run(ctx context.Context, o runOpts) error {
 	}
 }
 
-// commandServer — gRPC-handler для CommandService. Вся работа с Kafka
-// происходит асинхронно в outbox publisher'е, RPC возвращает успех сразу
-// после COMMIT'а в БД. Клиент знает: «заказ принят, событие будет позже».
 type commandServer struct {
 	ordersv1.UnimplementedCommandServiceServer
 	pool  *pgxpool.Pool
@@ -274,10 +235,6 @@ func (s *commandServer) Create(ctx context.Context, req *ordersv1.CreateRequest)
 	}, nil
 }
 
-// runPublisher — встроенный outbox-поллер. Та же at-least-once гарантия,
-// что и в лекции 04-03: между ProduceSync и UPDATE published_at есть окно,
-// в которое крах процесса даёт дубль. Защита — dedup по outbox-id на
-// стороне consumer'ов (см. inventory-service / order-query-service).
 func runPublisher(ctx context.Context, pool *pgxpool.Pool, cl *kgo.Client, o runOpts) error {
 	var published atomic.Int64
 

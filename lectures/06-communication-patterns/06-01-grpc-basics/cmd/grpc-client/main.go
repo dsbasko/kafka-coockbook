@@ -1,17 +1,3 @@
-// grpc-client — простой клиент для OrderService: один Create + один Get.
-//
-// Сценарий: подняли сервер через `make run-server`, запустили клиент,
-// он создаёт заказ, печатает его id, дальше тем же id делает Get и
-// печатает Order целиком. Дополнительно клиент вешает unary client
-// interceptor, который меряет round-trip и логирует код ответа — так
-// видно, что любой gRPC-вызов на клиенте можно завернуть в обёртку
-// (auth, retry, tracing — всё по тому же шаблону).
-//
-// На каждом вызове ставим deadline через context.WithTimeout — это
-// канонический способ ограничить gRPC-вызов сверху, без него зависший
-// сервер заблокирует клиента навсегда.
-//
-// Запуск: см. Makefile (`make run-client`).
 package main
 
 import (
@@ -56,7 +42,6 @@ func main() {
 
 	client := ordersv1.NewOrderServiceClient(conn)
 
-	// Create
 	createCtx, cancel := context.WithTimeout(ctx, *timeout)
 	defer cancel()
 	createResp, err := client.Create(createCtx, &ordersv1.CreateRequest{
@@ -77,7 +62,6 @@ func main() {
 		created.GetStatus(),
 	)
 
-	// Get
 	getCtx, cancel2 := context.WithTimeout(ctx, *timeout)
 	defer cancel2()
 	getResp, err := client.Get(getCtx, &ordersv1.GetRequest{Id: created.GetId()})
@@ -95,8 +79,6 @@ func main() {
 		got.GetCreatedAt().AsTime().Format(time.RFC3339),
 	)
 
-	// Bonus: NotFound для несуществующего id — показать, что код = NotFound,
-	// а не «грязная» ошибка. В CI такие проверки идут через status.Code(err).
 	notFoundCtx, cancel3 := context.WithTimeout(ctx, *timeout)
 	defer cancel3()
 	_, err = client.Get(notFoundCtx, &ordersv1.GetRequest{Id: "no-such-order"})
@@ -107,9 +89,6 @@ func main() {
 	}
 }
 
-// loggingUnaryClientInterceptor — клиентский аналог серверного: меряет
-// round-trip, тащит код из status и логирует. На клиенте это место для
-// ретраев, добавления заголовков (auth, trace), сбора метрик.
 func loggingUnaryClientInterceptor(logger *slog.Logger) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		start := time.Now()

@@ -1,15 +1,3 @@
-// grpc-server — минимальная реализация OrderService поверх gRPC.
-//
-// Что внутри:
-//
-//   - in-memory store: map[string]*Order под RWMutex; никакого Postgres
-//     тут не нужно, лекция про gRPC, а не про БД;
-//   - реализация двух unary RPC: Create выдаёт UUID, кладёт Order в map,
-//     отвечает; Get ищет по id, на промахе возвращает codes.NotFound;
-//   - logging interceptor: обёртка над любым unary handler'ом, печатает
-//     метод, длительность и gRPC-код.
-//
-// Запуск: см. Makefile (`make run-server`).
 package main
 
 import (
@@ -55,9 +43,6 @@ func main() {
 	store := newOrderStore()
 	ordersv1.RegisterOrderServiceServer(srv, &orderServer{store: store})
 
-	// reflection включаем, чтобы `grpcurl -plaintext localhost:50051 list`
-	// работал без копирования .proto на машину клиента — для лекции это
-	// удобно, в проде reflection обычно отключают или прячут за auth.
 	reflection.Register(srv)
 
 	go func() {
@@ -73,7 +58,6 @@ func main() {
 	}
 }
 
-// orderStore — потокобезопасный in-memory key-value по id заказа.
 type orderStore struct {
 	mu     sync.RWMutex
 	orders map[string]*ordersv1.Order
@@ -135,11 +119,6 @@ func (s *orderServer) Get(_ context.Context, req *ordersv1.GetRequest) (*ordersv
 	return &ordersv1.GetResponse{Order: o}, nil
 }
 
-// loggingUnaryInterceptor — простейший interceptor: засекает время,
-// дёргает реальный handler, забирает gRPC-код через status.Code и
-// логирует метод плюс длительность. Production-вариант ещё цепляет
-// trace-id из metadata и пишет structured-лог со span'ом — здесь
-// только базовая идея.
 func loggingUnaryInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		start := time.Now()

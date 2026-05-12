@@ -1,24 +1,3 @@
-// word-count — stateful word-count к лекции 07-02.
-//
-// Базовая идея:
-//   1. Читаем `text-events` (любая короткая строка-событие).
-//   2. Бьём value на слова (lower-case, только латиница/кириллица/цифры).
-//   3. Инкрементим per-слово счётчик в локальном Pebble store.
-//   4. На каждое изменение пишем в `word-count-changelog` запись
-//      (key=word, value=binary uint64 в текущем значении).
-//   5. Каждые `flush` секунд эмитим текущий top-N в `word-counts`
-//      (key=word, value=`{count,total_seen,...}`).
-//
-// Pebble — embedded LSM, аналог RocksDB. После kill -9 state остаётся
-// на диске; чтобы продемонстрировать восстановление с нуля, удаляем
-// директорию `state` и запускаем `cmd/changelog-restorer`. Restorer
-// читает changelog с beginning, складывает в Pebble — после этого
-// word-count стартует и продолжает с того же state.
-//
-// Зачем changelog отдельно от Pebble. Pebble живёт на одной машине;
-// changelog — это compacted-топик в Kafka, репликация и долговечность
-// у него такие же, как у любого другого топика. В Kafka Streams эта
-// схема называется state store + changelog topic. Тут она руками.
 package main
 
 import (
@@ -106,9 +85,7 @@ func main() {
 	cl, err := kafka.NewClient(
 		kgo.ConsumerGroup(*group),
 		kgo.ConsumeTopics(*inputTopic),
-		// AtStart — чтобы при первом запуске на чистой группе подхватить
-		// весь поток. Если консьюмер уже коммитил, franz-go продолжит
-		// с committed offset; политика касается только новой группы.
+
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		kgo.DisableAutoCommit(),
 	)
@@ -214,9 +191,7 @@ func (w *wordCounter) run(ctx context.Context) error {
 		}
 
 		var produces []*kgo.Record
-		// overlay — per-batch счётчики, накапливаются в памяти
-		// БЕЗ записи в Pebble. Так слово, встретившееся в батче дважды,
-		// получит cur+1, потом cur+2, как и положено.
+
 		overlay := make(map[string]uint64)
 		var procErr error
 		var processedRecords uint64
@@ -253,16 +228,6 @@ func (w *wordCounter) run(ctx context.Context) error {
 			continue
 		}
 
-		// Порядок строгий: changelog → Pebble → commit offset.
-		// Это нужно, чтобы changelog действительно был источником истины:
-		// если упадём между changelog'ом и pebble, после рестарта
-		// changelog-restorer перенесёт state и значения совпадут с тем,
-		// что уже опубликовано. Если бы Pebble писали ДО changelog'а,
-		// state ушёл бы вперёд — на рестарте changelog лагал бы.
-		// Семантика всё равно at-least-once: между Pebble и commit
-		// процесс может упасть, тогда те же записи приедут снова
-		// и счётчики раздуются на батч. EOS дала бы лекция 04-02,
-		// тут она увела бы в сторону от темы state stores.
 		rpcCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		err := w.client.ProduceSync(rpcCtx, produces...).FirstErr()
 		cancel()

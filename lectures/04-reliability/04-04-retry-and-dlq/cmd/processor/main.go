@@ -1,34 +1,3 @@
-// processor — consumer с retry-pipeline через отдельные топики с задержкой.
-//
-// Идея простая. У нас есть основной топик payments и три retry-топика
-// payments-retry-30s, payments-retry-5m, payments-retry-1h, плюс
-// payments-dlq в конце пайплайна. Один consumer группы lecture-04-04
-// слушает все четыре retry/main-топика. Для retry-топиков перед
-// обработкой ждёт до record.Timestamp + соответствующий лаг (30s/5m/1h).
-//
-// Поведение по результату handle():
-//
-//   - nil                   → commit, идём дальше;
-//   - permanent error       → сразу payments-dlq, commit;
-//   - transient (любой обычный error) → следующий retry-топик; если уже
-//     последний retry — в payments-dlq.
-//
-// Каждое перемещение по пайплайну форвардит payload + headers, докладывая
-// retry.count, error.class, error.message, original.* и retry.last-error.
-// Это даёт DLQ-обработчику и replay-CLI всю историю инцидента.
-//
-// Что важно:
-//
-//   - sleep до Timestamp + лага блокирует poll-loop. Для лекции это
-//     осознанно: pipeline должен быть нагляден. В проде так не делают —
-//     либо отдельный поток на каждый retry-топик, либо паузим консьюмер
-//     через PauseFetchPartitions; хорошие подробности — в 04-05.
-//   - publish в следующий топик и commit входного — две операции, между
-//     ними окно для дублей. Ровно та же история, что в 04-03 для outbox.
-//   - Last-stop — DLQ. После DLQ retry прекращаются: его читает только
-//     dlq-processor (или replay-cli при ручном вмешательстве).
-//
-// Запуск: см. Makefile (run-processor, seed-with-failures).
 package main
 
 import (
@@ -58,25 +27,18 @@ const (
 	defaultGroup   = "lecture-04-04-processor"
 )
 
-// stage — одна ступень пайплайна. nextTopic пуст для DLQ-ступени;
-// delay = 0 для main-ступени, иначе сколько ждать перед обработкой
-// (от record.Timestamp).
 type stage struct {
 	topic     string
 	delay     time.Duration
-	nextTopic string // пусто = некуда дальше эскалировать (DLQ или последний retry, ведущий в DLQ)
+	nextTopic string
 }
 
-// payment — формат входного сообщения. Битый JSON ловится unmarshal'ом
-// и тут же классифицируется как permanent (poison-pill).
 type payment struct {
 	ID     string  `json:"id"`
 	Amount float64 `json:"amount,omitempty"`
-	Mode   string  `json:"mode"` // ok | transient | permanent
+	Mode   string  `json:"mode"`
 }
 
-// permError — невозвратные ошибки. Всё, что не permError, считается
-// transient (есть смысл повторить позже).
 type permError struct{ msg string }
 
 func (e *permError) Error() string { return e.msg }
@@ -232,8 +194,6 @@ func run(ctx context.Context, stages []stage, dlqTopic, group string, fromStart 
 	}
 }
 
-// waitUntilDue ждёт, пока (recordTs + delay) не наступит. Если уже наступило —
-// возвращается сразу. Прерывается контекстом (SIGINT/SIGTERM).
 func waitUntilDue(ctx context.Context, recordTs time.Time, delay time.Duration) error {
 	due := recordTs.Add(delay)
 	wait := time.Until(due)
@@ -249,16 +209,6 @@ func waitUntilDue(ctx context.Context, recordTs time.Time, delay time.Duration) 
 	}
 }
 
-// handle — мок-обработчик платежа, идентичный 03-04.
-//
-//   - битый JSON     → permError (poison-pill);
-//   - mode=ok        → nil;
-//   - mode=transient → обычный error (transient — пойдёт на следующую ступень);
-//   - mode=permanent → permError (сразу в DLQ, мимо retry).
-//
-// Под лекцию transient никогда не «исцеляется», чтобы было видно весь пайплайн
-// 30s → 5m → 1h → DLQ. На практике transient бывают временными — у нас бы
-// прошло после первого-второго ретрая.
 func handle(r *kgo.Record) error {
 	var p payment
 	if err := json.Unmarshal(r.Value, &p); err != nil {
@@ -276,13 +226,6 @@ func handle(r *kgo.Record) error {
 	}
 }
 
-// forwardOrDLQ решает, куда отправить упавший record:
-//
-//   - permanent → сразу dlqTopic, минуя retry-ступени (поведение 03-04);
-//   - transient + есть nextTopic у текущей ступени → в nextTopic;
-//   - transient + nextTopic пусто (последняя retry-ступень) → в dlqTopic.
-//
-// В обоих случаях докладываем headers и коммитим upstream-batch снаружи.
 func forwardOrDLQ(
 	ctx context.Context,
 	cl *kgo.Client,
@@ -314,19 +257,6 @@ func forwardOrDLQ(
 	return forwardWithHeaders(ctx, cl, target, r, cause)
 }
 
-// forwardWithHeaders собирает headers по соглашению лекции и шлёт ProduceSync
-// в target-топик. Соглашение headers (повторяем 03-04 с дополнениями):
-//
-//	error.class      → permanent | transient
-//	error.message    → последняя ошибка handle()
-//	error.timestamp  → когда упало (RFC3339Nano UTC)
-//	retry.count      → сколько раз уже эскалировали (0 при первом форварде из main)
-//	original.topic   → откуда родом (никогда не меняется при цепочке retry)
-//	original.partition / original.offset → где лежал в самом начале
-//	previous.topic   → где упало последний раз (полезно для replay)
-//
-// Если запись уже путешествует по pipeline'у — original.* ставит самый первый
-// форвард, последующие лишь читают и оставляют как есть.
 func forwardWithHeaders(
 	ctx context.Context,
 	cl *kgo.Client,
@@ -371,9 +301,6 @@ func forwardWithHeaders(
 	return nil
 }
 
-// appendOrReplace перезаписывает значение header'а с заданным ключом,
-// если такой уже есть, иначе добавляет новый. Это нужно, чтобы не плодить
-// дубли error.* при многократной эскалации.
 func appendOrReplace(hs []kgo.RecordHeader, key, value string) []kgo.RecordHeader {
 	for i := range hs {
 		if hs[i].Key == key {

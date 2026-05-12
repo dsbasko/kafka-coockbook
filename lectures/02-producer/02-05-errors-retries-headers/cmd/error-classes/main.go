@@ -1,16 +1,3 @@
-// error-classes демонстрирует различие между non-retriable и retriable
-// ошибками продьюсера. Один бинарник, два режима через флаг -mode:
-//
-//   - mode=non-retriable: создаёт топик с max.message.bytes=1024 и пробует
-//     записать 4 КБ. Брокер отвечает MESSAGE_TOO_LARGE — это «формальный»
-//     отказ, ретраить нет смысла, клиент сразу отдаёт ошибку наверх.
-//
-//   - mode=retriable: создаёт топик с min.insync.replicas=3 на RF=3 и пишет
-//     с acks=all. До запуска оператор должен `make kill-broker`, чтобы ISR
-//     просел до 2. Брокер тогда отвечает NOT_ENOUGH_REPLICAS — это
-//     retriable: franz-go держит record в очереди и повторяет, пока ISR не
-//     восстановится или не истечёт RecordDeliveryTimeout. Внутренние
-//     попытки видны в логах через kgo.WithLogger(LogLevelDebug).
 package main
 
 import (
@@ -66,9 +53,6 @@ func main() {
 	}
 }
 
-// runNonRetriable создаёт топик с max.message.bytes=1024 и пишет 4 КБ.
-// Брокер отвечает MESSAGE_TOO_LARGE мгновенно — этого hardcoded-в-протокол
-// предела не обойти ретраем, поэтому franz-go отдаёт ошибку сразу.
 func runNonRetriable(ctx context.Context, topic string, payload int) error {
 	admin, err := kafka.NewAdmin()
 	if err != nil {
@@ -82,12 +66,10 @@ func runNonRetriable(ctx context.Context, topic string, payload int) error {
 
 	cl, err := kafka.NewClient(
 		kgo.DefaultProduceTopic(topic),
-		// Дефолт max.message.bytes на клиенте больше — мы хотим, чтобы
-		// клиент пропустил запрос дальше, и отказал именно брокер.
+
 		kgo.ProducerBatchMaxBytes(1<<20),
 		kgo.MaxBufferedRecords(10),
-		// Без NoCompression — franz-go по умолчанию жмёт snappy, а 4 КБ
-		// «aaaa…» сожмётся в ~300 байт и пройдёт под 1024.
+
 		kgo.ProducerBatchCompression(kgo.NoCompression()),
 	)
 	if err != nil {
@@ -122,11 +104,6 @@ func runNonRetriable(ctx context.Context, topic string, payload int) error {
 	}
 }
 
-// runRetriable пишет с acks=all в топик с min.insync.replicas=3. Если до
-// запуска убрать одного брокера (`make kill-broker`), ISR просядет до 2,
-// и каждый record будет получать NOT_ENOUGH_REPLICAS. Это retriable —
-// клиент держит record и пытается заново, пока либо ISR не вернётся, либо
-// не истечёт RecordDeliveryTimeout.
 func runRetriable(ctx context.Context, topic string, deliveryTimeout time.Duration, debug bool) error {
 	admin, err := kafka.NewAdmin()
 	if err != nil {
@@ -172,9 +149,7 @@ func runRetriable(ctx context.Context, topic string, deliveryTimeout time.Durati
 		fmt.Printf("[retriable] доставлено за %s — кластер здоров, ISR=3 (для демки нужно перед запуском убрать одного брокера)\n", fmtDur(took))
 		return nil
 	case errors.Is(pErr, kgo.ErrRecordTimeout):
-		// franz-go упаковывает «истёк RecordDeliveryTimeout» в ErrRecordTimeout
-		// и оборачивает последний наблюдённый retriable-error через %w. Если
-		// сейчас ISR=2 и acks=all — внутри будет NOT_ENOUGH_REPLICAS.
+
 		fmt.Printf("[retriable] упёрлись в delivery-timeout после %s ретраев\n", fmtDur(took))
 		fmt.Printf("[retriable] err: %v\n", pErr)
 		return nil
@@ -188,8 +163,6 @@ func runRetriable(ctx context.Context, topic string, deliveryTimeout time.Durati
 	}
 }
 
-// ensureTopicWithMaxBytes создаёт топик с per-topic max.message.bytes.
-// Если топик уже есть — приводит конфиг к нужному значению.
 func ensureTopicWithMaxBytes(ctx context.Context, admin *kadm.Client, topic string, maxBytes string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -220,8 +193,6 @@ func ensureTopicWithMaxBytes(ctx context.Context, admin *kadm.Client, topic stri
 	return nil
 }
 
-// ensureTopicWithMinISR — то же, но для min.insync.replicas (для retriable
-// сценария: с min.ISR=3 при упавшем брокере acks=all даёт NOT_ENOUGH_REPLICAS).
 func ensureTopicWithMinISR(ctx context.Context, admin *kadm.Client, topic string, minISR string) error {
 	rpcCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -252,9 +223,6 @@ func ensureTopicWithMinISR(ctx context.Context, admin *kadm.Client, topic string
 	return nil
 }
 
-// randomBytes — случайные байты (не «aaaaa»), чтобы snappy/zstd не сжали
-// их в ничто, если кто-то поставит компрессор. Для non-retriable сценария
-// это страховка: брокер должен видеть тот же размер, что мы заложили.
 func randomBytes(n int) []byte {
 	if n <= 0 {
 		return nil
@@ -282,4 +250,3 @@ func fmtDur(d time.Duration) string {
 		return fmt.Sprintf("%.2fs", d.Seconds())
 	}
 }
-

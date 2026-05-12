@@ -1,35 +1,3 @@
-// idempotent-pg — at-least-once консьюмер с идемпотентным обработчиком.
-// Идея простая: на стороне Kafka мы оставляем at-least-once (manual sync
-// commit после батча), а защиту от дублей переносим в БД — через
-// PRIMARY KEY (topic, partition, offset) и INSERT ... ON CONFLICT DO NOTHING.
-//
-// Что бы ни произошло между «получили сообщение» и «закоммитили offset»,
-// при рестарте мы прочитаем то же сообщение заново — и попытка вставки
-// в таблицу messages схлопнется в no-op по дубликату ключа. В таблице
-// каждое (topic, partition, offset) лежит ровно один раз.
-//
-// Что делает программа:
-//  1. Подключается к Postgres (DATABASE_URL) и Kafka (KAFKA_BOOTSTRAP).
-//  2. Подписывается на топик в группе с DisableAutoCommit().
-//  3. На каждое сообщение делает INSERT ... ON CONFLICT DO NOTHING.
-//     RowsAffected = 1 → новая запись; = 0 → дубль (был на прошлом запуске).
-//  4. После того как ВЕСЬ батч записан в БД — вызывает CommitRecords.
-//  5. Если -crash-after > 0, после стольких записей делает os.Exit(1)
-//     ПОСЛЕ insert'а, но ДО commit'а offset'а.
-//     Это и есть критический момент: при рестарте те же сообщения
-//     приходят заново, но в БД они уже есть → ON CONFLICT защищает.
-//
-// Как смотреть результат:
-//
-//	make up                # Postgres
-//	make db-init           # таблица messages
-//	make topic-create      # топик
-//	make topic-load        # 30 сообщений
-//	make run CRASH=10      # читает 10, вставляет 10, падает ДО commit
-//	make db-count          # ровно 10
-//	make run CRASH=0       # дочитывает остаток; первые 10 опять приходят,
-//	                       # но ON CONFLICT их выбрасывает
-//	make db-count          # ровно 30 — без дублей
 package main
 
 import (

@@ -1,20 +1,3 @@
-// concurrent-pool — консьюмер с пулом per-key worker'ов и out-of-order
-// offset tracker'ом.
-//
-// Задача — обогнать sequential по throughput, не нарушая порядок внутри
-// одного ключа (это единственная гарантия, которую партиция Kafka даёт
-// per-key). Решение — пул из N goroutine'ов; диспетчер кладёт каждый
-// record в worker по hash(key) % N. Один и тот же ключ всегда у одного
-// worker'а, разные ключи параллелятся между собой.
-//
-// Out-of-order proof: если worker[3] закончил offset=12 раньше, чем
-// worker[1] закончил offset=10, коммитить 13 нельзя — иначе на рестарте
-// мы потеряем offset=10. Tracker per-partition держит committed cursor
-// `next` и set ещё-не-склеенных done offset'ов выше next'а. markDone
-// двигает next по непрерывной полосе. CommitOffsets дёргается тикером
-// раз в commit-interval и забирает текущий snapshot.
-//
-// Запуск: см. Makefile (run-pool).
 package main
 
 import (
@@ -37,12 +20,12 @@ import (
 )
 
 const (
-	defaultTopic          = "lecture-03-05-events"
-	defaultGroup          = "lecture-03-05-pool"
-	defaultWorkers        = 8
-	defaultWorkDelay      = 10 * time.Millisecond
+	defaultTopic           = "lecture-03-05-events"
+	defaultGroup           = "lecture-03-05-pool"
+	defaultWorkers         = 8
+	defaultWorkDelay       = 10 * time.Millisecond
 	defaultBufferPerWorker = 1024
-	defaultCommitInterval = 500 * time.Millisecond
+	defaultCommitInterval  = 500 * time.Millisecond
 )
 
 func main() {
@@ -93,19 +76,11 @@ type runOpts struct {
 	fromStart      bool
 }
 
-// topicPartition — ключ tracker'а. Записываем topic явно: tracker
-// общий по всем подписанным топикам, хоть в этой лекции он один.
 type topicPartition struct {
 	topic     string
 	partition int32
 }
 
-// partTracker — per-partition состояние:
-//   - next  — committed cursor; offset, который мы вернёмся читать
-//     после рестарта (и пока что НЕ обработан);
-//   - done  — set уже обработанных offset'ов выше next'а (out-of-order);
-//   - epoch — leader epoch последнего виденного record'а в этой партиции;
-//     нужен для CommitOffsets, иначе fence на смену лидера не отработает.
 type partTracker struct {
 	next  int64
 	done  map[int64]struct{}
@@ -121,8 +96,6 @@ func newTracker() *tracker {
 	return &tracker{parts: make(map[topicPartition]*partTracker)}
 }
 
-// observe — увидели offset с диска до обработки. Lazy-init tracker'а
-// на случай первого record'а в партиции; обновляем эпоху.
 func (t *tracker) observe(r *kgo.Record) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -138,8 +111,6 @@ func (t *tracker) observe(r *kgo.Record) {
 	pt.epoch = r.LeaderEpoch
 }
 
-// markDone — worker отчитался об обработке. Двигаем next по непрерывной
-// полосе done-offset'ов: 10,11,12 готовы → next прыгает с 10 до 13.
 func (t *tracker) markDone(topic string, partition int32, offset int64) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -158,8 +129,6 @@ func (t *tracker) markDone(topic string, partition int32, offset int64) {
 	}
 }
 
-// snapshot — текущий committed cursor по каждой партиции.
-// Формат — то, что ждёт kgo.Client.CommitOffsets.
 func (t *tracker) snapshot() map[string]map[int32]kgo.EpochOffset {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -175,8 +144,6 @@ func (t *tracker) snapshot() map[string]map[int32]kgo.EpochOffset {
 	return out
 }
 
-// drop — партиция уехала на ребалансе; сбрасываем её состояние, чтобы
-// при возврате не путаться со старым next'ом.
 func (t *tracker) drop(topic string, partition int32) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -220,7 +187,6 @@ func run(ctx context.Context, o runOpts) error {
 	fmt.Println("Ctrl+C — выход.")
 	fmt.Println()
 
-	// per-worker channels — диспетчер раскладывает по hash(key).
 	channels := make([]chan *kgo.Record, o.workers)
 	for i := range channels {
 		channels[i] = make(chan *kgo.Record, o.bufferSize)
@@ -239,9 +205,6 @@ func run(ctx context.Context, o runOpts) error {
 		}(i, channels[i])
 	}
 
-	// commit-loop: раз в commit-interval берёт snapshot tracker'а
-	// и шлёт CommitOffsets. Async — то есть мы не ждём подтверждения
-	// в цикле обработки; ошибка коммита просто залогируется.
 	commitCtx, commitCancel := context.WithCancel(context.Background())
 	var commitWg sync.WaitGroup
 	commitWg.Add(1)
@@ -259,7 +222,6 @@ func run(ctx context.Context, o runOpts) error {
 		}
 	}()
 
-	// throughput-репортер раз в секунду.
 	statsCtx, statsCancel := context.WithCancel(context.Background())
 	var statsWg sync.WaitGroup
 	statsWg.Add(1)
@@ -268,14 +230,9 @@ func run(ctx context.Context, o runOpts) error {
 		reportThroughput(statsCtx, &processed)
 	}()
 
-	// poll-loop: получили fetches → observe + dispatch в worker.
-	// Когда ctx отменяется, выходим из poll, закрываем worker-каналы,
-	// ждём drain, делаем финальный sync-commit.
 	start := time.Now()
 	pollErr := pollLoop(ctx, cl, tr, channels)
 
-	// shutdown sequence: нет новых записей в каналы → ждём workers
-	// → останавливаем тикер commit'ов → финальный sync-commit.
 	for _, ch := range channels {
 		close(ch)
 	}
@@ -298,8 +255,6 @@ func run(ctx context.Context, o runOpts) error {
 	return nil
 }
 
-// pollLoop читает fetches и раскладывает по worker-каналам. Возврат —
-// либо ошибка, либо nil после ctx.Done.
 func pollLoop(
 	ctx context.Context,
 	cl *kgo.Client,
@@ -331,8 +286,6 @@ func pollLoop(
 	}
 }
 
-// workerFor — стабильный fnv32a-хеш по ключу, mod N. Пустой ключ всегда
-// уходит в worker 0; per-key ordering для безключевых записей не нужен.
 func workerFor(key []byte, n int) int {
 	if len(key) == 0 {
 		return 0

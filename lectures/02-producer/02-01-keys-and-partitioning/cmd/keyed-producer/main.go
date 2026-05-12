@@ -1,15 +1,3 @@
-// keyed-producer пишет 1000 сообщений в топик с ключом userID%10 и в конце
-// показывает распределение записей по партициям и список ключей в каждой
-// партиции. Видно две вещи сразу: записи разъезжаются по партициям не
-// случайно, а через хэш ключа; и один и тот же ключ всегда летит в одну и
-// ту же партицию.
-//
-// Топик создаётся идемпотентно с -partitions=3. Запись через ProduceSync,
-// чтобы получить (partition, offset) сразу — это удобно для аналитики в
-// конце. Дефолтный partitioner в franz-go — UniformBytesPartitioner, он же
-// «sticky»: для записей с ключом он хеширует ключ через murmur2 и берёт
-// результат по модулю числа партиций. Это та же формула, что в Java-клиенте
-// Kafka по умолчанию.
 package main
 
 import (
@@ -87,8 +75,6 @@ func run(ctx context.Context, o runOpts) error {
 	fmt.Printf("пишем %d сообщений с ключами user-0..user-%d в топик %q (%d партиций)\n\n",
 		o.messages, o.users-1, o.topic, o.partitions)
 
-	// keyToPartitions: какой ключ в какие партиции попал. На корректно работающем
-	// дефолтном partitioner'е у каждого ключа партиция должна быть одна.
 	keyToPartitions := make(map[string]map[int32]int)
 	partitionCount := make(map[int32]int)
 

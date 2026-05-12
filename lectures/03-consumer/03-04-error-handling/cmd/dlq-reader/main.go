@@ -1,16 +1,3 @@
-// dlq-reader — отдельный консьюмер на payments-dlq.
-//
-// Печатает каждое сообщение DLQ с подсветкой ключевых заголовков:
-// error.class, error.message, original.topic / partition / offset,
-// retry.count, dlq.timestamp. По дизайну — для разбора инцидентов
-// и replay-сценария (модуль 04-04).
-//
-// От реального DLQ-обработчика этот код отличается тем, что ничего
-// не пишет обратно (ни в БД, ни в alert-канал). Задача демонстрационная:
-// показать, что в DLQ приехали разные классы ошибок и каждый сохранил
-// свой контекст в headers.
-//
-// Запуск: см. Makefile (run-dlq-reader).
 package main
 
 import (
@@ -32,8 +19,6 @@ const (
 	defaultGroup = "lecture-03-04-dlq-reader"
 )
 
-// keyHeaders — те, что хочется напечатать первой строкой,
-// сразу после partition/offset. Остальные headers идут списком ниже.
 var keyHeaders = []string{
 	"error.class",
 	"error.message",
@@ -124,9 +109,6 @@ func printRecord(n int, r *kgo.Record) {
 	fmt.Printf("    payload: %s\n\n", string(r.Value))
 }
 
-// indexHeaders собирает headers в map для удобного lookup'а по имени.
-// Если один и тот же ключ встречается несколько раз — берём последний;
-// в Kafka это допустимо (headers — список пар, не мапа).
 func indexHeaders(hs []kgo.RecordHeader) map[string]string {
 	out := make(map[string]string, len(hs))
 	for _, h := range hs {

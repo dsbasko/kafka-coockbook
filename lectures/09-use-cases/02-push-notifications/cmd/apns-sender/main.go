@@ -1,4 +1,3 @@
-// apns-sender — sender для канала APNs. Тонкая обёртка над sender.Main.
 package main
 
 import "github.com/dsbasko/kafka-sandbox/lectures/09-use-cases/02-push-notifications/internal/sender"

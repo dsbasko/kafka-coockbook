@@ -1,22 +1,3 @@
-// dlq-processor — терминальный обработчик payments-dlq.
-//
-// Что делает:
-//
-//   - читает payments-dlq в группе lecture-04-04-dlq;
-//   - на каждое сообщение печатает ALERT в stdout (mock алёрт-канала —
-//     в реальной жизни тут был бы PagerDuty / Slack-вебхук / OpsGenie);
-//   - дописывает компактную JSON-строку в incident-лог (по умолчанию
-//     /tmp/lecture-04-04-incidents.jsonl) — чтобы потом можно было
-//     грепать по error.class или original.topic во время разбора.
-//
-// В плане лекции дата-стор для DLQ — Postgres-таблица. Здесь сделан
-// файл append-only, чтобы лекция оставалась лёгкой и не тащила за собой
-// docker-compose.override.yml. Контракт тот же: «всё, что попало в DLQ,
-// зафиксировано в долговременном хранилище и видно глазами оператора».
-// Замена файла на INSERT в Postgres — упражнение на 30 строк, паттерн
-// здесь не меняется.
-//
-// Запуск: см. Makefile (run-dlq).
 package main
 
 import (
@@ -44,10 +25,6 @@ const (
 	defaultClientID = "lecture-04-04-dlq-processor"
 )
 
-// incident — то, что мы пишем в incident-лог. Всё ключевое из headers
-// плюс короткая выжимка о самой записи. Payload в incident НЕ кладём —
-// мы не хотим терабайтов чувствительных данных в incident-логе. Если
-// нужно посмотреть payload — есть kafka-console-consumer и replay-cli.
 type incident struct {
 	DLQTopic         string `json:"dlq_topic"`
 	DLQPartition     int32  `json:"dlq_partition"`
@@ -204,8 +181,6 @@ func writeIncident(w *bufio.Writer, inc incident) error {
 	return nil
 }
 
-// nz — короткое «not zero»: возвращает «-», если строка пустая.
-// Чисто для читаемости лога — пустые поля бросаются в глаза при разборе.
 func nz(s string) string {
 	if s == "" {
 		return "-"

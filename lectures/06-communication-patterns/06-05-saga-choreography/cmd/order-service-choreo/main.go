@@ -1,23 +1,3 @@
-// order-service-choreo — наблюдатель за сагой в choreography-варианте.
-//
-// В choreography у саги нет одного «хозяина», который видит все шаги. Этот
-// сервис собирает воедино только потому, что подписан на все 9 событий
-// саги; в реальности так делает не сервис, а отдельный observability-pipeline.
-// В лекции один процесс печатает таймлайн, чтобы было видно, что
-// происходит, без копания в нескольких терминалах.
-//
-// Что делает:
-//
-//   - subscribe ко всем choreo-топикам (order.requested, payment.*,
-//     inventory.*, shipment.*) с собственной consumer-группой;
-//   - в памяти держит { saga_id → []событий с временем } и при каждом
-//     событии печатает обновлённый таймлайн;
-//   - помечает сагу как SUCCESS на shipment-scheduled и FAILED на
-//     payment.failed / inventory.failed (без compensation) или после
-//     payment.refunded (с compensation).
-//
-// Запускать только в choreography. Для orchestration наблюдателя нет —
-// там состояние и так центрально, в saga_state.
 package main
 
 import (

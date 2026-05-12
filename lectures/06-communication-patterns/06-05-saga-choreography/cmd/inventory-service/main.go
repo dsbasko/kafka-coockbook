@@ -1,12 +1,3 @@
-// inventory-service — резервирует и компенсирует резерв.
-//
-// choreo:
-//
-//	payment.completed → inventory.reserved | inventory.failed
-//	shipment.failed   → inventory.released
-//
-// orch: subscribed to inventory-cmd, отвечает в inventory-reply.
-// RESERVE может срываться через FAIL_RATE; RELEASE — компенсация, всегда ok.
 package main
 
 import (
@@ -170,7 +161,7 @@ func handleChoreo(ctx context.Context, cl *kgo.Client, r *kgo.Record, failRate f
 		if err := sagaio.Unmarshal(r, &evt); err != nil {
 			return err
 		}
-		// Резерв был, теперь надо вернуть. Компенсация всегда ok.
+
 		fmt.Printf("RELEASE   saga=%s reason=%s\n", sagaio.Short(evt.GetSagaId()), evt.GetReason())
 		return sagaio.Produce(ctx, cl, sagaio.TopicChoreoInventoryReleased, evt.GetSagaId(),
 			&sagav1.InventoryReleased{
