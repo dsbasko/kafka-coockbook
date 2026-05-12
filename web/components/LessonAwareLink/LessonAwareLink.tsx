@@ -2,6 +2,7 @@
 
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { LockIcon } from '@/components/ProgramDrawer/LockIcon';
+import { stripLangFromPath } from '@/lib/lang';
 import styles from './LessonAwareLink.module.css';
 
 type LessonAwareLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
@@ -71,7 +72,8 @@ function matchLessonHref(
   if (!path.startsWith('/')) return null;
 
   const withoutHash = path.split('#')[0]?.split('?')[0] ?? '';
-  const segments = withoutHash.split('/').filter(Boolean);
+  const { rest } = stripLangFromPath(withoutHash);
+  const segments = rest.split('/').filter(Boolean);
   if (segments.length < 2) return null;
 
   return { moduleId: segments[0], slug: segments[1] };

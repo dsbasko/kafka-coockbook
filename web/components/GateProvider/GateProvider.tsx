@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import type { Course, FlatLessonEntry } from '@/lib/course';
 import { GATE_LOCKED_ATTR } from '@/lib/gate-init-script';
 import { applyGatePainting } from '@/lib/gate-mark-script';
+import { stripLangFromPath } from '@/lib/lang';
 import {
   getFrontierLesson,
   isLessonKeyUnlocked,
@@ -91,7 +92,8 @@ export function GateProvider({ course, basePath, children }: GateProviderProps) 
     const root = document.documentElement;
     const furthestIndex = resolveFurthestIndex(course, furthestKey, progress);
 
-    const segments = (pathname ?? '/')
+    const { rest } = stripLangFromPath(pathname ?? '/');
+    const segments = rest
       .replace(/^\/+|\/+$/g, '')
       .split('/')
       .filter(Boolean);
