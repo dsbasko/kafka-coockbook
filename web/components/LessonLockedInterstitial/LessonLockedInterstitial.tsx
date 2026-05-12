@@ -10,6 +10,7 @@ import {
 } from '@/lib/course';
 import { navigateToFrontierHref } from '@/lib/frontier-link';
 import { openProgramDrawer } from '@/lib/program-drawer';
+import { useT } from '@/lib/use-i18n';
 import styles from './LessonLockedInterstitial.module.css';
 
 type LessonLockedInterstitialProps = {
@@ -34,6 +35,7 @@ export function LessonLockedInterstitial({
   const gate = useGate();
   const { course, basePath } = gate;
   const router = useRouter();
+  const t = useT();
 
   const attemptedLesson =
     attemptedModuleId && attemptedSlug
@@ -67,27 +69,25 @@ export function LessonLockedInterstitial({
           <div className={styles.eyebrow}>
             <span className={styles.eyebrowBadge} aria-hidden="true">
               <SmallLockIcon />
-              <span>LOCKED</span>
+              <span>{t.locked}</span>
             </span>
             {attemptedModuleIndex >= 0 && (
               <>
                 <span className={styles.eyebrowDot}>·</span>
                 <span>
-                  Модуль {String(attemptedModuleIndex + 1).padStart(2, '0')}
+                  {t.moduleNumberPrefix}{' '}
+                  {String(attemptedModuleIndex + 1).padStart(2, '0')}
                 </span>
               </>
             )}
           </div>
 
-          <h1 className={styles.title}>Этот урок ещё впереди</h1>
-          <p className={styles.desc}>
-            Курс изучается по порядку — чтобы открыть этот шаг, сначала
-            завершите предыдущие. Так контекст накапливается без пропусков.
-          </p>
+          <h1 className={styles.title}>{t.lockedTitle}</h1>
+          <p className={styles.desc}>{t.lockedDesc}</p>
 
           {attemptedLesson && (
-            <dl className={styles.targetCard} aria-label="Урок, который вы открыли">
-              <dt className={styles.targetLabel}>/ вы пытались открыть</dt>
+            <dl className={styles.targetCard} aria-label={t.attemptedLessonLabel}>
+              <dt className={styles.targetLabel}>{t.attemptedYouTried}</dt>
               <dd className={styles.targetTitle}>
                 {attemptedModule && (
                   <>
@@ -108,8 +108,8 @@ export function LessonLockedInterstitial({
             data-cta-state="not-started"
             suppressHydrationWarning
           >
-            {/* The "Открыть программу" button is always visible; the
-                "Продолжить" link is the gate-paint-driven variant. */}
+            {/* The "Open outline" button is always visible; the
+                "Continue" link is the gate-paint-driven variant. */}
             <Link
               href={firstHref}
               className={`${styles.btn} ${styles.btnPrimary}`}
@@ -118,7 +118,7 @@ export function LessonLockedInterstitial({
               suppressHydrationWarning
               onClick={(e) => navigateToFrontierHref(e, router, basePath)}
             >
-              Продолжить ·{' '}
+              {t.continueAction} ·{' '}
               <span data-cta-frontier-title suppressHydrationWarning>
                 {firstEntry?.lesson.title ?? ''}
               </span>
@@ -129,7 +129,7 @@ export function LessonLockedInterstitial({
               className={`${styles.btn} ${styles.btnPrimary}`}
               data-cta-variant="not-started"
             >
-              Начать с первого урока
+              {t.startFromFirst}
               <span className={styles.btnArrow}>→</span>
             </Link>
             <button
@@ -137,20 +137,20 @@ export function LessonLockedInterstitial({
               onClick={openProgramDrawer}
               className={`${styles.btn} ${styles.btnSecondary}`}
             >
-              Открыть программу
+              {t.openProgram}
             </button>
           </div>
         </div>
 
         <aside
           className={styles.sideCard}
-          aria-label="Прогресс курса"
+          aria-label={t.courseProgress}
           data-progress-scope="global"
           data-progress-state="not-started"
           suppressHydrationWarning
         >
           <div className={styles.sideRow}>
-            <span className={styles.sideLabel}>Прогресс</span>
+            <span className={styles.sideLabel}>{t.progress}</span>
             <span className={styles.sideVal}>
               <span data-progress-count suppressHydrationWarning>
                 0
@@ -181,7 +181,7 @@ export function LessonLockedInterstitial({
             data-hint-state="hidden"
             suppressHydrationWarning
           >
-            <span className={styles.sideLabel}>Следующий шаг</span>
+            <span className={styles.sideLabel}>{t.nextStep}</span>
             <div className={styles.frontierLine}>
               <span
                 className={styles.frontierModule}
@@ -200,7 +200,7 @@ export function LessonLockedInterstitial({
             <>
               <div className={styles.sideDivider} />
               <div className={styles.sideBlock}>
-                <span className={styles.sideLabel}>До этого урока</span>
+                <span className={styles.sideLabel}>{t.untilThisLesson}</span>
                 <div
                   className={styles.stepsValue}
                   data-steps-until

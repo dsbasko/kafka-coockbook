@@ -14,7 +14,7 @@ import {
   getPrevLesson,
   getTotalLessons,
 } from '@/lib/course';
-import { stripLangFromPath } from '@/lib/lang';
+import { DEFAULT_LANG, stripLangFromPath } from '@/lib/lang';
 import { OPEN_PROGRAM_EVENT } from '@/lib/program-drawer';
 import styles from './AppShell.module.css';
 
@@ -38,8 +38,11 @@ export function AppShell({ children, course }: AppShellProps) {
 
   // After the i18n restructure every route lives under `/<lang>/...`.
   // Strip the lang segment so module/slug detection sees the same shape
-  // it did pre-i18n; the AppShell stays language-agnostic.
-  const { rest } = stripLangFromPath(pathname);
+  // it did pre-i18n; the AppShell stays language-agnostic for routing
+  // but forwards the active lang to the server-rendered Header (which
+  // needs it for aria-labels via getDict).
+  const { lang: parsedLang, rest } = stripLangFromPath(pathname);
+  const lang = parsedLang ?? DEFAULT_LANG;
   const segments = rest.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
   const moduleId = segments[0];
   const lessonSlug = segments[1];
@@ -105,7 +108,7 @@ export function AppShell({ children, course }: AppShellProps) {
         onClose={() => setIsDrawerOpen(false)}
       />
       <div className={styles.body}>
-        {hideHeader ? null : <Header breadcrumbs={breadcrumbs} actions={actions} />}
+        {hideHeader ? null : <Header lang={lang} breadcrumbs={breadcrumbs} actions={actions} />}
         <main className={styles.main}>{children}</main>
       </div>
     </div>

@@ -1,6 +1,10 @@
+'use client';
+
 import Link from 'next/link';
+import { useT } from '@/lib/use-i18n';
 
 export default function NotFound() {
+  const t = useT();
   return (
     <main
       style={{
@@ -17,7 +21,7 @@ export default function NotFound() {
           marginBottom: 'var(--space-4)',
         }}
       >
-        Страница не найдена
+        {t.notFoundTitle}
       </h1>
       <p
         style={{
@@ -26,7 +30,7 @@ export default function NotFound() {
           marginBottom: 'var(--space-6)',
         }}
       >
-        Похоже, такой лекции в курсе нет. Вернитесь на главную.
+        {t.notFoundDesc}
       </p>
       <Link
         href="/"
@@ -39,7 +43,7 @@ export default function NotFound() {
           fontWeight: 'var(--font-weight-semibold)',
         }}
       >
-        На главную
+        {t.goHome}
       </Link>
     </main>
   );

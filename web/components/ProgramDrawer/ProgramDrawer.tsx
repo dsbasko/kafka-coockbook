@@ -7,6 +7,7 @@ import type { Course } from '@/lib/course';
 import { parseDurationMin } from '@/lib/format';
 import { applyGatePainting } from '@/lib/gate-mark-script';
 import { isCompleted, lessonKey } from '@/lib/progress';
+import { useT } from '@/lib/use-i18n';
 import { LockIcon } from './LockIcon';
 import styles from './ProgramDrawer.module.css';
 
@@ -32,6 +33,7 @@ export function ProgramDrawer({
   onClose,
 }: ProgramDrawerProps) {
   const gate = useGate();
+  const t = useT();
   // Use the shared progress map from GateProvider (single source of truth) so
   // the drawer agrees with checkmark state elsewhere on the page.
   const progress = gate.hydrated ? gate.progress : null;
@@ -121,7 +123,7 @@ export function ProgramDrawer({
         ref={asideRef}
         className={styles.drawer}
         data-open={isOpen ? 'true' : 'false'}
-        aria-label="Программа курса"
+        aria-label={t.programCourse}
         aria-hidden={!isOpen}
         role="dialog"
         aria-modal="true"
@@ -133,20 +135,20 @@ export function ProgramDrawer({
         <header className={styles.header}>
           <div>
             <div className={styles.eyebrow}>/ contents</div>
-            <h2 className={styles.title}>Программа курса</h2>
+            <h2 className={styles.title}>{t.programCourse}</h2>
           </div>
           <button
             type="button"
             className={styles.close}
             onClick={onClose}
-            aria-label="Закрыть"
+            aria-label={t.close}
             tabIndex={isOpen ? 0 : -1}
           >
             <CloseIcon />
           </button>
         </header>
 
-        <nav className={styles.body} aria-label="Список модулей и уроков">
+        <nav className={styles.body} aria-label={t.moduleListLabel}>
           <ol className={styles.modules}>
             {course.modules.map((mod, mIndex) => {
               const total = mod.lessons.length;
@@ -209,7 +211,7 @@ export function ProgramDrawer({
                                 onClose();
                               }}
                               tabIndex={isOpen ? 0 : -1}
-                              title="Урок откроется после прохождения предыдущих"
+                              title={t.lessonLockTitle}
                             >
                               <span className={styles.lessonNum}>
                                 {String(lIndex + 1).padStart(2, '0')}

@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
+import { getDict } from '@/lib/i18n';
+import { type Lang } from '@/lib/lang';
 import styles from './LessonPageLayout.module.css';
 
 type LessonPageLayoutProps = {
+  lang: Lang;
   title: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -10,6 +13,7 @@ type LessonPageLayoutProps = {
 };
 
 export function LessonPageLayout({
+  lang,
   title,
   children,
   footer,
@@ -17,6 +21,7 @@ export function LessonPageLayout({
   sideMetaSlot,
 }: LessonPageLayoutProps) {
   const hasSide = Boolean(tocSlot || sideMetaSlot);
+  const t = getDict(lang);
 
   return (
     <div className={styles.page} data-has-side={hasSide ? 'true' : 'false'}>
@@ -31,7 +36,7 @@ export function LessonPageLayout({
       </div>
 
       {hasSide && (
-        <aside className={styles.side} aria-label="Сведения об уроке">
+        <aside className={styles.side} aria-label={t.lessonInfoLabel}>
           {tocSlot}
           {sideMetaSlot}
         </aside>

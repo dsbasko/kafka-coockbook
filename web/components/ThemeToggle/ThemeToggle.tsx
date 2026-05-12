@@ -3,11 +3,19 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ThemeIcon } from '@/components/Sidebar/icons';
 import { useTheme } from '@/components/ThemeProvider';
-import { THEME_LABELS, THEME_PREFERENCES, type ThemePreference } from '@/lib/theme';
+import { THEME_PREFERENCES, type ThemePreference } from '@/lib/theme';
+import { useT } from '@/lib/use-i18n';
 import styles from './ThemeToggle.module.css';
+
+const THEME_LABEL_KEYS: Record<ThemePreference, 'themeLight' | 'themeDark' | 'themeSystem'> = {
+  light: 'themeLight',
+  dark: 'themeDark',
+  system: 'themeSystem',
+};
 
 export function ThemeToggle() {
   const { preference, setPreference } = useTheme();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const popoverId = useId();
@@ -40,8 +48,8 @@ export function ThemeToggle() {
       <button
         type="button"
         className={styles.trigger}
-        aria-label="Тема оформления"
-        title="Тема оформления"
+        aria-label={t.themeToggleLabel}
+        title={t.themeToggleLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={popoverId}
@@ -52,7 +60,7 @@ export function ThemeToggle() {
       <div
         id={popoverId}
         role="menu"
-        aria-label="Тема оформления"
+        aria-label={t.themeToggleLabel}
         className={styles.popover}
         data-open={open ? 'true' : 'false'}
         hidden={!open}
@@ -70,7 +78,7 @@ export function ThemeToggle() {
               onClick={() => handleSelect(value)}
               tabIndex={open ? 0 : -1}
             >
-              <span className={styles.optionLabel}>{THEME_LABELS[value]}</span>
+              <span className={styles.optionLabel}>{t[THEME_LABEL_KEYS[value]]}</span>
               <span className={styles.optionMark} aria-hidden="true">
                 {active ? '✓' : ''}
               </span>

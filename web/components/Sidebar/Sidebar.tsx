@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useT } from '@/lib/use-i18n';
 import { HomeIcon, ProgramIcon, GitHubIcon } from './icons';
 import styles from './Sidebar.module.css';
 
@@ -15,14 +16,15 @@ type SidebarProps = {
 export function Sidebar({ onProgramClick, isProgramOpen, repoUrl }: SidebarProps) {
   const pathname = usePathname() ?? '/';
   const isHome = pathname === '/';
+  const t = useT();
   return (
-    <aside className={styles.sidebar} aria-label="Боковая навигация">
-      <nav className={styles.nav} aria-label="Основная навигация">
+    <aside className={styles.sidebar} aria-label={t.sidebarLabel}>
+      <nav className={styles.nav} aria-label={t.navMainLabel}>
         <Link
           href="/"
           className={styles.button}
-          aria-label="Главная"
-          title="Главная"
+          aria-label={t.home}
+          title={t.home}
           aria-current={isHome ? 'page' : undefined}
         >
           <HomeIcon />
@@ -30,8 +32,8 @@ export function Sidebar({ onProgramClick, isProgramOpen, repoUrl }: SidebarProps
         <button
           type="button"
           className={styles.button}
-          aria-label="Программа курса"
-          title="Программа курса"
+          aria-label={t.programCourse}
+          title={t.programCourse}
           aria-haspopup="dialog"
           aria-expanded={isProgramOpen}
           onClick={onProgramClick}
@@ -47,8 +49,8 @@ export function Sidebar({ onProgramClick, isProgramOpen, repoUrl }: SidebarProps
           href={repoUrl}
           target="_blank"
           rel="noreferrer noopener"
-          aria-label="Репозиторий на GitHub"
-          title="Репозиторий на GitHub"
+          aria-label={t.githubRepo}
+          title={t.githubRepo}
         >
           <GitHubIcon />
         </a>

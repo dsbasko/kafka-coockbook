@@ -20,6 +20,7 @@ import {
 import { openProgramDrawer } from '@/lib/program-drawer';
 import { lessonKey } from '@/lib/progress';
 import { navigateToFrontierHref } from '@/lib/frontier-link';
+import { useT } from '@/lib/use-i18n';
 import styles from './HomePage.module.css';
 
 type HomePageProps = {
@@ -31,6 +32,7 @@ export function HomePage({ course, level }: HomePageProps) {
   const totalLessons = getTotalLessons(course);
   const router = useRouter();
   const { basePath } = useGate();
+  const t = useT();
   const totalDurationMin = useMemo(
     () =>
       course.modules.reduce(
@@ -56,7 +58,9 @@ export function HomePage({ course, level }: HomePageProps) {
       <section className={styles.hero}>
         <div>
           <h1 className={styles.heroTitle}>
-            Kafka <span className={styles.heroTitleAccent}>для тех, кто</span> пишет на Go
+            {t.heroTitleLead}{' '}
+            <span className={styles.heroTitleAccent}>{t.heroTitleAccent}</span>{' '}
+            {t.heroTitleTail}
           </h1>
           <p className={styles.heroLead}>{collapseWhitespace(course.description)}</p>
           <div
@@ -67,13 +71,13 @@ export function HomePage({ course, level }: HomePageProps) {
           >
             {/* Two CTA variants: gate-paint flips data-cta-state and CSS
                 shows exactly one. Pre-paint baseline = "not-started" so the
-                SSR HTML reads "Начать с первого урока". */}
+                SSR HTML reads the "start from the first lesson" copy. */}
             <Link
               href={firstHref}
               className={`${styles.btn} ${styles.btnPrimary}`}
               data-cta-variant="not-started"
             >
-              Начать с первого урока
+              {t.startFromFirst}
               <span className={styles.btnArrow}>→</span>
             </Link>
             <Link
@@ -84,26 +88,26 @@ export function HomePage({ course, level }: HomePageProps) {
               suppressHydrationWarning
               onClick={(e) => navigateToFrontierHref(e, router, basePath)}
             >
-              Продолжить · урок{' '}
+              {t.continueLessonPrefix}{' '}
               <span data-cta-frontier-num suppressHydrationWarning>
                 1
               </span>
               <span className={styles.btnArrow}>→</span>
             </Link>
-            {/* "Начать с начала" only visible in in-progress state. */}
+            {/* "Start over" only visible in in-progress state. */}
             <Link
               href={firstHref}
               className={`${styles.btn} ${styles.btnSecondary}`}
               data-cta-variant="in-progress"
             >
-              Начать с начала
+              {t.startFromScratch}
             </Link>
             <button
               type="button"
               className={`${styles.btn} ${styles.btnGhost}`}
               onClick={openProgramDrawer}
             >
-              Программа курса
+              {t.programCourse}
             </button>
           </div>
           {/* Frontier hint — only visible once gate-paint marks the page as
@@ -127,7 +131,7 @@ export function HomePage({ course, level }: HomePageProps) {
 
         <aside
           className={styles.statsCard}
-          aria-label="Сводка прогресса"
+          aria-label={t.progressSummary}
           data-progress-scope="global"
           data-progress-state="not-started"
           suppressHydrationWarning
@@ -158,19 +162,19 @@ export function HomePage({ course, level }: HomePageProps) {
           </div>
           <dl className={styles.statsGrid}>
             <div>
-              <dt className={styles.statsLabel}>Модулей</dt>
+              <dt className={styles.statsLabel}>{t.modulesLabel}</dt>
               <dd className={styles.statsValue}>{course.modules.length}</dd>
             </div>
             <div>
-              <dt className={styles.statsLabel}>Уроков</dt>
+              <dt className={styles.statsLabel}>{t.lessonsLabel}</dt>
               <dd className={styles.statsValue}>{totalLessons}</dd>
             </div>
             <div>
-              <dt className={styles.statsLabel}>Длительность</dt>
+              <dt className={styles.statsLabel}>{t.durationLabel}</dt>
               <dd className={styles.statsValue}>{formatDurationHm(totalDurationMin)}</dd>
             </div>
             <div>
-              <dt className={styles.statsLabel}>Стек</dt>
+              <dt className={styles.statsLabel}>{t.stackLabel}</dt>
               <dd className={styles.statsValue}>{level}</dd>
             </div>
           </dl>
@@ -180,7 +184,7 @@ export function HomePage({ course, level }: HomePageProps) {
       <header className={styles.sectionHead}>
         <div>
           <div className={styles.sectionEyebrow}>/ contents</div>
-          <h2 className={styles.sectionTitle}>Программа курса</h2>
+          <h2 className={styles.sectionTitle}>{t.programCourse}</h2>
         </div>
         <div className={styles.sectionTools}>
           {course.modules.length} {pluralize(course.modules.length, MODULE_FORMS)} ·{' '}
@@ -219,7 +223,7 @@ export function HomePage({ course, level }: HomePageProps) {
                     e.preventDefault();
                   }
                 }}
-                title="Модуль откроется после прохождения предыдущих уроков"
+                title={t.moduleLockTitle}
                 suppressHydrationWarning
               >
                 <div className={styles.moduleNum}>

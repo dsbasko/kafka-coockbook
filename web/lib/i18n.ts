@@ -33,6 +33,12 @@ export type UIDict = {
   prevLesson: string;
   nextLesson: string;
 
+  // HeaderLessonNav (chevron buttons reuse a shorter form without the arrow)
+  prevLessonAria: string;
+  nextLessonAria: string;
+  firstLessonTitle: string;
+  lastLessonTitle: string;
+
   // Toc
   tocLabel: string;
 
@@ -107,6 +113,11 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     prevLesson: '← Предыдущий урок',
     nextLesson: 'Следующий урок →',
 
+    prevLessonAria: 'Предыдущий урок',
+    nextLessonAria: 'Следующий урок',
+    firstLessonTitle: 'Это первый урок',
+    lastLessonTitle: 'Это последний урок',
+
     tocLabel: 'Содержание',
 
     readingProgressLabel: 'Прогресс чтения',
@@ -171,6 +182,11 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     lessonNavLabel: 'Lesson navigation',
     prevLesson: '← Previous lesson',
     nextLesson: 'Next lesson →',
+
+    prevLessonAria: 'Previous lesson',
+    nextLessonAria: 'Next lesson',
+    firstLessonTitle: 'This is the first lesson',
+    lastLessonTitle: 'This is the last lesson',
 
     tocLabel: 'Contents',
 

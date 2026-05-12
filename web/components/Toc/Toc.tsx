@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { TocEntry } from '@/lib/extract-toc';
+import { useT } from '@/lib/use-i18n';
 import styles from './Toc.module.css';
 
 type TocProps = {
@@ -15,6 +16,7 @@ const OBSERVER_OPTIONS: IntersectionObserverInit = {
 };
 
 export function Toc({ entries }: TocProps) {
+  const t = useT();
   const [activeSlug, setActiveSlug] = useState<string | null>(
     entries.length > 0 ? entries[0].slug : null,
   );
@@ -61,7 +63,7 @@ export function Toc({ entries }: TocProps) {
   };
 
   return (
-    <nav className={styles.toc} aria-label="Содержание">
+    <nav className={styles.toc} aria-label={t.tocLabel}>
       <p className={styles.heading}>/ contents</p>
       <ol className={styles.list}>
         {entries.map((entry) => {

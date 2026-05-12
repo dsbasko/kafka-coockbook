@@ -158,6 +158,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       <div data-lesson-body>
         <ReadingProgress />
         <LessonPageLayout
+          lang={lang}
           title={lesson.title}
           tocSlot={<Toc entries={toc} />}
           sideMetaSlot={

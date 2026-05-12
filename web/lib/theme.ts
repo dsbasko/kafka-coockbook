@@ -4,12 +4,6 @@ export type ResolvedTheme = 'light' | 'dark';
 export const THEME_STORAGE_KEY = 'kafka-cookbook-theme';
 export const THEME_PREFERENCES = ['light', 'dark', 'system'] as const;
 
-export const THEME_LABELS: Record<ThemePreference, string> = {
-  light: 'Светлая',
-  dark: 'Тёмная',
-  system: 'Системная',
-};
-
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
 }

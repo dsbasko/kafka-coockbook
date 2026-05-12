@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useT } from '@/lib/use-i18n';
 import styles from './ReadingProgress.module.css';
 
 type ReadingProgressProps = {
@@ -10,6 +11,7 @@ type ReadingProgressProps = {
 export function ReadingProgress({
   targetSelector = '[data-reading-target]',
 }: ReadingProgressProps) {
+  const t = useT();
   const [pct, setPct] = useState(0);
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function ReadingProgress({
       className={styles.bar}
       style={{ width: `${pct}%` }}
       role="progressbar"
-      aria-label="Прогресс чтения"
+      aria-label={t.readingProgressLabel}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(pct)}
