@@ -1,50 +1,52 @@
-# Курс: Kafka на Go от новичка до профессионала
+# Kafka on Go — From Novice to Pro
 
-Это учебный курс из 9 модулей и 42 единиц материала (38 лекций плюс 4 сквозных use case'а). Курс наслаивается поверх sandbox-стенда из корня репозитория — kafka-1/2/3 в KRaft mode, Schema Registry, Kafka Connect, Kafka UI.
+> Available as an interactive site: https://dsbasko.github.io/kafka-cookbook/
 
-Цель — пройти путь от «что такое топик и партиция» до production-grade паттернов: транзакции, outbox, CDC через Debezium, гибрид gRPC + Kafka. Без сахара. С реальным кодом, который запускается на твоей машине через `make run` и оставляет наблюдаемый эффект на стенде.
+A nine-module course with 42 units (38 lectures plus 4 cross-cutting use cases). Each lecture builds on the sandbox stack at the repo root — kafka-1/2/3 in KRaft mode, Schema Registry, Kafka Connect, Kafka UI.
 
-## Сайт
+The goal: go from "what is a topic and a partition" to production-grade patterns — transactions, outbox, CDC via Debezium, a gRPC + Kafka hybrid. No sugar. Real code that runs on your machine via `make run` and leaves an observable trace on the stack.
 
-Тот же материал в виде статического сайта с навигацией по программе, подсветкой кода и переключением темы:
+## Site
+
+The same material as a static site with program navigation, syntax highlighting, language toggle (RU / EN), and theme switch:
 
 **https://dsbasko.github.io/kafka-cookbook/**
 
-Локальный запуск (требует Node ≥ 20 и pnpm 9.15.0 — `corepack enable && corepack prepare pnpm@9.15.0 --activate`):
+Local run (requires Node ≥ 20 and pnpm 9.15.0 — `corepack enable && corepack prepare pnpm@9.15.0 --activate`):
 
 ```sh
-make web-install   # один раз — pnpm install в web/
+make web-install   # once — pnpm install in web/
 make web-dev       # http://localhost:3000
-make web-build     # статика в web/out/ (то же самое собирает GitHub Action на push в main)
+make web-build     # static output in web/out/ (the same build runs in GitHub Actions on push to main)
 ```
 
-Деплой автоматический: `.github/workflows/deploy.yml` собирает и публикует на push в `main` (один раз нужно включить Settings → Pages → Source: «GitHub Actions»). Origin для canonical/sitemap/OG задаётся переменной `NEXT_PUBLIC_SITE_URL` (дефолт `https://dsbasko.github.io`). Подробности про устройство и скрипты — в [web/README.md](web/README.md).
+Deployment is automatic: `.github/workflows/deploy.yml` builds and publishes on push to `main` (enable Settings → Pages → Source: "GitHub Actions" once). Origin for canonical / sitemap / OG comes from `NEXT_PUBLIC_SITE_URL` (default `https://dsbasko.github.io`).
 
-## Стек
+## Stack
 
 - Go 1.26
-- Apache Kafka 4.2.0 (KRaft mode, без ZooKeeper)
-- [twmb/franz-go](https://github.com/twmb/franz-go) v1.21.0 — Kafka-клиент
-- Protobuf и gRPC (кодогенерация через buf)
-- Confluent Schema Registry плюс Kafka Connect (с Debezium для CDC)
-- Postgres, ClickHouse, Elasticsearch и mock-сервисы — для use case'ов модуля 09
+- Apache Kafka 4.2.0 (KRaft mode, no ZooKeeper)
+- [twmb/franz-go](https://github.com/twmb/franz-go) v1.21.0 — Kafka client
+- Protobuf and gRPC (codegen via buf)
+- Confluent Schema Registry plus Kafka Connect (with Debezium for CDC)
+- Postgres, ClickHouse, Elasticsearch, and mock services — for the module 09 use cases
 
-Полный список того, что крутится в стенде, и как его поднять — в [docker-compose.yml](docker-compose.yml).
+Everything that runs in the stack and how to bring it up — see [docker-compose.yml](docker-compose.yml).
 
-## Как пользоваться
+## Getting Started
 
-Сначала подними стенд из корня репозитория (`docker compose up -d`). Дальше из корня:
+First bring up the stack from the repo root (`docker compose up -d`). Then from the root:
 
 ```sh
-make list                                                    # дерево лекций (lectures/<module>/<slug>)
-make lecture L=01-foundations/01-01-architecture-and-kraft  # запустить конкретную
+make list                                                    # tree of lectures (lectures/<module>/<slug>)
+make lecture L=01-foundations/01-01-architecture-and-kraft  # run a specific one
 ```
 
-Корневой `Makefile` делегирует эти цели в `lectures/Makefile`, плюс владеет `connect-install-plugins` / `connect-verify-plugins` (потому что `connect-plugins/` остаётся в корне).
+The root `Makefile` delegates these targets to `lectures/Makefile` and owns `connect-install-plugins` / `connect-verify-plugins` (because `connect-plugins/` lives in the root).
 
-Каждая лекция — отдельный Go-модуль со своим `go.mod`, README на русском и Makefile с целями `run`, `topic-create`, плюс что-нибудь специфичное (`kill-broker`, `proto-gen`, `connector-create` — зависит от темы).
+Every lecture is a separate Go module with its own `go.mod`, a README in both Russian and English (`i18n/ru/README.md`, `i18n/en/README.md` when translated), and a Makefile with `run` and `topic-create` targets plus something topic-specific (`kill-broker`, `proto-gen`, `connector-create` — depends on the lecture).
 
-Bootstrap для клиентов — переменная окружения, дефолт уже подходит для локального стенда:
+Client bootstrap is an environment variable, the default already fits the local stack:
 
 ```sh
 KAFKA_BOOTSTRAP=localhost:19092,localhost:19093,localhost:19094
@@ -52,44 +54,48 @@ SCHEMA_REGISTRY_URL=http://localhost:8081
 KAFKA_CONNECT_URL=http://localhost:8083
 ```
 
-Логирование — через `LOG_LEVEL=debug|info|warn|error` (по умолчанию info, текст в stderr).
+Logging — via `LOG_LEVEL=debug|info|warn|error` (default info, text to stderr).
 
-## Структура
+## Structure
 
 ```
 lectures/
-├── go.work                     # workspace, объединяет все модули лекций
-├── README.md                   # этот файл
-├── Makefile                    # делегирует make внутрь лекций
+├── go.work                     # workspace that ties all lecture modules together
+├── README.md                   # dev-doc for adding new lectures
+├── Makefile                    # delegates make into individual lectures
 ├── internal/                   # shared helpers — kafka client, env, runctx, log
 │   ├── kafka/
 │   ├── config/
 │   ├── runctx/
 │   └── log/
-├── 01-foundations/             # модуль 01
+├── 01-foundations/             # module 01
 │   └── 01-01-architecture-and-kraft/
 │       ├── go.mod
-│       ├── README.md
+│       ├── README.md           # stub linking to i18n/ru and i18n/en
+│       ├── i18n/
+│       │   ├── ru/README.md
+│       │   └── en/README.md
+│       ├── images/             # diagrams referenced from both READMEs
 │       ├── Makefile
 │       └── cmd/<binary>/main.go
-├── 02-producer/                # модуль 02
+├── 02-producer/                # module 02
 ├── ...
-└── 09-use-cases/               # сквозные use case'ы (отдельный README, integration test)
+└── 09-use-cases/               # cross-cutting use cases (separate README, integration test)
 ```
 
-Внутри лекции почти всегда один-два бинарника в `cmd/`. Use case'ы крупнее — там несколько сервисов, proto-схемы, иногда `docker-compose.override.yml` под дополнительный Postgres/ClickHouse/ES.
+Inside a lecture there are usually one or two binaries in `cmd/`. Use cases are bigger — several services, proto schemas, sometimes a `docker-compose.override.yml` for an extra Postgres / ClickHouse / Elasticsearch.
 
 ## Shared helpers
 
-Чтобы не копировать в каждой лекции один и тот же бойлерплейт, общие куски лежат в `internal/`:
+To avoid copying the same boilerplate into every lecture, common pieces live in `internal/`:
 
-- `internal/kafka.NewClient(opts ...kgo.Opt)` — kgo.Client с дефолтами курса (SeedBrokers из env, ClientID `lectures`, разумные таймауты)
-- `internal/kafka.NewAdmin()` — admin-клиент для CreateTopic/DescribeTopics/Lag
-- `internal/config.MustEnv(name)`, `EnvOr(name, default)` — обёртки над os.Getenv
-- `internal/runctx.New()` — context, отменяемый по SIGINT/SIGTERM
-- `internal/log.New()` — slog logger с уровнем из LOG_LEVEL
+- `internal/kafka.NewClient(opts ...kgo.Opt)` — kgo.Client with course defaults (SeedBrokers from env, ClientID `lectures`, reasonable timeouts)
+- `internal/kafka.NewAdmin()` — admin client for CreateTopic / DescribeTopics / Lag
+- `internal/config.MustEnv(name)`, `EnvOr(name, default)` — wrappers over os.Getenv
+- `internal/runctx.New()` — context cancelled on SIGINT / SIGTERM
+- `internal/log.New()` — slog logger with level from LOG_LEVEL
 
-Пользоваться так (псевдокод из будущей лекции):
+Use it like this (pseudocode from a future lecture):
 
 ```go
 ctx, cancel := runctx.New()
@@ -100,7 +106,7 @@ if err != nil { panic(err) }
 defer cl.Close()
 ```
 
-Каждая лекция в своём `go.mod` пишет:
+Each lecture lists in its `go.mod`:
 
 ```
 require (
@@ -109,105 +115,105 @@ require (
 )
 ```
 
-Workspace разруливает локальный путь к `internal` через `go.work`.
+The workspace resolves the local path to `internal` through `go.work`.
 
-## Оглавление
+## Table of Contents
 
-Курс идёт по уровням сложности. Модули 01–04 — обязательная база, дальше можно прыгать в любом порядке (но 05 нужен перед 09-03/09-04, и 07-04 опирается на 04-03).
+The course goes by difficulty. Modules 01–04 are the mandatory base; after that you can jump in any order (but 05 is needed before 09-03 / 09-04, and 07-04 builds on 04-03).
 
-### 01 — Основы
+### 01 — Foundations
 
-Что такое Kafka вообще: брокер, контроллер, топик, партиция, репликация, offset, retention. Первый продьюсер и консьюмер на franz-go. После этого модуля у тебя в голове есть рабочая модель — дальше можно копать вглубь.
+The Kafka base model: broker, controller, topic, partition, replication, offset, retention. The first producer and consumer on franz-go — after this module you have a working mental model that every other topic builds on.
 
-- [01-01 — Architecture & KRaft](lectures/01-foundations/01-01-architecture-and-kraft/README.md)
-- [01-02 — Topics & Partitions](lectures/01-foundations/01-02-topics-and-partitions/README.md)
-- [01-03 — Replication & ISR](lectures/01-foundations/01-03-replication-and-isr/README.md)
-- [01-04 — Offsets & Retention](lectures/01-foundations/01-04-offsets-and-retention/README.md)
-- [01-05 — First Producer](lectures/01-foundations/01-05-first-producer/README.md)
-- [01-06 — First Consumer](lectures/01-foundations/01-06-first-consumer/README.md)
+- [01-01 — Architecture and KRaft](lectures/01-foundations/01-01-architecture-and-kraft/i18n/en/README.md)
+- [01-02 — Topics and partitions](lectures/01-foundations/01-02-topics-and-partitions/i18n/ru/README.md) *(RU only)*
+- [01-03 — Replication and ISR](lectures/01-foundations/01-03-replication-and-isr/i18n/ru/README.md) *(RU only)*
+- [01-04 — Offsets and retention](lectures/01-foundations/01-04-offsets-and-retention/i18n/ru/README.md) *(RU only)*
+- [01-05 — First producer on franz-go](lectures/01-foundations/01-05-first-producer/i18n/ru/README.md) *(RU only)*
+- [01-06 — First consumer on franz-go](lectures/01-foundations/01-06-first-consumer/i18n/ru/README.md) *(RU only)*
 
-### 02 — Продьюсер
+### 02 — Producer
 
-Ключи и партиционирование (где живёт one-key-one-partition гарантия), acks и durability, идемпотентность, батчинг и компрессия, классы ошибок и headers.
+Where the one-key-one-partition guarantee lives, how acks affects durability, why you need idempotency, how batching and compression shift throughput, and which error classes the producer sees on retries.
 
-- [02-01 — Keys & Partitioning](lectures/02-producer/02-01-keys-and-partitioning/README.md)
-- [02-02 — Acks & Durability](lectures/02-producer/02-02-acks-and-durability/README.md)
-- [02-03 — Idempotent Producer](lectures/02-producer/02-03-idempotent-producer/README.md)
-- [02-04 — Batching & Throughput](lectures/02-producer/02-04-batching-and-throughput/README.md)
-- [02-05 — Errors, Retries & Headers](lectures/02-producer/02-05-errors-retries-headers/README.md)
+- [02-01 — Keys and partitioning](lectures/02-producer/02-01-keys-and-partitioning/i18n/ru/README.md) *(RU only)*
+- [02-02 — Acks and durability](lectures/02-producer/02-02-acks-and-durability/i18n/ru/README.md) *(RU only)*
+- [02-03 — Idempotent producer](lectures/02-producer/02-03-idempotent-producer/i18n/ru/README.md) *(RU only)*
+- [02-04 — Batching and throughput](lectures/02-producer/02-04-batching-and-throughput/i18n/ru/README.md) *(RU only)*
+- [02-05 — Errors, retries, and headers](lectures/02-producer/02-05-errors-retries-headers/i18n/ru/README.md) *(RU only)*
 
-### 03 — Консьюмер
+### 03 — Consumer
 
-Группы и ребалансы (включая cooperative-sticky), коммиты offset'ов, гарантии обработки (at-most/at-least/exactly-once на стороне консьюмера), error handling с retry-топиками и DLQ, конкурентность и lag.
+Consumer groups and rebalances (including cooperative-sticky), offset commits, processing guarantees on the consumer side, error handling via retry topics and DLQ, concurrency and lag.
 
-- [03-01 — Consumer Groups & Rebalance](lectures/03-consumer/03-01-groups-and-rebalance/README.md)
-- [03-02 — Offset Commits](lectures/03-consumer/03-02-offset-commits/README.md)
-- [03-03 — Processing Guarantees](lectures/03-consumer/03-03-processing-guarantees/README.md)
-- [03-04 — Error Handling](lectures/03-consumer/03-04-error-handling/README.md)
-- [03-05 — Concurrency & Lag](lectures/03-consumer/03-05-concurrency-and-lag/README.md)
+- [03-01 — Groups and rebalances](lectures/03-consumer/03-01-groups-and-rebalance/i18n/ru/README.md) *(RU only)*
+- [03-02 — Offset commits](lectures/03-consumer/03-02-offset-commits/i18n/ru/README.md) *(RU only)*
+- [03-03 — Processing guarantees](lectures/03-consumer/03-03-processing-guarantees/i18n/ru/README.md) *(RU only)*
+- [03-04 — Error handling](lectures/03-consumer/03-04-error-handling/i18n/ru/README.md) *(RU only)*
+- [03-05 — Concurrency and lag](lectures/03-consumer/03-05-concurrency-and-lag/i18n/ru/README.md) *(RU only)*
 
-### 04 — Надёжность
+### 04 — Reliability
 
-Транзакции и exactly-once semantics, consume-process-produce паттерн, transactional outbox, retry/DLQ deep dive, доставка во внешние системы (HTTP courier с CB и backpressure через PauseFetchPartitions).
+Transactions and exactly-once semantics, the consume-process-produce pattern, transactional outbox, retry/DLQ deep dive, delivery to external systems (an HTTP courier with circuit breaker and backpressure via PauseFetchPartitions).
 
-- [04-01 — Transactions & EOS](lectures/04-reliability/04-01-transactions-and-eos/README.md)
-- [04-02 — Consume-Process-Produce](lectures/04-reliability/04-02-consume-process-produce/README.md)
-- [04-03 — Outbox Pattern](lectures/04-reliability/04-03-outbox-pattern/README.md)
-- [04-04 — Retry & DLQ Deep Dive](lectures/04-reliability/04-04-retry-and-dlq/README.md)
-- [04-05 — External Delivery](lectures/04-reliability/04-05-external-delivery/README.md)
+- [04-01 — Transactions and EOS](lectures/04-reliability/04-01-transactions-and-eos/i18n/ru/README.md) *(RU only)*
+- [04-02 — Consume-process-produce](lectures/04-reliability/04-02-consume-process-produce/i18n/ru/README.md) *(RU only)*
+- [04-03 — Outbox pattern](lectures/04-reliability/04-03-outbox-pattern/i18n/ru/README.md) *(RU only)*
+- [04-04 — Retry and DLQ deep dive](lectures/04-reliability/04-04-retry-and-dlq/i18n/ru/README.md) *(RU only)*
+- [04-05 — External system delivery](lectures/04-reliability/04-05-external-delivery/i18n/ru/README.md) *(RU only)*
 
-### 05 — Контракты
+### 05 — Contracts
 
-Зачем вообще схемы (JSON vs Avro vs Protobuf), Protobuf в Go через buf, Schema Registry с magic byte и schema_id, эволюция схем (BACKWARD/FORWARD/FULL и что такое breaking change в protobuf).
+Why schemas matter and a comparison of wire formats (JSON / Avro / Protobuf), Protobuf in Go via buf, Schema Registry with magic byte and schema_id, schema evolution (BACKWARD / FORWARD / FULL), and what counts as a breaking change in protobuf.
 
-- [05-01 — Why Contracts & Wire Formats](lectures/05-contracts/05-01-why-contracts-and-wire-formats/README.md)
-- [05-02 — Protobuf in Go](lectures/05-contracts/05-02-protobuf-in-go/README.md)
-- [05-03 — Schema Registry](lectures/05-contracts/05-03-schema-registry/README.md)
-- [05-04 — Schema Evolution](lectures/05-contracts/05-04-schema-evolution/README.md)
+- [05-01 — Why contracts and wire formats](lectures/05-contracts/05-01-why-contracts-and-wire-formats/i18n/ru/README.md) *(RU only)*
+- [05-02 — Protobuf in Go](lectures/05-contracts/05-02-protobuf-in-go/i18n/ru/README.md) *(RU only)*
+- [05-03 — Schema Registry](lectures/05-contracts/05-03-schema-registry/i18n/ru/README.md) *(RU only)*
+- [05-04 — Schema evolution](lectures/05-contracts/05-04-schema-evolution/i18n/ru/README.md) *(RU only)*
 
-### 06 — Паттерны коммуникации
+### 06 — Communication patterns
 
-Тут самое интересное для тех, кто проектирует системы. gRPC basics и streaming, синхрон против асинхрона (decision matrix), гибрид gRPC + Kafka на одном сервисе, saga (choreography vs orchestration).
+For those who design systems: gRPC basics and streaming, sync vs async (a decision matrix), a gRPC + Kafka hybrid in one service, saga (choreography vs orchestration).
 
-- [06-01 — gRPC Basics](lectures/06-communication-patterns/06-01-grpc-basics/README.md)
-- [06-02 — gRPC Streaming](lectures/06-communication-patterns/06-02-grpc-streaming/README.md)
-- [06-03 — Sync vs Async](lectures/06-communication-patterns/06-03-sync-vs-async/README.md)
-- [06-04 — Hybrid: gRPC + Kafka](lectures/06-communication-patterns/06-04-hybrid-grpc-and-kafka/README.md)
-- [06-05 — Saga: Choreography vs Orchestration](lectures/06-communication-patterns/06-05-saga-choreography/README.md)
+- [06-01 — gRPC: basics](lectures/06-communication-patterns/06-01-grpc-basics/i18n/ru/README.md) *(RU only)*
+- [06-02 — gRPC streaming](lectures/06-communication-patterns/06-02-grpc-streaming/i18n/ru/README.md) *(RU only)*
+- [06-03 — Sync vs async: gRPC and Kafka](lectures/06-communication-patterns/06-03-sync-vs-async/i18n/ru/README.md) *(RU only)*
+- [06-04 — gRPC + Kafka hybrid](lectures/06-communication-patterns/06-04-hybrid-grpc-and-kafka/i18n/ru/README.md) *(RU only)*
+- [06-05 — Saga: choreography vs orchestration](lectures/06-communication-patterns/06-05-saga-choreography/i18n/ru/README.md) *(RU only)*
 
-### 07 — Streams и Connect
+### 07 — Streams and Connect
 
-Stream-processing концепции (event-time, windowing, watermark, late events), реализация word-count на franz-go + Pebble (заменитель Kafka Streams для Go), Kafka Connect, Debezium CDC.
+Stream processing concepts (event-time, windowing, watermark, late events), a word-count implementation on franz-go + Pebble (a Kafka Streams replacement for Go), Kafka Connect, and Debezium CDC.
 
-- [07-01 — Stream Processing Concepts](lectures/07-streams-and-connect/07-01-stream-processing-concepts/README.md)
-- [07-02 — Stream Processing in Go (franz-go + Pebble)](lectures/07-streams-and-connect/07-02-stream-processing-in-go/README.md)
-- [07-03 — Kafka Connect](lectures/07-streams-and-connect/07-03-kafka-connect/README.md)
-- [07-04 — Debezium CDC](lectures/07-streams-and-connect/07-04-debezium-cdc/README.md)
+- [07-01 — Stream processing: concepts](lectures/07-streams-and-connect/07-01-stream-processing-concepts/i18n/ru/README.md) *(RU only)*
+- [07-02 — Stream processing in Go (franz-go + Pebble)](lectures/07-streams-and-connect/07-02-stream-processing-in-go/i18n/ru/README.md) *(RU only)*
+- [07-03 — Kafka Connect](lectures/07-streams-and-connect/07-03-kafka-connect/i18n/ru/README.md) *(RU only)*
+- [07-04 — Debezium CDC](lectures/07-streams-and-connect/07-04-debezium-cdc/i18n/ru/README.md) *(RU only)*
 
-### 08 — Эксплуатация
+### 08 — Operations
 
-Мониторинг и метрики (kminion как exporter, Grafana dashboard), retention vs compaction на практике, sizing и tuning топиков под профиль нагрузки, troubleshooting runbook на 10–12 типовых проблем.
+Monitoring and metrics (kminion + Grafana), retention vs compaction in practice, topic sizing and tuning for a load profile, a troubleshooting runbook for common problems.
 
-- [08-01 — Monitoring & Metrics](lectures/08-operations/08-01-monitoring-and-metrics/README.md)
-- [08-02 — Retention & Compaction](lectures/08-operations/08-02-retention-and-compaction/README.md)
-- [08-03 — Sizing & Tuning](lectures/08-operations/08-03-sizing-and-tuning/README.md)
-- [08-04 — Troubleshooting Runbook](lectures/08-operations/08-04-troubleshooting-runbook/README.md)
+- [08-01 — Monitoring and metrics](lectures/08-operations/08-01-monitoring-and-metrics/i18n/ru/README.md) *(RU only)*
+- [08-02 — Retention and compaction](lectures/08-operations/08-02-retention-and-compaction/i18n/ru/README.md) *(RU only)*
+- [08-03 — Sizing and tuning](lectures/08-operations/08-03-sizing-and-tuning/i18n/ru/README.md) *(RU only)*
+- [08-04 — Troubleshooting runbook](lectures/08-operations/08-04-troubleshooting-runbook/i18n/ru/README.md) *(RU only)*
 
 ### 09 — Use cases
 
-Сквозные сценарии — связывают всё, что было выше, в работающие приложения с integration-тестами.
+End-to-end scenarios that tie everything above into working applications with integration tests. Use cases are larger than lectures: several services, proto schemas, sometimes a docker-compose.override.yml for Postgres / ClickHouse / Elasticsearch.
 
-- [09-01 — Microservices Communication](lectures/09-use-cases/01-microservices-comm/README.md) (3 сервиса × 2 ноды, gRPC + outbox + Kafka)
-- [09-02 — Push Notifications](lectures/09-use-cases/02-push-notifications/README.md) (router → Firebase/APNs/webhook с retry+DLQ, CB, HMAC, replay, integration test)
-- [09-03 — Postgres → ClickHouse с анонимизацией](lectures/09-use-cases/03-pg-to-clickhouse/README.md) (Debezium + Go-anonymizer с декларативным YAML + ClickHouse Sink, ReplacingMergeTree(cdc_lsn) для дедупа, integration test)
-- [09-04 — Postgres → Elasticsearch](lectures/09-use-cases/04-pg-to-elasticsearch/README.md) (Debezium + Confluent ES Sink через ExtractNewRecordState SMT, index template, blue-green reindex через alias rotation, integration test)
+- [09-01 — Microservices communication](lectures/09-use-cases/01-microservices-comm/i18n/ru/README.md) *(RU only)* — 3 services × 2 nodes, gRPC + outbox + Kafka
+- [09-02 — Push notifications](lectures/09-use-cases/02-push-notifications/i18n/ru/README.md) *(RU only)* — router → Firebase / APNs / webhook with retry + DLQ, circuit breaker, HMAC, replay, integration test
+- [09-03 — Postgres → ClickHouse with anonymization](lectures/09-use-cases/03-pg-to-clickhouse/i18n/ru/README.md) *(RU only)* — Debezium + Go anonymizer with declarative YAML + ClickHouse Sink, ReplacingMergeTree(cdc_lsn) for dedup, integration test
+- [09-04 — Postgres → Elasticsearch](lectures/09-use-cases/04-pg-to-elasticsearch/i18n/ru/README.md) *(RU only)* — Debezium + Confluent ES Sink via ExtractNewRecordState SMT, index template, blue-green reindex via alias rotation, integration test
 
-## Как добавить новую лекцию
+## How to add a new lecture
 
-Внутри модуля создаёшь папку формата `<MM>-<short-name>/`, кладёшь `go.mod` с module path `github.com/dsbasko/kafka-sandbox/lectures/<NN-module>/<MM-short>`, добавляешь `use ./<NN-module>/<MM-short>` в `lectures/go.work`, дальше README + Makefile + cmd. Параллельно прописываешь лекцию в `course.yaml` (id, title, duration, tags) и прогоняешь `make web-check-coverage` — она сверяет манифест с файловой системой и кричит про расхождения. Раздел оглавления ниже обновляешь руками.
+Inside a module, create a folder named `<MM>-<short-name>/`, drop a `go.mod` with module path `github.com/dsbasko/kafka-sandbox/lectures/<NN-module>/<MM-short>`, add `use ./<NN-module>/<MM-short>` to `lectures/go.work`, then `i18n/ru/README.md` + Makefile + cmd. Declare the lecture in `course.yaml` (id, title in both `ru` and `en`, duration, tags) and run `make web-check-coverage` — it reconciles the manifest with the filesystem and prints any mismatches. Add the entry to the TOC section above by running `make web-generate-readme-toc` and pasting the output.
 
-## Совместимость и что вне scope
+## Compatibility and out of scope
 
-Курс — учебный sandbox. Production-конфиги (security, ACL, mTLS, multi-DC репликация, MirrorMaker2) тут не разбираются — они требуют реальной инфраструктуры и выходят за рамки локальной машины. Альтернативные клиенты (Sarama, confluent-kafka-go) тоже не разбираются: курс целенаправленно один — franz-go.
+The course is a learning sandbox. Production configs (security, ACL, mTLS, multi-DC replication, MirrorMaker2) are not covered — they require real infrastructure and step outside the local-machine setup. Alternative clients (Sarama, confluent-kafka-go) are not covered either: the course intentionally sticks to one — franz-go.
 
-Если что-то сломалось на стенде — смотри `docker-compose.yml` и логи контейнеров (`docker compose logs kafka-1`).
+If something on the stack breaks — check `docker-compose.yml` and container logs (`docker compose logs kafka-1`).
