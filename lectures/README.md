@@ -1,52 +1,67 @@
 # Lectures
 
-Здесь живёт весь учебный материал курса — 9 модулей, 42 единицы (37 лекций + 4 use case'а в `09-use-cases/`). Полный обзор курса, оглавление и инструкции — в [корневом README](../README.md). Этот файл описывает только содержимое директории.
+All course material lives here — 9 modules, 42 units (38 lectures plus 4 use cases in `09-use-cases/`). The full course overview, table of contents, and instructions are in the [root README](../README.md). This file only describes what is inside this directory.
 
-## Структура
+## Structure
 
 ```
 lectures/
-├── go.work                # workspace, объединяет все модули лекций
+├── go.work                # workspace that ties all lecture modules together
 ├── go.work.sum
-├── Makefile               # цели list / lecture L=… / sync / build
+├── Makefile               # targets: list / lecture L=… / sync / build
 ├── internal/              # shared helpers (kafka, config, runctx, log)
-├── 01-foundations/        # модуль 01 — основы Kafka
-├── 02-producer/           # модуль 02 — продьюсер
-├── 03-consumer/           # модуль 03 — консьюмер
-├── 04-reliability/        # модуль 04 — надёжность (EOS, outbox, retry/DLQ)
-├── 05-contracts/          # модуль 05 — Protobuf, Schema Registry
-├── 06-communication-patterns/  # модуль 06 — gRPC, sync vs async, saga
-├── 07-streams-and-connect/     # модуль 07 — stream-processing, Connect, Debezium
-├── 08-operations/         # модуль 08 — мониторинг, retention, sizing, troubleshooting
-└── 09-use-cases/          # модуль 09 — сквозные use case'ы
+├── 01-foundations/        # module 01 — Kafka foundations
+├── 02-producer/           # module 02 — producer
+├── 03-consumer/           # module 03 — consumer
+├── 04-reliability/        # module 04 — reliability (EOS, outbox, retry/DLQ)
+├── 05-contracts/          # module 05 — Protobuf, Schema Registry
+├── 06-communication-patterns/  # module 06 — gRPC, sync vs async, saga
+├── 07-streams-and-connect/     # module 07 — stream processing, Connect, Debezium
+├── 08-operations/         # module 08 — monitoring, retention, sizing, troubleshooting
+└── 09-use-cases/          # module 09 — cross-cutting use cases
 ```
 
-Каждая лекция — отдельный Go-модуль со своим `go.mod`, `README.md` (на русском) и `Makefile` (как минимум цель `run`, плюс что-то специфичное теме). Use case'ы крупнее — несколько сервисов, proto-схемы, иногда `docker-compose.override.yml`.
+Each lecture is a separate Go module with its own `go.mod`, a stub `README.md` linking to translations under `i18n/<lang>/README.md`, and a `Makefile` (at least a `run` target, plus something specific to the topic). Use cases are larger — several services, proto schemas, sometimes a `docker-compose.override.yml`.
 
-## Запуск
+Lecture layout after the i18n migration:
 
-Из корня репозитория:
+```
+lectures/<NN-module>/<MM-slug>/
+├── go.mod
+├── README.md              # stub: links to i18n/ru and i18n/en
+├── i18n/
+│   ├── ru/README.md       # Russian original
+│   └── en/README.md       # English translation (when ready)
+├── images/                # shared by both languages
+├── Makefile
+└── cmd/<binary>/main.go
+```
+
+## Running
+
+From the repo root:
 
 ```sh
-make list                                                    # дерево всех 42 лекций
-make lecture L=01-foundations/01-01-architecture-and-kraft   # запустить конкретную
+make list                                                    # tree of all 42 lectures
+make lecture L=01-foundations/01-01-architecture-and-kraft   # run a specific one
 make sync                                                    # go work sync
-make build                                                   # собрать все модули workspace'а
+make build                                                   # build every workspace module
 ```
 
-Целями владеет `lectures/Makefile`; корневой `Makefile` их проксирует.
+`lectures/Makefile` owns these targets; the root `Makefile` proxies them.
 
-## Конвенции
+## Conventions
 
 - Module path: `github.com/dsbasko/kafka-sandbox/lectures/<NN-module>/<MM-short>`.
-- В `go.mod` каждой лекции — `replace github.com/dsbasko/kafka-sandbox/internal => ../../internal` (после реструктуризации в `lectures/` относительный путь сохранил ту же глубину `../../`).
-- Внутри лекции: `cmd/<binary>/main.go` для одно-двух бинарей, `pkg/` или плоские файлы — для чего-то крупнее.
-- README — обычный markdown (без MDX). Картинки в `images/` рядом с README, относительные ссылки `./images/foo.png`. Внутрикурсовые ссылки на соседние лекции — `[Заголовок из course.yaml](../../<module>/<slug>/README.md)` (из каталога лекции путь поднимается на два уровня). По соглашению используем именно эту длинную форму даже для соседа в том же модуле, чтобы diff был единообразным; технически `remark-link-rewrite` в `web/` также принимает короткую `../<slug>/README.md` и форму с trailing-slash без `README.md` (`../../<module>/<slug>/`). Билд падает, если target отсутствует в `course.yaml`, путь выходит за `lectures/`, или указан non-README markdown / non-markdown ресурс. Сайт переписывает валидные ссылки на site-URL автоматически.
+- Every lecture `go.mod` carries `replace github.com/dsbasko/kafka-sandbox/internal => ../../internal` — after the move into `lectures/` the relative path keeps the same `../../` depth.
+- Inside a lecture: `cmd/<binary>/main.go` for one or two binaries, `pkg/` or flat files for anything bigger.
+- READMEs are plain markdown (no MDX) and live under `i18n/<lang>/README.md`. Images stay in `images/` next to the lecture root; both translations reference them as `../../images/<file>.png`. Cross-module links use the form `[Title from course.yaml](../../../../<module>/<slug>/i18n/<lang>/README.md)` — from `i18n/<lang>/README.md` you climb four levels to `lectures/` and descend again. Siblings inside the same module use one less hop: `../../../<sibling-slug>/i18n/<lang>/README.md`. The trailing-slash form without `README.md` is also accepted (`../../../../<module>/<slug>/i18n/<lang>/`). The build fails if the target is missing from `course.yaml`, the path escapes `lectures/`, or the link points to a non-README markdown or a non-markdown resource. The site rewrites valid links to site URLs automatically.
 
-## Как добавить лекцию
+## How to add a lecture
 
-1. Создать `lectures/<NN-module>/<MM-short-name>/` с `go.mod`, `README.md`, `Makefile`, `cmd/`.
-2. Добавить `use ./<NN-module>/<MM-short-name>` в `lectures/go.work`.
-3. Описать лекцию в корневом `course.yaml` (slug, title, duration, опциональные tags) — иначе сайт-билд упадёт в `generateStaticParams`.
-4. Обновить раздел «Оглавление» в корневом `README.md`.
-5. Прогнать `make web-check-coverage` — должен вывести `mismatches: 0`.
+1. Create `lectures/<NN-module>/<MM-short-name>/` with `go.mod`, a stub `README.md`, `Makefile`, and `cmd/`.
+2. Add `i18n/ru/README.md` (mandatory) and `i18n/en/README.md` (optional, can come later) with lecture content.
+3. Add `use ./<NN-module>/<MM-short-name>` to `lectures/go.work`.
+4. Describe the lecture in the root `course.yaml` (slug, bilingual title, duration, optional tags) — otherwise the site build fails in `generateStaticParams`.
+5. Update the Table of Contents in the root `README.md` (use `make web-generate-readme-toc` to regenerate it).
+6. Run `make web-check-coverage` — it should report `mismatches: 0`.
