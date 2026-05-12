@@ -38,6 +38,7 @@ const OPTIONS: RemarkLinkRewriteOptions = {
   basePath: '/kafka-cookbook',
   course: COURSE,
   lecturesRoot: '/lectures',
+  lang: 'ru',
 };
 
 describe('rewriteLessonLink', () => {
@@ -47,7 +48,7 @@ describe('rewriteLessonLink', () => {
       OPTIONS,
     );
     expect(out).toEqual({
-      url: '/kafka-cookbook/02-producer/02-04-batching-and-throughput/',
+      url: '/kafka-cookbook/ru/02-producer/02-04-batching-and-throughput/',
       external: false,
     });
   });
@@ -58,7 +59,7 @@ describe('rewriteLessonLink', () => {
       OPTIONS,
     );
     expect(out).toEqual({
-      url: '/kafka-cookbook/03-consumer/03-01-groups-and-rebalance/',
+      url: '/kafka-cookbook/ru/03-consumer/03-01-groups-and-rebalance/',
       external: false,
     });
   });
@@ -69,7 +70,7 @@ describe('rewriteLessonLink', () => {
       OPTIONS,
     );
     expect(out.url).toBe(
-      '/kafka-cookbook/03-consumer/03-03-processing-guarantees/#идемпотентность',
+      '/kafka-cookbook/ru/03-consumer/03-03-processing-guarantees/#идемпотентность',
     );
     expect(out.external).toBe(false);
   });
@@ -80,7 +81,7 @@ describe('rewriteLessonLink', () => {
       OPTIONS,
     );
     expect(out).toEqual({
-      url: '/kafka-cookbook/02-producer/02-04-batching-and-throughput/',
+      url: '/kafka-cookbook/ru/02-producer/02-04-batching-and-throughput/',
       external: false,
     });
   });
@@ -91,7 +92,29 @@ describe('rewriteLessonLink', () => {
       { ...OPTIONS, basePath: '/kafka-cookbook/' },
     );
     expect(out.url).toBe(
-      '/kafka-cookbook/02-producer/02-04-batching-and-throughput/',
+      '/kafka-cookbook/ru/02-producer/02-04-batching-and-throughput/',
+    );
+  });
+
+  it('emits the active lang prefix when lang option is "en"', () => {
+    const out = rewriteLessonLink(
+      '../../../02-04-batching-and-throughput/i18n/en/README.md',
+      { ...OPTIONS, lang: 'en' },
+    );
+    expect(out.url).toBe(
+      '/kafka-cookbook/en/02-producer/02-04-batching-and-throughput/',
+    );
+  });
+
+  it('falls back to DEFAULT_LANG prefix when lang option is omitted', () => {
+    const { lang: _omit, ...withoutLang } = OPTIONS;
+    void _omit;
+    const out = rewriteLessonLink(
+      '../../../02-04-batching-and-throughput/i18n/en/README.md',
+      withoutLang,
+    );
+    expect(out.url).toBe(
+      '/kafka-cookbook/en/02-producer/02-04-batching-and-throughput/',
     );
   });
 
@@ -142,7 +165,7 @@ describe('rewriteLessonLink', () => {
         '../../../02-04-batching-and-throughput/i18n/ru/notes.md',
         OPTIONS,
       ),
-    ).toThrow(/Only "<module>\/<slug>\/i18n\/ru\/README\.md"/);
+    ).toThrow(/Only "<module>\/<slug>\/i18n\/<ru\|en>\/README\.md"/);
   });
 
   it('throws when relative path escapes lectures root', () => {
@@ -232,7 +255,7 @@ describe('remarkLinkRewrite plugin', () => {
       tree.children[0] as { children: Array<{ url: string; data?: unknown }> }
     ).children[0];
     expect(internal.url).toBe(
-      '/kafka-cookbook/02-producer/02-04-batching-and-throughput/',
+      '/kafka-cookbook/ru/02-producer/02-04-batching-and-throughput/',
     );
     expect(internal.data).toBeUndefined();
 
@@ -266,7 +289,7 @@ describe('remarkLinkRewrite plugin', () => {
 
     const def = tree.children[0] as { url: string };
     expect(def.url).toBe(
-      '/kafka-cookbook/02-producer/02-04-batching-and-throughput/',
+      '/kafka-cookbook/ru/02-producer/02-04-batching-and-throughput/',
     );
   });
 

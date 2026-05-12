@@ -14,6 +14,7 @@ import remarkLessonImages from './mdx-plugins/remark-lesson-images';
 import remarkLinkRewrite from './mdx-plugins/remark-link-rewrite';
 import rehypeCallout from './mdx-plugins/rehype-callout';
 import type { Course } from './course';
+import { DEFAULT_LANG, type Lang } from './lang';
 import { LessonAwareLink } from '@/components/LessonAwareLink';
 import { MarkdownAside, MarkdownFigure } from './markdown-components';
 import { extractToc, type TocEntry } from './extract-toc';
@@ -23,6 +24,12 @@ export interface RenderLessonMarkdownOptions {
   slug: string;
   basePath: string;
   course: Course;
+  /**
+   * Active route language. Determines how relative sibling-lesson links are
+   * resolved (`i18n/<lang>/README.md`) and which `/<lang>/` prefix the rewriter
+   * stamps on emitted site URLs. Defaults to {@link DEFAULT_LANG}.
+   */
+  lang?: Lang;
 }
 
 export interface RenderLessonMarkdownResult {
@@ -107,6 +114,7 @@ export async function renderLessonMarkdown(
       slug: options.slug,
       basePath: options.basePath,
       course: options.course,
+      lang: options.lang ?? DEFAULT_LANG,
     })
     .use(remarkRehype, { allowDangerousHtml: false })
     .use(rehypeStripLeadingH1)

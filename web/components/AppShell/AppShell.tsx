@@ -14,6 +14,7 @@ import {
   getPrevLesson,
   getTotalLessons,
 } from '@/lib/course';
+import { stripLangFromPath } from '@/lib/lang';
 import { OPEN_PROGRAM_EVENT } from '@/lib/program-drawer';
 import styles from './AppShell.module.css';
 
@@ -35,7 +36,11 @@ export function AppShell({ children, course }: AppShellProps) {
     return () => window.removeEventListener(OPEN_PROGRAM_EVENT, handler);
   }, []);
 
-  const segments = pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+  // After the i18n restructure every route lives under `/<lang>/...`.
+  // Strip the lang segment so module/slug detection sees the same shape
+  // it did pre-i18n; the AppShell stays language-agnostic.
+  const { rest } = stripLangFromPath(pathname);
+  const segments = rest.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
   const moduleId = segments[0];
   const lessonSlug = segments[1];
 
@@ -81,7 +86,7 @@ export function AppShell({ children, course }: AppShellProps) {
   // Home and module index pages own their own hero (eyebrow + breadcrumbs +
   // progress card) — the global header would duplicate that chrome. Lesson
   // pages keep the header because they need lesson nav + reading progress.
-  const isHome = pathname === '/';
+  const isHome = rest === '/' || segments.length === 0;
   const isModuleIndex = !!moduleId && !lessonSlug;
   const hideHeader = isHome || isModuleIndex;
 

@@ -1,11 +1,18 @@
 import path from 'node:path';
 import type { Course } from '../course';
+import { DEFAULT_LANG, isLang, type Lang } from '../lang';
 
 export interface RemarkLinkRewriteOptions {
   moduleId: string;
   slug: string;
   basePath: string;
   course: Course;
+  /**
+   * Active route language. Used both to pick the source `i18n/<lang>/README.md`
+   * file when re-relativizing markdown sibling links AND to prefix the emitted
+   * site URL with `/<lang>/`. Defaults to {@link DEFAULT_LANG}.
+   */
+  lang?: Lang;
   /**
    * Absolute path to the lectures root (the directory that contains
    * `<moduleId>/<slug>/README.md`). Optional — defaults to the path that
@@ -70,12 +77,13 @@ export function rewriteLessonLink(
 
   const [pathPart, hashPart = ''] = splitHash(url);
   const lecturesRoot = options.lecturesRoot ?? '/lectures';
+  const lang = options.lang && isLang(options.lang) ? options.lang : DEFAULT_LANG;
   const lessonDir = path.posix.join(
     lecturesRoot,
     options.moduleId,
     options.slug,
     'i18n',
-    'ru',
+    lang,
   );
   const resolved = path.posix.normalize(path.posix.join(lessonDir, pathPart));
 
@@ -102,7 +110,7 @@ export function rewriteLessonLink(
   const looksLikeLessonReadme =
     segments.length === 5 &&
     segments[2] === 'i18n' &&
-    segments[3] === 'ru' &&
+    isLang(segments[3]) &&
     segments[4] === 'README.md';
 
   if (!isMarkdown && !looksLikeLessonDir) {
@@ -118,7 +126,7 @@ export function rewriteLessonLink(
     throw new Error(
       `remark-link-rewrite: link "${rawUrl}" in ${options.moduleId}/${options.slug} ` +
         `points to "${segments.join('/')}". Only ` +
-        `"<module>/<slug>/i18n/ru/README.md" markdown links are supported.`,
+        `"<module>/<slug>/i18n/<ru|en>/README.md" markdown links are supported.`,
     );
   }
 
@@ -143,7 +151,7 @@ export function rewriteLessonLink(
   }
 
   const basePath = options.basePath.replace(/\/+$/, '');
-  const siteUrl = `${basePath}/${targetModuleId}/${targetSlug}/${hashPart}`;
+  const siteUrl = `${basePath}/${lang}/${targetModuleId}/${targetSlug}/${hashPart}`;
   return { url: siteUrl, external: false };
 }
 

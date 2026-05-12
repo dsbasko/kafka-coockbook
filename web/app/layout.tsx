@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { Manrope, Source_Serif_4 } from 'next/font/google';
 import localFont from 'next/font/local';
-import { AppShell } from '@/components/AppShell';
-import { GateProvider } from '@/components/GateProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { loadCourse } from '@/lib/course-loader';
 import { buildGateInitScript } from '@/lib/gate-init-script';
 import { buildGateMarkScript } from '@/lib/gate-mark-script';
+import { DEFAULT_LANG, LANGS } from '@/lib/lang';
 import { buildSiteUrl, getRuntimeBasePath, getSiteUrl } from '@/lib/site-url';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import '@/styles/globals.css';
@@ -40,22 +39,34 @@ const sourceSerif = Source_Serif_4({
 });
 
 export function generateMetadata(): Metadata {
-  const course = loadCourse('ru');
+  // The root layout is the SEO entry point. Default-language content lives at
+  // `/` (this layout's child), with `/{ru,en}/` mirrors under [lang]/. The
+  // canonical points at the default-lang URL and `alternates.languages` lets
+  // crawlers discover the per-lang copies.
+  const course = loadCourse(DEFAULT_LANG);
   const description =
-    'Курс по Apache Kafka на Go: продюсеры, консьюмеры, надёжность, контракты, стримы, эксплуатация и use cases.';
-  const url = buildSiteUrl(course.basePath);
+    DEFAULT_LANG === 'ru'
+      ? 'Курс по Apache Kafka на Go: продюсеры, консьюмеры, надёжность, контракты, стримы, эксплуатация и use cases.'
+      : 'Apache Kafka course in Go: producers, consumers, reliability, contracts, streams, operations and use cases.';
+  const canonical = buildSiteUrl(course.basePath, [DEFAULT_LANG]);
+  const languages: Record<string, string> = {
+    'x-default': canonical,
+  };
+  for (const lang of LANGS) {
+    languages[lang] = buildSiteUrl(course.basePath, [lang]);
+  }
   return {
     metadataBase: new URL(getSiteUrl()),
     title: course.title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical, languages },
     openGraph: {
       type: 'website',
       siteName: course.title,
       title: course.title,
       description,
-      url,
-      locale: 'ru_RU',
+      url: canonical,
+      locale: DEFAULT_LANG === 'ru' ? 'ru_RU' : 'en_US',
     },
     twitter: {
       card: 'summary_large_image',
@@ -66,13 +77,17 @@ export function generateMetadata(): Metadata {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const course = loadCourse('ru');
+  // Init scripts only need the linear lesson order + course shape, both of
+  // which are language-agnostic. Loading the default-lang course is enough —
+  // the per-lang [lang]/layout supplies its own AppShell/GateProvider with the
+  // language-specific course (used for titles, descriptions, etc.).
+  const course = loadCourse(DEFAULT_LANG);
   const basePath = getRuntimeBasePath(course.basePath);
   const gateInitScript = buildGateInitScript(course, basePath);
   const gateMarkScript = buildGateMarkScript(course, basePath);
   return (
     <html
-      lang="ru"
+      lang={DEFAULT_LANG}
       data-theme="light"
       className={`${manrope.variable} ${jetbrains.variable} ${sourceSerif.variable}`}
       suppressHydrationWarning
@@ -88,15 +103,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           // Pre-hydration gate: stamps data-lesson-locked on <html> when the
           // current URL targets a locked lesson, so CSS can hide the content
           // before React mounts and there is no flash of "open" lesson body.
+          // The script strips the `/{ru,en}/` prefix internally (see
+          // gate-init-script.ts) so it stays lang-agnostic.
           dangerouslySetInnerHTML={{ __html: gateInitScript }}
         />
       </head>
       <body>
-        <ThemeProvider>
-          <GateProvider course={course} basePath={basePath}>
-            <AppShell course={course}>{children}</AppShell>
-          </GateProvider>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
         {/* Runs as the last body child — by that point every [data-lesson-key]
             element from server-rendered lists is in the DOM, so we can stamp
             data-locked before the browser paints. Stops the flash where rows

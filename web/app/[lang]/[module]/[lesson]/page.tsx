@@ -11,59 +11,99 @@ import {
   flattenLessons,
   getNextLesson,
   getPrevLesson,
-  type Course,
   type FlatLessonEntry,
 } from '@/lib/course';
 import { loadCourse } from '@/lib/course-loader';
+import { isLang, LANGS, type Lang } from '@/lib/lang';
 import { getLessonContent } from '@/lib/lesson';
 import { renderLessonMarkdown } from '@/lib/markdown';
 import { extractDescription } from '@/lib/description';
 import { buildAssetUrl, buildSiteUrl, getRuntimeBasePath } from '@/lib/site-url';
 
 type LessonPageProps = {
-  params: { module: string; lesson: string };
+  params: { lang: string; module: string; lesson: string };
 };
 
-export function generateStaticParams(): Array<{ module: string; lesson: string }> {
+export function generateStaticParams(): Array<{
+  lang: Lang;
+  module: string;
+  lesson: string;
+}> {
+  // Pages are emitted for every (lang × module × lesson) triple — even when
+  // the EN translation is missing. The page renders with a fallback banner
+  // and noindex metadata in that case (see generateMetadata + render below).
   const course = loadCourse('ru');
-  return flattenLessons(course).map((entry) => ({
+  const lessonPairs = flattenLessons(course).map((entry) => ({
     module: entry.moduleId,
     lesson: entry.lesson.slug,
   }));
+  return LANGS.flatMap((lang) =>
+    lessonPairs.map((pair) => ({ lang, ...pair })),
+  );
 }
 
-export async function generateMetadata({ params }: LessonPageProps): Promise<Metadata> {
-  const course = loadCourse('ru');
+export async function generateMetadata({
+  params,
+}: LessonPageProps): Promise<Metadata> {
+  if (!isLang(params.lang)) return {};
+  const lang = params.lang as Lang;
+  const course = loadCourse(lang);
   const lesson = findLesson(course, params.module, params.lesson);
   if (!lesson) {
     return { title: 'Страница не найдена · Kafka Cookbook' };
   }
+
   let description = course.description.replace(/\s+/g, ' ').trim();
+  let fallbackUsed = false;
   try {
-    const { markdown } = await getLessonContent(params.module, params.lesson);
-    description = extractDescription(markdown) ?? description;
+    const content = await getLessonContent(params.module, params.lesson, lang);
+    description = extractDescription(content.markdown) ?? description;
+    fallbackUsed = content.fallbackUsed;
   } catch {
-    // metadata is best-effort; build will fail in the page render anyway
+    // metadata is best-effort; the page render will surface the real failure.
   }
+
   const title = `${lesson.title} · ${course.title}`;
-  const url = buildSiteUrl(course.basePath, [params.module, params.lesson]);
+  const canonicalUrl = buildSiteUrl(course.basePath, [
+    lang,
+    params.module,
+    params.lesson,
+  ]);
   const ogImage = {
     url: buildAssetUrl(course.basePath, '/opengraph-image'),
     width: 1200,
     height: 630,
     alt: `${course.title} — курс по Apache Kafka на Go`,
   };
+
+  // EN page falling back to RU content — withhold from search and point the
+  // canonical at the actual RU URL so search engines don't index a duplicate
+  // under the wrong language.
+  if (lang === 'en' && fallbackUsed) {
+    const ruCanonical = buildSiteUrl(course.basePath, [
+      'ru',
+      params.module,
+      params.lesson,
+    ]);
+    return {
+      title,
+      description,
+      alternates: { canonical: ruCanonical },
+      robots: { index: false, follow: true },
+    };
+  }
+
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       type: 'article',
       siteName: course.title,
       title,
       description,
-      url,
-      locale: 'ru_RU',
+      url: canonicalUrl,
+      locale: lang === 'ru' ? 'ru_RU' : 'en_US',
       images: [ogImage],
     },
     twitter: {
@@ -76,18 +116,27 @@ export async function generateMetadata({ params }: LessonPageProps): Promise<Met
 }
 
 export default async function LessonPage({ params }: LessonPageProps) {
-  const course = loadCourse('ru');
+  if (!isLang(params.lang)) notFound();
+  const lang = params.lang as Lang;
+  const course = loadCourse(lang);
   const lesson = findLesson(course, params.module, params.lesson);
   if (!lesson) {
     notFound();
   }
 
-  const { markdown } = await getLessonContent(params.module, params.lesson);
+  const { markdown, lang: contentLang, fallbackUsed } = await getLessonContent(
+    params.module,
+    params.lesson,
+    lang,
+  );
   const { content, toc } = await renderLessonMarkdown(markdown, {
     moduleId: params.module,
     slug: params.lesson,
     basePath: getRuntimeBasePath(course.basePath),
     course,
+    // Use the language of the README we actually loaded — fallback content
+    // contains RU sibling links and must be rewritten through the RU rewriter.
+    lang: contentLang,
   });
 
   const prev = toNavLink(getPrevLesson(course, params.module, params.lesson));
@@ -131,7 +180,12 @@ export default async function LessonPage({ params }: LessonPageProps) {
             />
           }
         >
-          <article className="markdown">{content}</article>
+          <article className="markdown" data-translation-fallback={fallbackUsed ? 'true' : 'false'}>
+            {/* TranslationBanner placeholder for Task 14 — when EN renders
+                fallback RU content the data-translation-fallback hook will let
+                that component slot in above the article body. */}
+            {content}
+          </article>
         </LessonPageLayout>
       </div>
       <div data-lesson-gate>

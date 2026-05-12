@@ -1,7 +1,5 @@
 import Link from 'next/link';
 
-// Root not-found is the fallback used when no lang segment matches. Always
-// rendered in DEFAULT_LANG; per-lang copies live at `[lang]/not-found.tsx`.
 export default function NotFound() {
   return (
     <main
@@ -19,7 +17,7 @@ export default function NotFound() {
           marginBottom: 'var(--space-4)',
         }}
       >
-        Page not found
+        Страница не найдена
       </h1>
       <p
         style={{
@@ -28,7 +26,7 @@ export default function NotFound() {
           marginBottom: 'var(--space-6)',
         }}
       >
-        That lesson is not part of the course. Head back to the home page.
+        Похоже, такой лекции в курсе нет. Вернитесь на главную.
       </p>
       <Link
         href="/"
@@ -41,7 +39,7 @@ export default function NotFound() {
           fontWeight: 'var(--font-weight-semibold)',
         }}
       >
-        Go home
+        На главную
       </Link>
     </main>
   );

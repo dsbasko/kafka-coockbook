@@ -2,26 +2,34 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ModulePage } from '@/components/ModulePage';
 import { loadCourse } from '@/lib/course-loader';
+import { isLang, LANGS, type Lang } from '@/lib/lang';
 import { buildAssetUrl, buildSiteUrl } from '@/lib/site-url';
 
 type ModulePageProps = {
-  params: { module: string };
+  params: { lang: string; module: string };
 };
 
-export function generateStaticParams(): Array<{ module: string }> {
+export function generateStaticParams(): Array<{ lang: Lang; module: string }> {
+  // Module set is shared across languages (titles differ, ids don't), so
+  // re-loading per lang is wasteful — parse once and fan out.
   const course = loadCourse('ru');
-  return course.modules.map((m) => ({ module: m.id }));
+  const moduleIds = course.modules.map((m) => m.id);
+  return LANGS.flatMap((lang) =>
+    moduleIds.map((module) => ({ lang, module })),
+  );
 }
 
 export function generateMetadata({ params }: ModulePageProps): Metadata {
-  const course = loadCourse('ru');
+  if (!isLang(params.lang)) return {};
+  const lang = params.lang as Lang;
+  const course = loadCourse(lang);
   const mod = course.modules.find((m) => m.id === params.module);
   if (!mod) {
     return { title: 'Страница не найдена · Kafka Cookbook' };
   }
   const description = collapseWhitespace(mod.description);
   const title = `${mod.title} · ${course.title}`;
-  const url = buildSiteUrl(course.basePath, [mod.id]);
+  const url = buildSiteUrl(course.basePath, [lang, mod.id]);
   const ogImage = {
     url: buildAssetUrl(course.basePath, '/opengraph-image'),
     width: 1200,
@@ -38,7 +46,7 @@ export function generateMetadata({ params }: ModulePageProps): Metadata {
       title,
       description,
       url,
-      locale: 'ru_RU',
+      locale: lang === 'ru' ? 'ru_RU' : 'en_US',
       images: [ogImage],
     },
     twitter: {
@@ -51,7 +59,8 @@ export function generateMetadata({ params }: ModulePageProps): Metadata {
 }
 
 export default function ModuleRoute({ params }: ModulePageProps) {
-  const course = loadCourse('ru');
+  if (!isLang(params.lang)) notFound();
+  const course = loadCourse(params.lang as Lang);
   const mod = course.modules.find((m) => m.id === params.module);
   if (!mod) {
     notFound();
