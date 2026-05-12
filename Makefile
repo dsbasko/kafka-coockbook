@@ -1,4 +1,4 @@
-.PHONY: help list lecture sync build connect-install-plugins connect-verify-plugins web-dev web-build web-lint web-typecheck web-test web-clean web-install web-check-coverage
+.PHONY: help list lecture sync build connect-install-plugins connect-verify-plugins web-dev web-build web-lint web-typecheck web-test web-clean web-install web-check-coverage web-generate-readme-toc
 
 # Корневой Makefile тонкий: владеет только connect-* целями
 # (потому что connect-plugins/ остаётся в корне).
@@ -26,7 +26,8 @@ help:
 	@echo "make web-lint                               - eslint проверка web/"
 	@echo "make web-typecheck                          - tsc --noEmit в web/"
 	@echo "make web-test                               - vitest run в web/"
-	@echo "make web-check-coverage                     - сверить course.yaml с lectures/"
+	@echo "make web-check-coverage                     - сверить course.yaml с lectures/ + RU/EN translation coverage"
+	@echo "make web-generate-readme-toc [TOC_LANG=en|ru] - напечатать markdown TOC для root README (по умолчанию EN)"
 	@echo "make web-clean                              - удалить web/.next и web/out"
 
 list:
@@ -67,6 +68,13 @@ web-test:
 
 web-check-coverage:
 	@cd "$(WEB_DIR)" && pnpm exec tsx scripts/check-course-coverage.ts
+
+# Печатает markdown TOC для корневого README. Дефолт TOC_LANG=en.
+# TOC_LANG=ru — печатает TOC с русскими заголовками и линками на /i18n/ru/README.md.
+# Имя переменной не "LANG", чтобы не конфликтовать с системным locale env.
+TOC_LANG ?= en
+web-generate-readme-toc:
+	@cd "$(WEB_DIR)" && pnpm exec tsx scripts/generate-readme-toc.ts --lang=$(TOC_LANG)
 
 web-clean:
 	@rm -rf "$(WEB_DIR)/.next" "$(WEB_DIR)/out"
