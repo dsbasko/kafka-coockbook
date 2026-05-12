@@ -6,6 +6,7 @@ import { LessonPageLayout } from '@/components/LessonPageLayout';
 import { LessonSideMeta } from '@/components/LessonSideMeta';
 import { ReadingProgress } from '@/components/ReadingProgress';
 import { Toc } from '@/components/Toc';
+import { TranslationBanner } from '@/components/TranslationBanner';
 import {
   findLesson,
   flattenLessons,
@@ -181,9 +182,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
           }
         >
           <article className="markdown" data-translation-fallback={fallbackUsed ? 'true' : 'false'}>
-            {/* TranslationBanner placeholder for Task 14 — when EN renders
-                fallback RU content the data-translation-fallback hook will let
-                that component slot in above the article body. */}
+            {lang === 'en' && fallbackUsed ? (
+              <TranslationBanner lang={lang} />
+            ) : null}
             {content}
           </article>
         </LessonPageLayout>

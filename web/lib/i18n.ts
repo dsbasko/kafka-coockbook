@@ -83,6 +83,10 @@ export type UIDict = {
 
   // LanguageToggle (mounted in Task 11, aria-label drawn from here)
   language: string;
+
+  // TranslationBanner (rendered on EN lesson pages that fall back to RU)
+  translationFallbackTitle: string;
+  translationFallbackBody: string;
 };
 
 export const UI_STRINGS: Record<Lang, UIDict> = {
@@ -146,6 +150,10 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     goHome: 'На главную',
 
     language: 'Язык интерфейса',
+
+    translationFallbackTitle: 'Перевод в процессе',
+    translationFallbackBody:
+      'Английская версия этой лекции пока не готова. Показан оригинал на русском.',
   },
   en: {
     sidebarLabel: 'Side navigation',
@@ -207,6 +215,10 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     goHome: 'Go home',
 
     language: 'Interface language',
+
+    translationFallbackTitle: 'Translation in progress',
+    translationFallbackBody:
+      'The English version of this lesson is not ready yet. Showing the original Russian text.',
   },
 };
 
