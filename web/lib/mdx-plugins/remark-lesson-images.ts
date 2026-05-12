@@ -20,6 +20,17 @@ type AstNode = ImageLikeNode | ParentNode;
 
 const PROTOCOL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|data:|mailto:|tel:|#)/i;
 
+const IMAGE_PREFIXES = ['./images/', '../../images/'] as const;
+
+function matchImagePrefix(url: string): string | null {
+  for (const prefix of IMAGE_PREFIXES) {
+    if (url.startsWith(prefix)) {
+      return prefix;
+    }
+  }
+  return null;
+}
+
 export function rewriteLessonImageUrl(
   url: string,
   options: RemarkLessonImagesOptions,
@@ -29,15 +40,17 @@ export function rewriteLessonImageUrl(
     return url;
   }
 
-  if (!url.startsWith('./images/')) {
+  const prefix = matchImagePrefix(url);
+  if (prefix === null) {
     throw new Error(
       `remark-lesson-images: ${context.nodeKind} url "${url}" in ` +
         `${options.moduleId}/${options.slug} is not allowed. ` +
-        `Only "./images/<file>" relative paths and absolute URLs (http(s)://, data:, mailto:, tel:) are supported.`,
+        `Only "./images/<file>" (legacy) or "../../images/<file>" (post-migration) ` +
+        `relative paths and absolute URLs (http(s)://, data:, mailto:, tel:) are supported.`,
     );
   }
 
-  const relative = url.slice('./images/'.length);
+  const relative = url.slice(prefix.length);
   if (relative.length === 0) {
     throw new Error(
       `remark-lesson-images: empty image filename in ${options.moduleId}/${options.slug}`,
@@ -46,7 +59,7 @@ export function rewriteLessonImageUrl(
   if (relative.includes('..')) {
     throw new Error(
       `remark-lesson-images: image url "${url}" in ${options.moduleId}/${options.slug} ` +
-        `must not contain ".." segments`,
+        `must not contain ".." segments after the images/ prefix`,
     );
   }
 
@@ -75,7 +88,7 @@ export default function remarkLessonImages(options: RemarkLessonImagesOptions) {
       // remark-link-rewrite handle the rest.
       if (node.type === 'definition') {
         const def = node as ImageLikeNode;
-        if (typeof def.url === 'string' && def.url.startsWith('./images/')) {
+        if (typeof def.url === 'string' && matchImagePrefix(def.url) !== null) {
           def.url = rewriteLessonImageUrl(def.url, options, {
             nodeKind: 'definition',
           });

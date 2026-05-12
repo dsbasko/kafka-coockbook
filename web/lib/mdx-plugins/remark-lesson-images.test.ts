@@ -20,8 +20,26 @@ describe('rewriteLessonImageUrl', () => {
     );
   });
 
+  it('rewrites ../../images/ paths (post-i18n-migration) the same way', () => {
+    const out = rewriteLessonImageUrl('../../images/diagram.png', OPTIONS, {
+      nodeKind: 'image',
+    });
+    expect(out).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/diagram.png',
+    );
+  });
+
   it('preserves nested paths under ./images/', () => {
     const out = rewriteLessonImageUrl('./images/sub/dir/file.svg', OPTIONS, {
+      nodeKind: 'image',
+    });
+    expect(out).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/sub/dir/file.svg',
+    );
+  });
+
+  it('preserves nested paths under ../../images/', () => {
+    const out = rewriteLessonImageUrl('../../images/sub/dir/file.svg', OPTIONS, {
       nodeKind: 'image',
     });
     expect(out).toBe(
@@ -54,9 +72,17 @@ describe('rewriteLessonImageUrl', () => {
     }
   });
 
-  it('throws on parent-relative paths (../...)', () => {
+  it('throws on single parent-relative paths (../...)', () => {
     expect(() =>
       rewriteLessonImageUrl('../shared/x.png', OPTIONS, { nodeKind: 'image' }),
+    ).toThrow(/not allowed/);
+  });
+
+  it('throws on triple parent-relative paths (../../../...) — extra .. outside prefix', () => {
+    expect(() =>
+      rewriteLessonImageUrl('../../../images/x.png', OPTIONS, {
+        nodeKind: 'image',
+      }),
     ).toThrow(/not allowed/);
   });
 
@@ -66,15 +92,35 @@ describe('rewriteLessonImageUrl', () => {
     ).toThrow(/not allowed/);
   });
 
-  it('throws when image file name is missing', () => {
+  it('mentions both supported patterns in the not-allowed error', () => {
+    expect(() =>
+      rewriteLessonImageUrl('weird.png', OPTIONS, { nodeKind: 'image' }),
+    ).toThrow(/\.\/images\/.+\.\.\/\.\.\/images\//s);
+  });
+
+  it('throws when image file name is missing (./images/ form)', () => {
     expect(() =>
       rewriteLessonImageUrl('./images/', OPTIONS, { nodeKind: 'image' }),
+    ).toThrow(/empty image filename/);
+  });
+
+  it('throws when image file name is missing (../../images/ form)', () => {
+    expect(() =>
+      rewriteLessonImageUrl('../../images/', OPTIONS, { nodeKind: 'image' }),
     ).toThrow(/empty image filename/);
   });
 
   it('throws when path contains .. segment after ./images/', () => {
     expect(() =>
       rewriteLessonImageUrl('./images/../escape.png', OPTIONS, {
+        nodeKind: 'image',
+      }),
+    ).toThrow(/".."/);
+  });
+
+  it('throws when path contains .. segment after ../../images/', () => {
+    expect(() =>
+      rewriteLessonImageUrl('../../images/../escape.png', OPTIONS, {
         nodeKind: 'image',
       }),
     ).toThrow(/".."/);
@@ -140,15 +186,24 @@ describe('remarkLessonImages plugin', () => {
           identifier: 'fig1',
           url: './images/fig1.png',
         },
+        {
+          type: 'definition',
+          identifier: 'fig2',
+          url: '../../images/fig2.png',
+        },
       ],
     };
 
     const transform = remarkLessonImages(OPTIONS);
     transform(tree as never);
 
-    const def = tree.children[0] as { url: string };
-    expect(def.url).toBe(
+    const legacy = tree.children[0] as { url: string };
+    const migrated = tree.children[1] as { url: string };
+    expect(legacy.url).toBe(
       '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/fig1.png',
+    );
+    expect(migrated.url).toBe(
+      '/kafka-cookbook/static/lectures/02-producer/02-04-batching-and-throughput/images/fig2.png',
     );
   });
 
