@@ -12,7 +12,7 @@ import { usePathname } from 'next/navigation';
 import type { Course, FlatLessonEntry } from '@/lib/course';
 import { GATE_LOCKED_ATTR } from '@/lib/gate-init-script';
 import { applyGatePainting } from '@/lib/gate-mark-script';
-import { stripLangFromPath } from '@/lib/lang';
+import { DEFAULT_LANG, stripLangFromPath } from '@/lib/lang';
 import {
   getFrontierLesson,
   isLessonKeyUnlocked,
@@ -92,7 +92,7 @@ export function GateProvider({ course, basePath, children }: GateProviderProps) 
     const root = document.documentElement;
     const furthestIndex = resolveFurthestIndex(course, furthestKey, progress);
 
-    const { rest } = stripLangFromPath(pathname ?? '/');
+    const { lang: parsedLang, rest } = stripLangFromPath(pathname ?? '/');
     const segments = rest
       .replace(/^\/+|\/+$/g, '')
       .split('/')
@@ -109,7 +109,7 @@ export function GateProvider({ course, basePath, children }: GateProviderProps) 
       }
     }
 
-    applyGatePainting(course, furthestIndex, basePath);
+    applyGatePainting(course, furthestIndex, basePath, parsedLang ?? DEFAULT_LANG);
   }, [hydrated, pathname, course, basePath, furthestKey, progress]);
 
   const value = useMemo<GateContextValue>(() => {

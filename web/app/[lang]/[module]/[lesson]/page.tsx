@@ -15,6 +15,7 @@ import {
   type FlatLessonEntry,
 } from '@/lib/course';
 import { loadCourse } from '@/lib/course-loader';
+import { getDict } from '@/lib/i18n';
 import { isLang, LANGS, type Lang } from '@/lib/lang';
 import { getLessonContent } from '@/lib/lesson';
 import { renderLessonMarkdown } from '@/lib/markdown';
@@ -48,10 +49,11 @@ export async function generateMetadata({
 }: LessonPageProps): Promise<Metadata> {
   if (!isLang(params.lang)) return {};
   const lang = params.lang as Lang;
+  const t = getDict(lang);
   const course = loadCourse(lang);
   const lesson = findLesson(course, params.module, params.lesson);
   if (!lesson) {
-    return { title: 'Страница не найдена · Kafka Cookbook' };
+    return { title: t.notFoundMetadataTitle };
   }
 
   let description = course.description.replace(/\s+/g, ' ').trim();
@@ -74,7 +76,7 @@ export async function generateMetadata({
     url: buildAssetUrl(course.basePath, '/opengraph-image'),
     width: 1200,
     height: 630,
-    alt: `${course.title} — курс по Apache Kafka на Go`,
+    alt: t.ogImageAlt,
   };
 
   // EN page falling back to RU content — withhold from search and point the

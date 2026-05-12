@@ -35,11 +35,15 @@ function makeCourse(): Course {
   return parseCourse(COURSE_YAML);
 }
 
-type FakeWindow = { localStorage: Storage };
+type FakeWindow = { localStorage: Storage; location: { pathname: string } };
 
 function runScript(script: string, fakeWindow: FakeWindow): void {
   const fn = new Function('window', script);
   fn(fakeWindow);
+}
+
+function makeFakeWindow(pathname = '/'): FakeWindow {
+  return { localStorage: window.localStorage, location: { pathname } };
 }
 
 beforeAll(() => {
@@ -93,8 +97,8 @@ describe('buildGateMarkScript', () => {
     // the same script keeps working under /, /ru/, and /en/ routes.
     // With no progress, only the first lesson is reachable (idx <= fidx+1).
     const { row01, row02, row03, row04 } = mountLessonRows();
-    const script = buildGateMarkScript(makeCourse(), '');
-    runScript(script, { localStorage: window.localStorage });
+    const script = buildGateMarkScript(makeCourse(), '', 'en');
+    runScript(script, makeFakeWindow('/en/'));
     expect(row01.hasAttribute('data-locked')).toBe(false);
     expect(row02.getAttribute('data-locked')).toBe('true');
     expect(row03.getAttribute('data-locked')).toBe('true');
@@ -107,22 +111,50 @@ describe('buildGateMarkScript', () => {
       lessonKey('02-bar', '02-01-start'),
     );
     const { row01, row02, row03, row04 } = mountLessonRows();
-    const script = buildGateMarkScript(makeCourse(), '');
-    runScript(script, { localStorage: window.localStorage });
+    const script = buildGateMarkScript(makeCourse(), '', 'en');
+    runScript(script, makeFakeWindow('/en/02-bar/02-01-start/'));
     expect(row01.hasAttribute('data-locked')).toBe(false);
     expect(row02.hasAttribute('data-locked')).toBe(false);
     expect(row03.hasAttribute('data-locked')).toBe(false);
     expect(row04.hasAttribute('data-locked')).toBe(false);
+  });
+
+  it('builds CTA hrefs with the active lang prefix derived from URL', () => {
+    document.body.innerHTML = '';
+    const cta = document.createElement('div');
+    cta.setAttribute('data-cta-frontier', 'global');
+    const link = document.createElement('a');
+    link.setAttribute('data-cta-frontier-link', '');
+    link.setAttribute('href', '#');
+    cta.appendChild(link);
+    document.body.appendChild(cta);
+
+    const script = buildGateMarkScript(makeCourse(), '/test', 'en');
+    runScript(script, makeFakeWindow('/test/ru/01-foo/01-01-intro/'));
+    expect(link.getAttribute('href')).toBe('/test/ru/01-foo/01-01-intro/');
   });
 });
 
 describe('applyGatePainting', () => {
   it('paints data-locked on future rows from the imperative API', () => {
     const { row01, row02, row03, row04 } = mountLessonRows();
-    applyGatePainting(makeCourse(), -1, '');
+    applyGatePainting(makeCourse(), -1, '', 'en');
     expect(row01.hasAttribute('data-locked')).toBe(false);
     expect(row02.getAttribute('data-locked')).toBe('true');
     expect(row03.getAttribute('data-locked')).toBe('true');
     expect(row04.getAttribute('data-locked')).toBe('true');
+  });
+
+  it('writes lang-prefixed CTA hrefs', () => {
+    const cta = document.createElement('div');
+    cta.setAttribute('data-cta-frontier', 'global');
+    const link = document.createElement('a');
+    link.setAttribute('data-cta-frontier-link', '');
+    link.setAttribute('href', '#');
+    cta.appendChild(link);
+    document.body.appendChild(cta);
+
+    applyGatePainting(makeCourse(), -1, '/test', 'ru');
+    expect(link.getAttribute('href')).toBe('/test/ru/01-foo/01-01-intro/');
   });
 });

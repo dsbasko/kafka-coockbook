@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { useT } from '@/lib/use-i18n';
+import { stripLangFromPath } from '@/lib/lang';
+import { useLang, useT } from '@/lib/use-i18n';
 import { HomeIcon, ProgramIcon, GitHubIcon } from './icons';
 import styles from './Sidebar.module.css';
 
@@ -16,13 +17,15 @@ type SidebarProps = {
 
 export function Sidebar({ onProgramClick, isProgramOpen, repoUrl }: SidebarProps) {
   const pathname = usePathname() ?? '/';
-  const isHome = pathname === '/';
+  const lang = useLang();
+  const { rest } = stripLangFromPath(pathname);
+  const isHome = rest === '/' || pathname === '/';
   const t = useT();
   return (
     <aside className={styles.sidebar} aria-label={t.sidebarLabel}>
       <nav className={styles.nav} aria-label={t.navMainLabel}>
         <Link
-          href="/"
+          href={`/${lang}`}
           className={styles.button}
           aria-label={t.home}
           title={t.home}

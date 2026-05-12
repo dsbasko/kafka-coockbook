@@ -7,7 +7,7 @@ import type { Course } from '@/lib/course';
 import { parseDurationMin } from '@/lib/format';
 import { applyGatePainting } from '@/lib/gate-mark-script';
 import { isCompleted, lessonKey } from '@/lib/progress';
-import { useT } from '@/lib/use-i18n';
+import { useLang, useT } from '@/lib/use-i18n';
 import { LockIcon } from './LockIcon';
 import styles from './ProgramDrawer.module.css';
 
@@ -34,6 +34,7 @@ export function ProgramDrawer({
 }: ProgramDrawerProps) {
   const gate = useGate();
   const t = useT();
+  const lang = useLang();
   // Use the shared progress map from GateProvider (single source of truth) so
   // the drawer agrees with checkmark state elsewhere on the page.
   const progress = gate.hydrated ? gate.progress : null;
@@ -108,8 +109,8 @@ export function ProgramDrawer({
   // rows never flash as "open".
   useIsomorphicLayoutEffect(() => {
     if (!gate.hydrated) return;
-    applyGatePainting(course, gate.furthestIndex, gate.basePath);
-  }, [gate.hydrated, gate.furthestIndex, gate.basePath, course, expanded, isOpen]);
+    applyGatePainting(course, gate.furthestIndex, gate.basePath, lang);
+  }, [gate.hydrated, gate.furthestIndex, gate.basePath, course, expanded, isOpen, lang]);
 
   return (
     <>
@@ -195,7 +196,7 @@ export function ProgramDrawer({
                         return (
                           <li key={lesson.slug} className={styles.lesson}>
                             <Link
-                              href={`/${mod.id}/${lesson.slug}`}
+                              href={`/${lang}/${mod.id}/${lesson.slug}`}
                               className={styles.lessonLink}
                               aria-current={isCurrent ? 'page' : undefined}
                               data-completed={done ? 'true' : 'false'}

@@ -1,27 +1,29 @@
 import Link from 'next/link';
+import type { Lang } from '@/lib/lang';
 import styles from './Header.module.css';
 
 type BreadcrumbsProps = {
+  lang: Lang;
   moduleId?: string;
   moduleTitle?: string;
   lessonTitle?: string;
 };
 
-export function Breadcrumbs({ moduleId, moduleTitle, lessonTitle }: BreadcrumbsProps) {
+export function Breadcrumbs({ lang, moduleId, moduleTitle, lessonTitle }: BreadcrumbsProps) {
   if (!moduleId || !moduleTitle) {
     return <span className={styles.breadcrumbRoot}>Kafka Cookbook</span>;
   }
 
   return (
     <>
-      <Link href="/" className={styles.breadcrumbLink}>
+      <Link href={`/${lang}`} className={styles.breadcrumbLink}>
         Kafka Cookbook
       </Link>
       <span className={styles.breadcrumbSeparator} aria-hidden="true">
         /
       </span>
       {lessonTitle ? (
-        <Link href={`/${moduleId}`} className={styles.breadcrumbLink}>
+        <Link href={`/${lang}/${moduleId}`} className={styles.breadcrumbLink}>
           {moduleTitle}
         </Link>
       ) : (

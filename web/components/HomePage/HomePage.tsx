@@ -20,7 +20,7 @@ import {
 import { openProgramDrawer } from '@/lib/program-drawer';
 import { lessonKey } from '@/lib/progress';
 import { navigateToFrontierHref } from '@/lib/frontier-link';
-import { useT } from '@/lib/use-i18n';
+import { useLang, useT } from '@/lib/use-i18n';
 import styles from './HomePage.module.css';
 
 type HomePageProps = {
@@ -33,6 +33,7 @@ export function HomePage({ course, level }: HomePageProps) {
   const router = useRouter();
   const { basePath } = useGate();
   const t = useT();
+  const lang = useLang();
   const totalDurationMin = useMemo(
     () =>
       course.modules.reduce(
@@ -50,7 +51,7 @@ export function HomePage({ course, level }: HomePageProps) {
   // state, so the user with progress doesn't see this baseline flash.
   const firstEntry = useMemo(() => flattenLessons(course)[0] ?? null, [course]);
   const firstHref = firstEntry
-    ? `/${firstEntry.moduleId}/${firstEntry.lesson.slug}`
+    ? `/${lang}/${firstEntry.moduleId}/${firstEntry.lesson.slug}`
     : '#';
 
   return (
@@ -212,7 +213,7 @@ export function HomePage({ course, level }: HomePageProps) {
           return (
             <li key={mod.id} className={styles.moduleItem}>
               <Link
-                href={`/${mod.id}`}
+                href={`/${lang}/${mod.id}`}
                 className={styles.moduleRow}
                 data-lesson-key={moduleKey}
                 data-progress-scope="module"

@@ -10,7 +10,7 @@ import {
 } from '@/lib/course';
 import { navigateToFrontierHref } from '@/lib/frontier-link';
 import { openProgramDrawer } from '@/lib/program-drawer';
-import { useT } from '@/lib/use-i18n';
+import { useLang, useT } from '@/lib/use-i18n';
 import styles from './LessonLockedInterstitial.module.css';
 
 type LessonLockedInterstitialProps = {
@@ -36,6 +36,7 @@ export function LessonLockedInterstitial({
   const { course, basePath } = gate;
   const router = useRouter();
   const t = useT();
+  const lang = useLang();
 
   const attemptedLesson =
     attemptedModuleId && attemptedSlug
@@ -59,7 +60,7 @@ export function LessonLockedInterstitial({
   // Bare path — Next `<Link>` prepends basePath; pre-baking it here would
   // produce `/kafka-cookbook/kafka-cookbook/...` on client-side navigation.
   const firstHref = firstEntry
-    ? `/${firstEntry.moduleId}/${firstEntry.lesson.slug}`
+    ? `/${lang}/${firstEntry.moduleId}/${firstEntry.lesson.slug}`
     : '#';
 
   return (

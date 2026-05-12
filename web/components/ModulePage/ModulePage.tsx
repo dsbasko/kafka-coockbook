@@ -17,6 +17,7 @@ import {
 } from '@/lib/format';
 import { lessonKey } from '@/lib/progress';
 import { navigateToFrontierHref } from '@/lib/frontier-link';
+import { useLang, useT } from '@/lib/use-i18n';
 import styles from './ModulePage.module.css';
 
 type ModulePageProps = {
@@ -29,6 +30,8 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
   const moduleIndex = course.modules.findIndex((m) => m.id === module.id);
   const router = useRouter();
   const { basePath } = useGate();
+  const t = useT();
+  const lang = useLang();
   const prevModule = moduleIndex > 0 ? course.modules[moduleIndex - 1] : null;
   const nextModule =
     moduleIndex >= 0 && moduleIndex < course.modules.length - 1
@@ -58,7 +61,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
   // same numbers and cause a hydration re-render.
   const firstLesson = module.lessons[0] ?? null;
   const fallbackHref = firstLesson
-    ? `/${module.id}/${firstLesson.slug}`
+    ? `/${lang}/${module.id}/${firstLesson.slug}`
     : '#';
 
   return (
@@ -100,7 +103,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
               className={`${styles.btn} ${styles.btnPrimary}`}
               data-cta-variant="not-started"
             >
-              Начать модуль
+              {t.startModule}
               <span className={styles.btnArrow}>→</span>
             </Link>
             <Link
@@ -111,7 +114,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
               suppressHydrationWarning
               onClick={(e) => navigateToFrontierHref(e, router, basePath)}
             >
-              Продолжить ·{' '}
+              {t.continueModulePrefix} ·{' '}
               <span data-cta-frontier-title suppressHydrationWarning>
                 {firstLesson?.title ?? ''}
               </span>
@@ -122,12 +125,12 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
               className={`${styles.btn} ${styles.btnSecondary}`}
               data-cta-variant="complete"
             >
-              Перечитать модуль
+              {t.rereadModule}
               <span className={styles.btnArrow}>→</span>
             </Link>
             {nextModule && (
-              <Link href={`/${nextModule.id}`} className={`${styles.btn} ${styles.btnGhost}`}>
-                Следующий модуль <span className={styles.btnArrow}>→</span>
+              <Link href={`/${lang}/${nextModule.id}`} className={`${styles.btn} ${styles.btnGhost}`}>
+                {t.nextModule} <span className={styles.btnArrow}>→</span>
               </Link>
             )}
           </div>
@@ -135,14 +138,14 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
 
         <aside
           className={styles.sideCard}
-          aria-label="Прогресс модуля"
+          aria-label={t.moduleProgress}
           data-progress-scope="module"
           data-progress-keys={moduleKeysCsv}
           data-progress-state="not-started"
           suppressHydrationWarning
         >
           <div className={styles.sideRow}>
-            <span className={styles.sideLabel}>Прогресс</span>
+            <span className={styles.sideLabel}>{t.progress}</span>
             <span className={styles.sideVal}>
               <span data-progress-count suppressHydrationWarning>
                 0
@@ -169,15 +172,15 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
 
           <dl className={styles.sideMeta}>
             <div>
-              <dt className={styles.sideMetaLabel}>Уроков</dt>
+              <dt className={styles.sideMetaLabel}>{t.lessonsCount}</dt>
               <dd className={styles.sideMetaValue}>{totalLessons}</dd>
             </div>
             <div>
-              <dt className={styles.sideMetaLabel}>Длительность</dt>
+              <dt className={styles.sideMetaLabel}>{t.durationLabelShort}</dt>
               <dd className={styles.sideMetaValue}>{formatDurationHm(moduleDurationMin)}</dd>
             </div>
             <div>
-              <dt className={styles.sideMetaLabel}>Стек</dt>
+              <dt className={styles.sideMetaLabel}>{t.stackLabelShort}</dt>
               <dd className={styles.sideMetaValue}>{level}</dd>
             </div>
           </dl>
@@ -187,7 +190,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
       <header className={styles.sectionHead}>
         <div>
           <div className={styles.sectionEyebrow}>/ lessons</div>
-          <h2 className={styles.sectionTitle}>Уроки модуля</h2>
+          <h2 className={styles.sectionTitle}>{t.moduleLessonsHeading}</h2>
         </div>
         <div className={styles.sectionTools}>
           {totalLessons} {pluralize(totalLessons, LESSON_FORMS)} ·{' '}
@@ -202,7 +205,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
           return (
             <li key={lesson.slug} className={styles.lessonItem}>
               <Link
-                href={`/${module.id}/${lesson.slug}`}
+                href={`/${lang}/${module.id}/${lesson.slug}`}
                 className={styles.lessonRow}
                 data-lesson-key={key}
                 onClick={(e) => {
@@ -210,7 +213,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
                     e.preventDefault();
                   }
                 }}
-                title="Урок откроется после прохождения предыдущих"
+                title={t.lessonLockShort}
               >
                 <span className={styles.lessonNum}>
                   {String(index + 1).padStart(2, '0')}
@@ -237,7 +240,7 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
                   <span className={styles.lessonTitle}>{lesson.title}</span>
                   {/* Hint is always present in DOM; CSS shows it only when
                       the row carries data-next and not data-locked. */}
-                  <span className={styles.lessonHint}>↳ продолжить отсюда</span>
+                  <span className={styles.lessonHint}>{t.lessonHintContinue}</span>
                 </span>
                 {lesson.tags && lesson.tags.length > 0 && (
                   <span className={styles.lessonTags}>
@@ -261,13 +264,13 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
         })}
       </ol>
 
-      <nav className={styles.moduleNav} aria-label="Соседние модули">
+      <nav className={styles.moduleNav} aria-label={t.lessonNeighbourModulesLabel}>
         {prevModule ? (
           <Link
-            href={`/${prevModule.id}`}
+            href={`/${lang}/${prevModule.id}`}
             className={`${styles.navCard} ${styles.navCardPrev}`}
           >
-            <span className={styles.navLabel}>← Предыдущий модуль</span>
+            <span className={styles.navLabel}>{t.prevModule}</span>
             <span className={styles.navTitle}>{prevModule.title}</span>
           </Link>
         ) : (
@@ -275,10 +278,10 @@ export function ModulePage({ course, module, level }: ModulePageProps) {
         )}
         {nextModule ? (
           <Link
-            href={`/${nextModule.id}`}
+            href={`/${lang}/${nextModule.id}`}
             className={`${styles.navCard} ${styles.navCardNext}`}
           >
-            <span className={styles.navLabel}>Следующий модуль →</span>
+            <span className={styles.navLabel}>{t.nextModule} →</span>
             <span className={styles.navTitle}>{nextModule.title}</span>
           </Link>
         ) : (

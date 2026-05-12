@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useGate } from '@/components/GateProvider';
 import { lessonKey, markCompletedAndAdvance } from '@/lib/progress';
-import { useT } from '@/lib/use-i18n';
+import { useLang, useT } from '@/lib/use-i18n';
 import styles from './LessonNav.module.css';
 
 export type LessonNavLink = {
@@ -22,6 +22,7 @@ type LessonNavProps = {
 export function LessonNav({ prev, next, currentModuleId, currentSlug }: LessonNavProps) {
   const gate = useGate();
   const t = useT();
+  const lang = useLang();
   const handleNextClick = () => {
     // Single entry point: marks completed, advances the sticky furthest
     // pointer, dispatches the change event. Keeps gate state internally
@@ -33,7 +34,7 @@ export function LessonNav({ prev, next, currentModuleId, currentSlug }: LessonNa
     <nav className={styles.row} aria-label={t.lessonNavLabel}>
       {prev ? (
         <Link
-          href={`/${prev.moduleId}/${prev.slug}`}
+          href={`/${lang}/${prev.moduleId}/${prev.slug}`}
           className={`${styles.card} ${styles.prev}`}
         >
           <span className={styles.label}>{t.prevLesson}</span>
@@ -44,7 +45,7 @@ export function LessonNav({ prev, next, currentModuleId, currentSlug }: LessonNa
       )}
       {next ? (
         <Link
-          href={`/${next.moduleId}/${next.slug}`}
+          href={`/${lang}/${next.moduleId}/${next.slug}`}
           className={`${styles.card} ${styles.next}`}
           onClick={handleNextClick}
         >

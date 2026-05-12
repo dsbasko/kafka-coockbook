@@ -93,6 +93,35 @@ export type UIDict = {
   // TranslationBanner (rendered on EN lesson pages that fall back to RU)
   translationFallbackTitle: string;
   translationFallbackBody: string;
+
+  // ModulePage
+  startModule: string;
+  continueModulePrefix: string;
+  rereadModule: string;
+  nextModule: string;
+  moduleProgress: string;
+  lessonsCount: string;
+  durationLabelShort: string;
+  stackLabelShort: string;
+  moduleLessonsHeading: string;
+  lessonLockShort: string;
+  lessonHintContinue: string;
+  lessonNeighbourModulesLabel: string;
+  prevModule: string;
+
+  // LessonSideMeta
+  moduleMetaKey: string;
+  readingTimeMetaKey: string;
+  tagsMetaKey: string;
+  markUnread: string;
+
+  // ProgressBar / aria
+  progressBarAriaLabel: string;
+  progressAriaConnector: string;
+
+  // Metadata fallbacks
+  notFoundMetadataTitle: string;
+  ogImageAlt: string;
 };
 
 export const UI_STRINGS: Record<Lang, UIDict> = {
@@ -165,6 +194,31 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     translationFallbackTitle: 'Перевод в процессе',
     translationFallbackBody:
       'Английская версия этой лекции пока не готова. Показан оригинал на русском.',
+
+    startModule: 'Начать модуль',
+    continueModulePrefix: 'Продолжить',
+    rereadModule: 'Перечитать модуль',
+    nextModule: 'Следующий модуль',
+    moduleProgress: 'Прогресс модуля',
+    lessonsCount: 'Уроков',
+    durationLabelShort: 'Длительность',
+    stackLabelShort: 'Стек',
+    moduleLessonsHeading: 'Уроки модуля',
+    lessonLockShort: 'Урок откроется после прохождения предыдущих',
+    lessonHintContinue: '↳ продолжить отсюда',
+    lessonNeighbourModulesLabel: 'Соседние модули',
+    prevModule: '← Предыдущий модуль',
+
+    moduleMetaKey: 'модуль',
+    readingTimeMetaKey: 'время чтения',
+    tagsMetaKey: 'теги',
+    markUnread: 'Пометить непрочитанным',
+
+    progressBarAriaLabel: 'Прогресс прохождения курса',
+    progressAriaConnector: 'из',
+
+    notFoundMetadataTitle: 'Страница не найдена · Kafka Cookbook',
+    ogImageAlt: 'Kafka Cookbook — курс по Apache Kafka на Go',
   },
   en: {
     sidebarLabel: 'Side navigation',
@@ -235,6 +289,31 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     translationFallbackTitle: 'Translation in progress',
     translationFallbackBody:
       'The English version of this lesson is not ready yet. Showing the original Russian text.',
+
+    startModule: 'Start module',
+    continueModulePrefix: 'Continue',
+    rereadModule: 'Reread module',
+    nextModule: 'Next module',
+    moduleProgress: 'Module progress',
+    lessonsCount: 'Lessons',
+    durationLabelShort: 'Duration',
+    stackLabelShort: 'Stack',
+    moduleLessonsHeading: 'Lessons',
+    lessonLockShort: 'Lesson unlocks after the previous ones are complete',
+    lessonHintContinue: '↳ continue from here',
+    lessonNeighbourModulesLabel: 'Neighbouring modules',
+    prevModule: '← Previous module',
+
+    moduleMetaKey: 'module',
+    readingTimeMetaKey: 'reading time',
+    tagsMetaKey: 'tags',
+    markUnread: 'Mark as unread',
+
+    progressBarAriaLabel: 'Course completion progress',
+    progressAriaConnector: 'of',
+
+    notFoundMetadataTitle: 'Page not found · Kafka Cookbook',
+    ogImageAlt: 'Kafka Cookbook — Apache Kafka course in Go',
   },
 };
 

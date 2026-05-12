@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useGate } from '@/components/GateProvider';
 import type { FlatLessonEntry } from '@/lib/course';
 import { lessonKey, markCompletedAndAdvance } from '@/lib/progress';
-import { useT } from '@/lib/use-i18n';
+import { useLang, useT } from '@/lib/use-i18n';
 import styles from './Header.module.css';
 
 type HeaderLessonNavProps = {
@@ -22,6 +22,7 @@ export function HeaderLessonNav({
 }: HeaderLessonNavProps) {
   const gate = useGate();
   const t = useT();
+  const lang = useLang();
   const handleNextClick = () => {
     // Mirror LessonNav: advance the sticky pointer before navigating so the
     // gate considers the next lesson reachable. Without this, clicking the
@@ -33,7 +34,7 @@ export function HeaderLessonNav({
     <>
       {prev ? (
         <Link
-          href={`/${prev.moduleId}/${prev.lesson.slug}`}
+          href={`/${lang}/${prev.moduleId}/${prev.lesson.slug}`}
           className={styles.navButton}
           title={`← ${prev.lesson.title}`}
           aria-label={`${t.prevLessonAria}: ${prev.lesson.title}`}
@@ -51,7 +52,7 @@ export function HeaderLessonNav({
       )}
       {next ? (
         <Link
-          href={`/${next.moduleId}/${next.lesson.slug}`}
+          href={`/${lang}/${next.moduleId}/${next.lesson.slug}`}
           className={styles.navButton}
           title={`${next.lesson.title} →`}
           aria-label={`${t.nextLessonAria}: ${next.lesson.title}`}

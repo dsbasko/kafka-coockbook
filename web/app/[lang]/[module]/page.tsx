@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ModulePage } from '@/components/ModulePage';
 import { loadCourse } from '@/lib/course-loader';
+import { getDict } from '@/lib/i18n';
 import { isLang, LANGS, type Lang } from '@/lib/lang';
 import { buildAssetUrl, buildSiteUrl } from '@/lib/site-url';
 
@@ -22,10 +23,11 @@ export function generateStaticParams(): Array<{ lang: Lang; module: string }> {
 export function generateMetadata({ params }: ModulePageProps): Metadata {
   if (!isLang(params.lang)) return {};
   const lang = params.lang as Lang;
+  const t = getDict(lang);
   const course = loadCourse(lang);
   const mod = course.modules.find((m) => m.id === params.module);
   if (!mod) {
-    return { title: 'Страница не найдена · Kafka Cookbook' };
+    return { title: t.notFoundMetadataTitle };
   }
   const description = collapseWhitespace(mod.description);
   const title = `${mod.title} · ${course.title}`;
@@ -34,7 +36,7 @@ export function generateMetadata({ params }: ModulePageProps): Metadata {
     url: buildAssetUrl(course.basePath, '/opengraph-image'),
     width: 1200,
     height: 630,
-    alt: `${course.title} — курс по Apache Kafka на Go`,
+    alt: t.ogImageAlt,
   };
   return {
     title,

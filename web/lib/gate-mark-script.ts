@@ -1,4 +1,6 @@
 import { flattenLessons, type Course } from './course';
+import { getDict } from './i18n';
+import type { Lang } from './lang';
 import { FURTHEST_STORAGE_KEY, PROGRESS_STORAGE_KEY, lessonKey, type LessonKey } from './progress';
 
 export const GATE_ITEM_LOCKED_ATTR = 'data-locked';
@@ -17,7 +19,11 @@ export const GATE_ITEM_KEY_ATTR = 'data-lesson-key';
  * updates (SPA route changes, cross-tab progress sync, drawer expand). React
  * never sees these attributes in JSX, so reconciliation can't clobber them.
  */
-export function buildGateMarkScript(course: Course, basePath: string): string {
+export function buildGateMarkScript(
+  course: Course,
+  basePath: string,
+  defaultLang: Lang,
+): string {
   const flat = flattenLessons(course);
   // moduleTitles[i] = the title of the module containing lesson i. Pre-
   // computed here so the inline script doesn't need to scan modules at
@@ -34,6 +40,13 @@ export function buildGateMarkScript(course: Course, basePath: string): string {
     basePath: basePath ?? '',
     progressKey: PROGRESS_STORAGE_KEY,
     furthestKey: FURTHEST_STORAGE_KEY,
+    defaultLang,
+    // Per-lang connector word for aria-valuetext ("X из Y" / "X of Y").
+    // Lookup at runtime by the lang derived from URL prefix.
+    progressConnector: {
+      ru: getDict('ru').progressAriaConnector,
+      en: getDict('en').progressAriaConnector,
+    },
   });
   // Body kept in one IIFE so it can ship as inline <script> verbatim.
   return `(function(){try{var D=${data};${GATE_PAINT_BODY}}catch(e){}})();`;
@@ -43,6 +56,10 @@ export function buildGateMarkScript(course: Course, basePath: string): string {
 // stays in lockstep with the inline script — same algorithm, same attribute
 // names, same edge cases.
 const GATE_PAINT_BODY = `
+// Derive active lang from URL so the inline CTA href stays in /<lang>/.../ —
+// the root layout (which renders this script) has no lang context, but the
+// browser does. Mirrors stripLangFromPath in lib/lang.ts.
+var __p=window.location.pathname;if(D.basePath&&__p.indexOf(D.basePath)===0)__p=__p.slice(D.basePath.length)||'/';var __lm=__p.match(/^\\/(ru|en)(\\/.*)?$/);var lang=__lm?__lm[1]:D.defaultLang;var connector=(D.progressConnector&&D.progressConnector[lang])||'of';
 var fkey=null;try{fkey=window.localStorage.getItem(D.furthestKey)}catch(e){}
 var fidx=fkey?D.keys.indexOf(fkey):-1;
 var completed={};var completedCount=0;
@@ -62,7 +79,7 @@ for(var g=0;g<groups.length;g++){var gr=groups[g].querySelectorAll('[data-lesson
 //    whole course; scope = 'module' uses data-progress-keys (csv) for in-page
 //    per-module cards.
 var slots=document.querySelectorAll('[data-progress-scope]');
-for(var p=0;p<slots.length;p++){var s=slots[p];var scope=s.getAttribute('data-progress-scope');var sKeys;if(scope==='module'){var csv=s.getAttribute('data-progress-keys')||'';sKeys=csv?csv.split(','):[]}else{sKeys=D.keys}var sDone=0;for(var i2=0;i2<sKeys.length;i2++){if(completed[sKeys[i2]])sDone++}var sTotal=sKeys.length;var sPct=sTotal>0?Math.round((sDone/sTotal)*100):0;var qN=s.querySelectorAll('[data-progress-count]');for(var i3=0;i3<qN.length;i3++)qN[i3].textContent=sDone;var qP=s.querySelectorAll('[data-progress-pct]');for(var i4=0;i4<qP.length;i4++)qP[i4].textContent=sPct;var qB=s.querySelectorAll('[data-progress-bar]');for(var i5=0;i5<qB.length;i5++)qB[i5].style.width=sPct+'%';var state=sTotal===0?'empty':sDone===0?'not-started':sDone===sTotal?'complete':'in-progress';s.setAttribute('data-progress-state',state);if(s.getAttribute('role')==='progressbar'){s.setAttribute('aria-valuenow',String(sDone));s.setAttribute('aria-valuemax',String(sTotal));s.setAttribute('aria-valuetext',sDone+' из '+sTotal+' ('+sPct+'%)')}}
+for(var p=0;p<slots.length;p++){var s=slots[p];var scope=s.getAttribute('data-progress-scope');var sKeys;if(scope==='module'){var csv=s.getAttribute('data-progress-keys')||'';sKeys=csv?csv.split(','):[]}else{sKeys=D.keys}var sDone=0;for(var i2=0;i2<sKeys.length;i2++){if(completed[sKeys[i2]])sDone++}var sTotal=sKeys.length;var sPct=sTotal>0?Math.round((sDone/sTotal)*100):0;var qN=s.querySelectorAll('[data-progress-count]');for(var i3=0;i3<qN.length;i3++)qN[i3].textContent=sDone;var qP=s.querySelectorAll('[data-progress-pct]');for(var i4=0;i4<qP.length;i4++)qP[i4].textContent=sPct;var qB=s.querySelectorAll('[data-progress-bar]');for(var i5=0;i5<qB.length;i5++)qB[i5].style.width=sPct+'%';var state=sTotal===0?'empty':sDone===0?'not-started':sDone===sTotal?'complete':'in-progress';s.setAttribute('data-progress-state',state);if(s.getAttribute('role')==='progressbar'){s.setAttribute('aria-valuenow',String(sDone));s.setAttribute('aria-valuemax',String(sTotal));s.setAttribute('aria-valuetext',sDone+' '+connector+' '+sTotal+' ('+sPct+'%)')}}
 
 // 4. Module rows on HomePage: each row carries data-progress-keys + slot for
 //    its own count/pct/state. Re-uses the same logic above by being matched
@@ -74,7 +91,7 @@ for(var p=0;p<slots.length;p++){var s=slots[p];var scope=s.getAttribute('data-pr
 //    (not-started, in-progress, complete) and we set data-cta-state on it
 //    so CSS hides the unused variants.
 var ctas=document.querySelectorAll('[data-cta-frontier]');
-for(var c=0;c<ctas.length;c++){var row=ctas[c];var ctaScope=row.getAttribute('data-cta-frontier');var targetIdx=-1;var ctaState='not-started';if(ctaScope==='module'){var mcsv=row.getAttribute('data-progress-keys')||'';var mKeys=mcsv?mcsv.split(','):[];var mDone=0;var mNext=null;for(var i6=0;i6<mKeys.length;i6++){if(completed[mKeys[i6]]){mDone++}else if(mNext===null){mNext=mKeys[i6]}}var mTotal=mKeys.length;if(mTotal>0&&mDone===mTotal){ctaState='complete';targetIdx=D.keys.indexOf(mKeys[0])}else if(mNext!==null){var nextIdx=D.keys.indexOf(mNext);if(nextIdx>fidx+1){targetIdx=frontierIdx}else{targetIdx=nextIdx}ctaState=mDone>0?'in-progress':hasProgress?'in-progress':'not-started'}}else{targetIdx=frontierIdx;ctaState=hasProgress?'in-progress':'not-started'}if(targetIdx<0||targetIdx>=D.keys.length){row.setAttribute('data-cta-state',ctaState);continue}var tKey=D.keys[targetIdx];var tTitle=D.titles[targetIdx];var hrefVal=(D.basePath||'')+'/'+tKey+'/';var links=row.querySelectorAll('[data-cta-frontier-link]');for(var i7=0;i7<links.length;i7++)links[i7].setAttribute('href',hrefVal);var tTitleEls=row.querySelectorAll('[data-cta-frontier-title]');for(var i8=0;i8<tTitleEls.length;i8++)tTitleEls[i8].textContent=tTitle;var tNumEls=row.querySelectorAll('[data-cta-frontier-num]');for(var i9=0;i9<tNumEls.length;i9++)tNumEls[i9].textContent=String(targetIdx+1);row.setAttribute('data-cta-state',ctaState)}
+for(var c=0;c<ctas.length;c++){var row=ctas[c];var ctaScope=row.getAttribute('data-cta-frontier');var targetIdx=-1;var ctaState='not-started';if(ctaScope==='module'){var mcsv=row.getAttribute('data-progress-keys')||'';var mKeys=mcsv?mcsv.split(','):[];var mDone=0;var mNext=null;for(var i6=0;i6<mKeys.length;i6++){if(completed[mKeys[i6]]){mDone++}else if(mNext===null){mNext=mKeys[i6]}}var mTotal=mKeys.length;if(mTotal>0&&mDone===mTotal){ctaState='complete';targetIdx=D.keys.indexOf(mKeys[0])}else if(mNext!==null){var nextIdx=D.keys.indexOf(mNext);if(nextIdx>fidx+1){targetIdx=frontierIdx}else{targetIdx=nextIdx}ctaState=mDone>0?'in-progress':hasProgress?'in-progress':'not-started'}}else{targetIdx=frontierIdx;ctaState=hasProgress?'in-progress':'not-started'}if(targetIdx<0||targetIdx>=D.keys.length){row.setAttribute('data-cta-state',ctaState);continue}var tKey=D.keys[targetIdx];var tTitle=D.titles[targetIdx];var hrefVal=(D.basePath||'')+'/'+lang+'/'+tKey+'/';var links=row.querySelectorAll('[data-cta-frontier-link]');for(var i7=0;i7<links.length;i7++)links[i7].setAttribute('href',hrefVal);var tTitleEls=row.querySelectorAll('[data-cta-frontier-title]');for(var i8=0;i8<tTitleEls.length;i8++)tTitleEls[i8].textContent=tTitle;var tNumEls=row.querySelectorAll('[data-cta-frontier-num]');for(var i9=0;i9<tNumEls.length;i9++)tNumEls[i9].textContent=String(targetIdx+1);row.setAttribute('data-cta-state',ctaState)}
 
 // 6. Continue hints (HomePage frontier line under CTA, interstitial side card).
 var hints=document.querySelectorAll('[data-frontier-hint]');
@@ -94,6 +111,7 @@ export function applyGatePainting(
   course: Course,
   furthestIndex: number,
   basePath: string,
+  lang: Lang,
 ): void {
   if (typeof document === 'undefined') return;
   const flat = flattenLessons(course);
@@ -210,7 +228,7 @@ export function applyGatePainting(
       slot.setAttribute('aria-valuemax', String(slotTotal));
       slot.setAttribute(
         'aria-valuetext',
-        `${slotDone} из ${slotTotal} (${slotPct}%)`,
+        `${slotDone} ${getDict(lang).progressAriaConnector} ${slotTotal} (${slotPct}%)`,
       );
     }
   });
@@ -248,7 +266,7 @@ export function applyGatePainting(
     if (targetIdx >= 0 && targetIdx < keys.length) {
       const tKey = keys[targetIdx];
       const tTitle = titles[targetIdx];
-      const hrefVal = `${basePath || ''}/${tKey}/`;
+      const hrefVal = `${basePath || ''}/${lang}/${tKey}/`;
       row.querySelectorAll<HTMLElement>('[data-cta-frontier-link]').forEach((link) => {
         link.setAttribute('href', hrefVal);
       });
@@ -299,6 +317,8 @@ export function applyGatePainting(
 export function applyGateMarking(course: Course, furthestIndex: number): void {
   // basePath here is best-effort — when called without basePath via the old
   // signature, fall back to '' which makes hrefs site-root-relative. The
-  // initial inline script always knows the real basePath.
-  applyGatePainting(course, furthestIndex, '');
+  // initial inline script always knows the real basePath. Lang defaults to
+  // 'en' which matches DEFAULT_LANG; real callers should use the language-
+  // aware applyGatePainting directly.
+  applyGatePainting(course, furthestIndex, '', 'en');
 }

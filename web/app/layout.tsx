@@ -84,7 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const course = loadCourse(DEFAULT_LANG);
   const basePath = getRuntimeBasePath(course.basePath);
   const gateInitScript = buildGateInitScript(course, basePath);
-  const gateMarkScript = buildGateMarkScript(course, basePath);
+  const gateMarkScript = buildGateMarkScript(course, basePath, DEFAULT_LANG);
   return (
     <html
       lang={DEFAULT_LANG}

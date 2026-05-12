@@ -66,6 +66,7 @@ export function AppShell({ children, course }: AppShellProps) {
 
   const breadcrumbs = (
     <Breadcrumbs
+      lang={lang}
       moduleId={currentModule?.id}
       moduleTitle={currentModule?.title}
       lessonTitle={currentLesson?.title}
@@ -74,7 +75,7 @@ export function AppShell({ children, course }: AppShellProps) {
 
   const actions = (
     <>
-      <ProgressBar total={getTotalLessons(course)} />
+      <ProgressBar total={getTotalLessons(course)} lang={lang} />
       {currentModule && currentLesson ? (
         <HeaderLessonNav
           prev={prev}
