@@ -161,9 +161,12 @@ export default async function LessonPage({ params }: LessonPageProps) {
     slug: params.lesson,
     basePath: getRuntimeBasePath(course.basePath),
     course,
-    // Use the language of the README we actually loaded — fallback content
-    // contains RU sibling links and must be rewritten through the RU rewriter.
-    lang: contentLang,
+    // Keep emitting `/<route-lang>/` URLs so an EN reader who clicks a sibling
+    // link inside fallback RU content stays on EN routes (and gets the same
+    // fallback banner there). `sourceLang` follows the README we actually
+    // loaded so relative paths are anchored at `i18n/<source>/`.
+    lang,
+    sourceLang: contentLang,
   });
 
   const prev = toNavLink(getPrevLesson(course, params.module, params.lesson));

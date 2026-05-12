@@ -157,6 +157,24 @@ describe('buildGateInitScript', () => {
     expect(document.documentElement.hasAttribute(GATE_LOCKED_ATTR)).toBe(false);
   });
 
+  it('merges progress map with furthest pointer (cross-tab race recovery)', () => {
+    // Stored furthest points at lesson 2, but a completed entry exists for
+    // lesson 4 (e.g. another tab wrote progress before the furthest pointer
+    // caught up). The merged frontier must reach lesson 4, so navigating to
+    // lesson 4 itself must NOT lock — matches `resolveFurthestIndex` semantics.
+    window.localStorage.setItem(
+      FURTHEST_STORAGE_KEY,
+      lessonKey('01-foo', '01-02-deep'),
+    );
+    const progress = {
+      [lessonKey('02-bar', '02-02-end')]: { completed: true, at: 'x' },
+    };
+    window.localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
+    const script = buildGateInitScript(makeCourse(), '');
+    runScript(script, fakeWindow('/ru/02-bar/02-02-end'));
+    expect(document.documentElement.hasAttribute(GATE_LOCKED_ATTR)).toBe(false);
+  });
+
   it('does not strip basePath when only a substring prefix matches', () => {
     // basePath '/foo' must not strip from '/foobar/...': mirrors the same
     // guarantee LessonAwareLink/frontier-link provide.

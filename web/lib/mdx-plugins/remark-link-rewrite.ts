@@ -8,11 +8,18 @@ export interface RemarkLinkRewriteOptions {
   basePath: string;
   course: Course;
   /**
-   * Active route language. Used both to pick the source `i18n/<lang>/README.md`
-   * file when re-relativizing markdown sibling links AND to prefix the emitted
-   * site URL with `/<lang>/`. Defaults to {@link DEFAULT_LANG}.
+   * Active route language — the `/<lang>/` prefix stamped on emitted site URLs.
+   * Defaults to {@link DEFAULT_LANG}.
    */
   lang?: Lang;
+  /**
+   * Language of the source README being processed — used to resolve the
+   * `i18n/<sourceLang>/` directory the relative links are anchored to. Defaults
+   * to {@link lang}. Decoupled from `lang` so an EN route falling back to the
+   * RU README can keep emitting `/en/...` URLs while still anchoring source
+   * resolution at `i18n/ru/`.
+   */
+  sourceLang?: Lang;
   /**
    * Absolute path to the lectures root (the directory that contains
    * `<moduleId>/<slug>/README.md`). Optional — defaults to the path that
@@ -78,12 +85,14 @@ export function rewriteLessonLink(
   const [pathPart, hashPart = ''] = splitHash(url);
   const lecturesRoot = options.lecturesRoot ?? '/lectures';
   const lang = options.lang && isLang(options.lang) ? options.lang : DEFAULT_LANG;
+  const sourceLang =
+    options.sourceLang && isLang(options.sourceLang) ? options.sourceLang : lang;
   const lessonDir = path.posix.join(
     lecturesRoot,
     options.moduleId,
     options.slug,
     'i18n',
-    lang,
+    sourceLang,
   );
   const resolved = path.posix.normalize(path.posix.join(lessonDir, pathPart));
 

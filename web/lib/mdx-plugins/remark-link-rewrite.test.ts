@@ -106,6 +106,20 @@ describe('rewriteLessonLink', () => {
     );
   });
 
+  it('emits routeLang prefix while resolving relative source against sourceLang dir', () => {
+    // EN route falling back to RU README: the link inside the body points to
+    // `../../../<slug>/i18n/ru/README.md` (anchored at i18n/ru/), but the
+    // emitted URL must keep the `/en/` prefix so the user stays on EN routes.
+    const out = rewriteLessonLink(
+      '../../../02-04-batching-and-throughput/i18n/ru/README.md',
+      { ...OPTIONS, lang: 'en', sourceLang: 'ru' },
+    );
+    expect(out.url).toBe(
+      '/kafka-cookbook/en/02-producer/02-04-batching-and-throughput/',
+    );
+    expect(out.external).toBe(false);
+  });
+
   it('falls back to DEFAULT_LANG prefix when lang option is omitted', () => {
     const { lang: _omit, ...withoutLang } = OPTIONS;
     void _omit;

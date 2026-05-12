@@ -25,11 +25,17 @@ export interface RenderLessonMarkdownOptions {
   basePath: string;
   course: Course;
   /**
-   * Active route language. Determines how relative sibling-lesson links are
-   * resolved (`i18n/<lang>/README.md`) and which `/<lang>/` prefix the rewriter
+   * Active route language. Determines the `/<lang>/` prefix the rewriter
    * stamps on emitted site URLs. Defaults to {@link DEFAULT_LANG}.
    */
   lang?: Lang;
+  /**
+   * Language of the README being rendered. When an EN route falls back to the
+   * RU README this differs from {@link lang}: the URL prefix stays `/en/` but
+   * relative sibling links inside the body anchor at `i18n/ru/`. Defaults to
+   * {@link lang}.
+   */
+  sourceLang?: Lang;
 }
 
 export interface RenderLessonMarkdownResult {
@@ -115,6 +121,7 @@ export async function renderLessonMarkdown(
       basePath: options.basePath,
       course: options.course,
       lang: options.lang ?? DEFAULT_LANG,
+      sourceLang: options.sourceLang ?? options.lang ?? DEFAULT_LANG,
     })
     .use(remarkRehype, { allowDangerousHtml: false })
     .use(rehypeStripLeadingH1)

@@ -45,10 +45,10 @@ export function generateMetadata(): Metadata {
   // canonical points at the default-lang URL and `alternates.languages` lets
   // crawlers discover the per-lang copies.
   const course = loadCourse(DEFAULT_LANG);
-  const description =
-    DEFAULT_LANG === 'ru'
-      ? 'Курс по Apache Kafka на Go: продюсеры, консьюмеры, надёжность, контракты, стримы, эксплуатация и use cases.'
-      : 'Apache Kafka course in Go: producers, consumers, reliability, contracts, streams, operations and use cases.';
+  // course.yaml owns the per-lang description; loadCourse(DEFAULT_LANG) has
+  // already resolved the right side of the `{ ru, en }` map. Normalize
+  // whitespace so multi-line YAML scalars render as a single sentence.
+  const description = course.description.replace(/\s+/g, ' ').trim();
   const canonical = buildSiteUrl(course.basePath, [DEFAULT_LANG]);
   const languages: Record<string, string> = {
     'x-default': canonical,

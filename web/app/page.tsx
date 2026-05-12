@@ -2,7 +2,7 @@ import { AppShell } from '@/components/AppShell';
 import { GateProvider } from '@/components/GateProvider';
 import { HomePage } from '@/components/HomePage';
 import { loadCourse } from '@/lib/course-loader';
-import { DEFAULT_LANG, LANG_INIT_SCRIPT, LANGS } from '@/lib/lang';
+import { DEFAULT_LANG, LANG_INIT_SCRIPT, LANG_LABELS, LANGS } from '@/lib/lang';
 import { buildSiteUrl, getRuntimeBasePath } from '@/lib/site-url';
 
 export default function RootPage() {
@@ -17,8 +17,10 @@ export default function RootPage() {
     <>
       <script
         id="lang-init"
-        // Runs synchronously before the body renders so a redirect, if needed,
-        // happens before the user sees default-language content.
+        // Renders as the first body child. Before the rest of the body paints,
+        // it redirects to `/{lang}/` when the resolved language differs from
+        // DEFAULT_LANG — at worst the user sees a brief background flash before
+        // the new page loads.
         dangerouslySetInnerHTML={{ __html: LANG_INIT_SCRIPT }}
       />
       <GateProvider course={course} basePath={basePath}>
@@ -27,10 +29,11 @@ export default function RootPage() {
         </AppShell>
       </GateProvider>
       <noscript>
+        <p>Choose your language / Выберите язык:</p>
         <ul>
           {LANGS.map((lang) => (
             <li key={lang}>
-              <a href={buildSiteUrl(course.basePath, [lang])}>{lang.toUpperCase()}</a>
+              <a href={buildSiteUrl(course.basePath, [lang])}>{LANG_LABELS[lang]}</a>
             </li>
           ))}
         </ul>

@@ -27,6 +27,9 @@ export function buildGateInitScript(course: Course, basePath: string): string {
   // leading `/ru/` or `/en/` segment so the parser sees `[moduleId, slug]` as
   // its first two segments regardless of the active language route. basePath
   // strip is segment-aware (mirrors LessonAwareLink) so `/foo` does not match
-  // `/foobar/...`.
-  return `(function(){try{var D=${data};var p=window.location.pathname;var base=D.basePath;if(base&&(p===base||p.indexOf(base+'/')===0)){p=p.slice(base.length)||'/'}var lm=p.match(/^\\/(ru|en)(\\/.*)?$/);if(lm){p=lm[2]&&lm[2].length>0?lm[2]:'/'}var m=p.replace(/^\\/+|\\/+$/g,'').split('/');if(m.length<2)return;var key=m[0]+'/'+m[1];var idx=D.keys.indexOf(key);if(idx<0)return;var fkey=null;try{fkey=window.localStorage.getItem(D.furthestKey)}catch(e){}var fidx=fkey?D.keys.indexOf(fkey):-1;if(fidx<0){try{var raw=window.localStorage.getItem(D.progressKey);if(raw){var pr=JSON.parse(raw);for(var i=0;i<D.keys.length;i++){var v=pr[D.keys[i]];if(v&&v.completed===true&&i>fidx){fidx=i}}}}catch(e){}}if(idx>fidx+1){document.documentElement.setAttribute(D.attr,'true')}}catch(e){}})();`;
+  // `/foobar/...`. The frontier index merges the stored `furthest` pointer
+  // and the highest completed entry in `progress` (mirrors `resolveFurthestIndex`
+  // in lesson-gate.ts); without merging both, a cross-tab race where progress
+  // overtakes the pointer would flash the locked interstitial before hydration.
+  return `(function(){try{var D=${data};var p=window.location.pathname;var base=D.basePath;if(base&&(p===base||p.indexOf(base+'/')===0)){p=p.slice(base.length)||'/'}var lm=p.match(/^\\/(ru|en)(\\/.*)?$/);if(lm){p=lm[2]&&lm[2].length>0?lm[2]:'/'}var m=p.replace(/^\\/+|\\/+$/g,'').split('/');if(m.length<2)return;var key=m[0]+'/'+m[1];var idx=D.keys.indexOf(key);if(idx<0)return;var fkey=null;try{fkey=window.localStorage.getItem(D.furthestKey)}catch(e){}var fidx=fkey?D.keys.indexOf(fkey):-1;try{var raw=window.localStorage.getItem(D.progressKey);if(raw){var pr=JSON.parse(raw);for(var i=0;i<D.keys.length;i++){var v=pr[D.keys[i]];if(v&&v.completed===true&&i>fidx){fidx=i}}}}catch(e){}if(idx>fidx+1){document.documentElement.setAttribute(D.attr,'true')}}catch(e){}})();`;
 }
