@@ -56,12 +56,18 @@ export async function generateMetadata({
     return { title: t.notFoundMetadataTitle };
   }
 
-  let description = course.description.replace(/\s+/g, ' ').trim();
+  const courseDescription = course.description.replace(/\s+/g, ' ').trim();
+  let description = courseDescription;
   let fallbackUsed = false;
   try {
     const content = await getLessonContent(params.module, params.lesson, lang);
-    description = extractDescription(content.markdown) ?? description;
     fallbackUsed = content.fallbackUsed;
+    // When EN falls back to the RU README, the markdown is Russian — extracting
+    // a description from it would leak RU text into the EN page's <meta>. Keep
+    // the EN course-level description instead.
+    if (!fallbackUsed) {
+      description = extractDescription(content.markdown) ?? courseDescription;
+    }
   } catch {
     // metadata is best-effort; the page render will surface the real failure.
   }

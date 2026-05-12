@@ -35,6 +35,10 @@ function makeCourse(): Course {
   return parseCourse(COURSE_YAML);
 }
 
+function makeCoursesByLang(): Record<'ru' | 'en', Course> {
+  return { ru: parseCourse(COURSE_YAML, 'ru'), en: parseCourse(COURSE_YAML, 'en') };
+}
+
 type FakeWindow = { localStorage: Storage; location: { pathname: string } };
 
 function runScript(script: string, fakeWindow: FakeWindow): void {
@@ -97,7 +101,7 @@ describe('buildGateMarkScript', () => {
     // the same script keeps working under /, /ru/, and /en/ routes.
     // With no progress, only the first lesson is reachable (idx <= fidx+1).
     const { row01, row02, row03, row04 } = mountLessonRows();
-    const script = buildGateMarkScript(makeCourse(), '', 'en');
+    const script = buildGateMarkScript(makeCoursesByLang(), '', 'en');
     runScript(script, makeFakeWindow('/en/'));
     expect(row01.hasAttribute('data-locked')).toBe(false);
     expect(row02.getAttribute('data-locked')).toBe('true');
@@ -111,7 +115,7 @@ describe('buildGateMarkScript', () => {
       lessonKey('02-bar', '02-01-start'),
     );
     const { row01, row02, row03, row04 } = mountLessonRows();
-    const script = buildGateMarkScript(makeCourse(), '', 'en');
+    const script = buildGateMarkScript(makeCoursesByLang(), '', 'en');
     runScript(script, makeFakeWindow('/en/02-bar/02-01-start/'));
     expect(row01.hasAttribute('data-locked')).toBe(false);
     expect(row02.hasAttribute('data-locked')).toBe(false);
@@ -129,9 +133,32 @@ describe('buildGateMarkScript', () => {
     cta.appendChild(link);
     document.body.appendChild(cta);
 
-    const script = buildGateMarkScript(makeCourse(), '/test', 'en');
+    const script = buildGateMarkScript(makeCoursesByLang(), '/test', 'en');
     runScript(script, makeFakeWindow('/test/ru/01-foo/01-01-intro/'));
     expect(link.getAttribute('href')).toBe('/test/ru/01-foo/01-01-intro/');
+  });
+
+  it('writes lang-matching titles into CTA slots so RU pages don\'t flash EN titles', () => {
+    // Reuses the test fixture (titles identical across langs without a {ru,en}
+    // map in YAML), but exercises the lookup path. The same call is also used
+    // by the production layout via lang-specific course objects.
+    document.body.innerHTML = '';
+    const cta = document.createElement('div');
+    cta.setAttribute('data-cta-frontier', 'global');
+    const titleEl = document.createElement('span');
+    titleEl.setAttribute('data-cta-frontier-title', '');
+    cta.appendChild(titleEl);
+    document.body.appendChild(cta);
+
+    const ruCourse = parseCourse(COURSE_YAML, 'ru');
+    const enCourse = parseCourse(COURSE_YAML, 'en');
+    // Mutate the first lesson title to differ between langs so we can verify
+    // the script picks by lang prefix from the URL.
+    ruCourse.modules[0].lessons[0].title = 'РУ Заголовок';
+    enCourse.modules[0].lessons[0].title = 'EN Title';
+    const script = buildGateMarkScript({ ru: ruCourse, en: enCourse }, '', 'en');
+    runScript(script, makeFakeWindow('/ru/'));
+    expect(titleEl.textContent).toBe('РУ Заголовок');
   });
 });
 

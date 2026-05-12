@@ -1,6 +1,6 @@
 import { flattenLessons, type Course } from './course';
 import { getDict } from './i18n';
-import type { Lang } from './lang';
+import { LANGS, type Lang } from './lang';
 import { FURTHEST_STORAGE_KEY, PROGRESS_STORAGE_KEY, lessonKey, type LessonKey } from './progress';
 
 export const GATE_ITEM_LOCKED_ATTR = 'data-locked';
@@ -20,23 +20,29 @@ export const GATE_ITEM_KEY_ATTR = 'data-lesson-key';
  * never sees these attributes in JSX, so reconciliation can't clobber them.
  */
 export function buildGateMarkScript(
-  course: Course,
+  coursesByLang: Record<Lang, Course>,
   basePath: string,
   defaultLang: Lang,
 ): string {
-  const flat = flattenLessons(course);
-  // moduleTitles[i] = the title of the module containing lesson i. Pre-
-  // computed here so the inline script doesn't need to scan modules at
-  // runtime — it just indexes by linear lesson index.
-  const moduleTitleByIndex: string[] = [];
-  for (const entry of flat) {
-    const mod = course.modules.find((m) => m.id === entry.moduleId);
-    moduleTitleByIndex.push(mod?.title ?? '');
+  // Lesson order is the same across languages (slugs/ids don't change), so use
+  // any course as the structural reference. Titles vary per lang and are sent
+  // as parallel arrays indexed by lang.
+  const referenceCourse = coursesByLang[defaultLang];
+  const flat = flattenLessons(referenceCourse);
+  const titlesByLang: Partial<Record<Lang, string[]>> = {};
+  const moduleTitlesByLang: Partial<Record<Lang, string[]>> = {};
+  for (const lang of LANGS) {
+    const langFlat = flattenLessons(coursesByLang[lang]);
+    titlesByLang[lang] = langFlat.map((e) => e.lesson.title);
+    moduleTitlesByLang[lang] = langFlat.map((e) => {
+      const mod = coursesByLang[lang].modules.find((m) => m.id === e.moduleId);
+      return mod?.title ?? '';
+    });
   }
   const data = JSON.stringify({
     keys: flat.map((e) => lessonKey(e.moduleId, e.lesson.slug)),
-    titles: flat.map((e) => e.lesson.title),
-    moduleTitles: moduleTitleByIndex,
+    titlesByLang,
+    moduleTitlesByLang,
     basePath: basePath ?? '',
     progressKey: PROGRESS_STORAGE_KEY,
     furthestKey: FURTHEST_STORAGE_KEY,
@@ -59,7 +65,7 @@ const GATE_PAINT_BODY = `
 // Derive active lang from URL so the inline CTA href stays in /<lang>/.../ —
 // the root layout (which renders this script) has no lang context, but the
 // browser does. Mirrors stripLangFromPath in lib/lang.ts.
-var __p=window.location.pathname;if(D.basePath&&__p.indexOf(D.basePath)===0)__p=__p.slice(D.basePath.length)||'/';var __lm=__p.match(/^\\/(ru|en)(\\/.*)?$/);var lang=__lm?__lm[1]:D.defaultLang;var connector=(D.progressConnector&&D.progressConnector[lang])||'of';
+var __p=window.location.pathname;if(D.basePath&&__p.indexOf(D.basePath)===0)__p=__p.slice(D.basePath.length)||'/';var __lm=__p.match(/^\\/(ru|en)(\\/.*)?$/);var lang=__lm?__lm[1]:D.defaultLang;var connector=(D.progressConnector&&D.progressConnector[lang])||'of';var titles=(D.titlesByLang&&D.titlesByLang[lang])||D.titlesByLang[D.defaultLang]||[];var moduleTitles=(D.moduleTitlesByLang&&D.moduleTitlesByLang[lang])||D.moduleTitlesByLang[D.defaultLang]||[];
 var fkey=null;try{fkey=window.localStorage.getItem(D.furthestKey)}catch(e){}
 var fidx=fkey?D.keys.indexOf(fkey):-1;
 var completed={};var completedCount=0;
@@ -91,11 +97,11 @@ for(var p=0;p<slots.length;p++){var s=slots[p];var scope=s.getAttribute('data-pr
 //    (not-started, in-progress, complete) and we set data-cta-state on it
 //    so CSS hides the unused variants.
 var ctas=document.querySelectorAll('[data-cta-frontier]');
-for(var c=0;c<ctas.length;c++){var row=ctas[c];var ctaScope=row.getAttribute('data-cta-frontier');var targetIdx=-1;var ctaState='not-started';if(ctaScope==='module'){var mcsv=row.getAttribute('data-progress-keys')||'';var mKeys=mcsv?mcsv.split(','):[];var mDone=0;var mNext=null;for(var i6=0;i6<mKeys.length;i6++){if(completed[mKeys[i6]]){mDone++}else if(mNext===null){mNext=mKeys[i6]}}var mTotal=mKeys.length;if(mTotal>0&&mDone===mTotal){ctaState='complete';targetIdx=D.keys.indexOf(mKeys[0])}else if(mNext!==null){var nextIdx=D.keys.indexOf(mNext);if(nextIdx>fidx+1){targetIdx=frontierIdx}else{targetIdx=nextIdx}ctaState=mDone>0?'in-progress':hasProgress?'in-progress':'not-started'}}else{targetIdx=frontierIdx;ctaState=hasProgress?'in-progress':'not-started'}if(targetIdx<0||targetIdx>=D.keys.length){row.setAttribute('data-cta-state',ctaState);continue}var tKey=D.keys[targetIdx];var tTitle=D.titles[targetIdx];var hrefVal=(D.basePath||'')+'/'+lang+'/'+tKey+'/';var links=row.querySelectorAll('[data-cta-frontier-link]');for(var i7=0;i7<links.length;i7++)links[i7].setAttribute('href',hrefVal);var tTitleEls=row.querySelectorAll('[data-cta-frontier-title]');for(var i8=0;i8<tTitleEls.length;i8++)tTitleEls[i8].textContent=tTitle;var tNumEls=row.querySelectorAll('[data-cta-frontier-num]');for(var i9=0;i9<tNumEls.length;i9++)tNumEls[i9].textContent=String(targetIdx+1);row.setAttribute('data-cta-state',ctaState)}
+for(var c=0;c<ctas.length;c++){var row=ctas[c];var ctaScope=row.getAttribute('data-cta-frontier');var targetIdx=-1;var ctaState='not-started';if(ctaScope==='module'){var mcsv=row.getAttribute('data-progress-keys')||'';var mKeys=mcsv?mcsv.split(','):[];var mDone=0;var mNext=null;for(var i6=0;i6<mKeys.length;i6++){if(completed[mKeys[i6]]){mDone++}else if(mNext===null){mNext=mKeys[i6]}}var mTotal=mKeys.length;if(mTotal>0&&mDone===mTotal){ctaState='complete';targetIdx=D.keys.indexOf(mKeys[0])}else if(mNext!==null){var nextIdx=D.keys.indexOf(mNext);if(nextIdx>fidx+1){targetIdx=frontierIdx}else{targetIdx=nextIdx}ctaState=mDone>0?'in-progress':hasProgress?'in-progress':'not-started'}}else{targetIdx=frontierIdx;ctaState=hasProgress?'in-progress':'not-started'}if(targetIdx<0||targetIdx>=D.keys.length){row.setAttribute('data-cta-state',ctaState);continue}var tKey=D.keys[targetIdx];var tTitle=titles[targetIdx];var hrefVal=(D.basePath||'')+'/'+lang+'/'+tKey+'/';var links=row.querySelectorAll('[data-cta-frontier-link]');for(var i7=0;i7<links.length;i7++)links[i7].setAttribute('href',hrefVal);var tTitleEls=row.querySelectorAll('[data-cta-frontier-title]');for(var i8=0;i8<tTitleEls.length;i8++)tTitleEls[i8].textContent=tTitle;var tNumEls=row.querySelectorAll('[data-cta-frontier-num]');for(var i9=0;i9<tNumEls.length;i9++)tNumEls[i9].textContent=String(targetIdx+1);row.setAttribute('data-cta-state',ctaState)}
 
 // 6. Continue hints (HomePage frontier line under CTA, interstitial side card).
 var hints=document.querySelectorAll('[data-frontier-hint]');
-if(hints.length>0){var hKey=D.keys[frontierIdx];var hTitle=D.titles[frontierIdx];var hMod=D.moduleTitles[frontierIdx];for(var i10=0;i10<hints.length;i10++){var h=hints[i10];var hLes=h.querySelectorAll('[data-frontier-hint-lesson]');var hMo=h.querySelectorAll('[data-frontier-hint-module]');if(hKey){h.setAttribute('data-hint-state',hasProgress?'visible':'hidden')}else{h.setAttribute('data-hint-state','hidden')}for(var i11=0;i11<hLes.length;i11++)hLes[i11].textContent=hTitle;for(var i12=0;i12<hMo.length;i12++)hMo[i12].textContent=hMod}}
+if(hints.length>0){var hKey=D.keys[frontierIdx];var hTitle=titles[frontierIdx];var hMod=moduleTitles[frontierIdx];for(var i10=0;i10<hints.length;i10++){var h=hints[i10];var hLes=h.querySelectorAll('[data-frontier-hint-lesson]');var hMo=h.querySelectorAll('[data-frontier-hint-module]');if(hKey){h.setAttribute('data-hint-state',hasProgress?'visible':'hidden')}else{h.setAttribute('data-hint-state','hidden')}for(var i11=0;i11<hLes.length;i11++)hLes[i11].textContent=hTitle;for(var i12=0;i12<hMo.length;i12++)hMo[i12].textContent=hMod}}
 
 // 7. Steps-until counters (interstitial "до этого урока N шагов"). The slot
 //    carries data-steps-target-index = linear index of the locked target;

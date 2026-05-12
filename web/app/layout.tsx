@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { Manrope, Source_Serif_4 } from 'next/font/google';
 import localFont from 'next/font/local';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import type { Course } from '@/lib/course';
 import { loadCourse } from '@/lib/course-loader';
 import { buildGateInitScript } from '@/lib/gate-init-script';
 import { buildGateMarkScript } from '@/lib/gate-mark-script';
-import { DEFAULT_LANG, LANGS } from '@/lib/lang';
+import { DEFAULT_LANG, LANGS, type Lang } from '@/lib/lang';
 import { buildSiteUrl, getRuntimeBasePath, getSiteUrl } from '@/lib/site-url';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import '@/styles/globals.css';
@@ -77,14 +78,19 @@ export function generateMetadata(): Metadata {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // Init scripts only need the linear lesson order + course shape, both of
-  // which are language-agnostic. Loading the default-lang course is enough —
-  // the per-lang [lang]/layout supplies its own AppShell/GateProvider with the
-  // language-specific course (used for titles, descriptions, etc.).
-  const course = loadCourse(DEFAULT_LANG);
+  // gate-init operates on lesson keys + linear order (language-agnostic), so
+  // the default-lang course is enough. gate-mark, however, writes localized
+  // lesson/module titles into CTA/hint slots — it must ship per-lang title
+  // tables and pick the right one at runtime based on the URL prefix; without
+  // this, RU pages flash EN titles into CTAs between SSR and hydration.
+  const coursesByLang: Record<Lang, Course> = {
+    ru: loadCourse('ru'),
+    en: loadCourse('en'),
+  };
+  const course = coursesByLang[DEFAULT_LANG];
   const basePath = getRuntimeBasePath(course.basePath);
   const gateInitScript = buildGateInitScript(course, basePath);
-  const gateMarkScript = buildGateMarkScript(course, basePath, DEFAULT_LANG);
+  const gateMarkScript = buildGateMarkScript(coursesByLang, basePath, DEFAULT_LANG);
   return (
     <html
       lang={DEFAULT_LANG}
