@@ -87,7 +87,10 @@ export async function generateMetadata({
 
   // EN page falling back to RU content — withhold from search and point the
   // canonical at the actual RU URL so search engines don't index a duplicate
-  // under the wrong language.
+  // under the wrong language. Still emit a full openGraph block: without it
+  // social-share unfurls inherit root-layout defaults (og:url=/en/,
+  // og:type=website), which gives misleading previews even though crawlers
+  // honour the noindex.
   if (lang === 'en' && fallbackUsed) {
     const ruCanonical = buildSiteUrl(course.basePath, [
       'ru',
@@ -99,6 +102,21 @@ export async function generateMetadata({
       description,
       alternates: { canonical: ruCanonical },
       robots: { index: false, follow: true },
+      openGraph: {
+        type: 'article',
+        siteName: course.title,
+        title,
+        description,
+        url: ruCanonical,
+        locale: 'ru_RU',
+        images: [ogImage],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [ogImage.url],
+      },
     };
   }
 

@@ -74,6 +74,18 @@ export function GateProvider({ course, basePath, children }: GateProviderProps) 
     };
   }, []);
 
+  // The inline LANG_SYNC_SCRIPT in [lang]/layout fixes <html lang> for the
+  // very first paint, but client navigation between sibling /ru/ and /en/
+  // routes only re-renders the script element — browsers do not execute
+  // <script> tags inserted via DOM mutation, so the static `<html lang>`
+  // from the root layout would stay wrong for screen readers and Intl APIs
+  // after a LanguageToggle. Mirror the route lang from a client effect.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const { lang } = stripLangFromPath(pathname ?? '/');
+    document.documentElement.lang = lang ?? DEFAULT_LANG;
+  }, [pathname]);
+
   // Keep gate markers in sync with current state. Two attributes are
   // managed here from a single source of truth (resolveFurthestIndex):
   //   • `data-lesson-locked` on <html> — controls the lesson page gate.
