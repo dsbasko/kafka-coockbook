@@ -53,7 +53,9 @@ export function buildGateMarkScript(
       ru: getDict('ru').progressAriaConnector,
       en: getDict('en').progressAriaConnector,
     },
-  });
+    // Escape `<` so a maintainer-supplied title containing `</script>` cannot
+    // prematurely close the inline <script> tag during HTML parsing.
+  }).replace(/</g, '\\u003c');
   // Body kept in one IIFE so it can ship as inline <script> verbatim.
   return `(function(){try{var D=${data};${GATE_PAINT_BODY}}catch(e){}})();`;
 }
@@ -65,7 +67,7 @@ const GATE_PAINT_BODY = `
 // Derive active lang from URL so the inline CTA href stays in /<lang>/.../ —
 // the root layout (which renders this script) has no lang context, but the
 // browser does. Mirrors stripLangFromPath in lib/lang.ts.
-var __p=window.location.pathname;if(D.basePath&&__p.indexOf(D.basePath)===0)__p=__p.slice(D.basePath.length)||'/';var __lm=__p.match(/^\\/(ru|en)(\\/.*)?$/);var lang=__lm?__lm[1]:D.defaultLang;var connector=(D.progressConnector&&D.progressConnector[lang])||'of';var titles=(D.titlesByLang&&D.titlesByLang[lang])||D.titlesByLang[D.defaultLang]||[];var moduleTitles=(D.moduleTitlesByLang&&D.moduleTitlesByLang[lang])||D.moduleTitlesByLang[D.defaultLang]||[];
+var __p=window.location.pathname;if(D.basePath&&(__p===D.basePath||__p.indexOf(D.basePath+'/')===0))__p=__p.slice(D.basePath.length)||'/';var __lm=__p.match(/^\\/(ru|en)(\\/.*)?$/);var lang=__lm?__lm[1]:D.defaultLang;var connector=(D.progressConnector&&D.progressConnector[lang])||'of';var titles=(D.titlesByLang&&D.titlesByLang[lang])||D.titlesByLang[D.defaultLang]||[];var moduleTitles=(D.moduleTitlesByLang&&D.moduleTitlesByLang[lang])||D.moduleTitlesByLang[D.defaultLang]||[];
 var fkey=null;try{fkey=window.localStorage.getItem(D.furthestKey)}catch(e){}
 var fidx=fkey?D.keys.indexOf(fkey):-1;
 var completed={};var completedCount=0;

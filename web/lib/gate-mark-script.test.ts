@@ -138,6 +138,27 @@ describe('buildGateMarkScript', () => {
     expect(link.getAttribute('href')).toBe('/test/ru/01-foo/01-01-intro/');
   });
 
+  it('does not strip basePath when only a substring prefix matches', () => {
+    // basePath '/foo' must not match '/foobar/...': segment-aware check
+    // mirrors LessonAwareLink so the lang strip downstream still sees the
+    // original path.
+    document.body.innerHTML = '';
+    const cta = document.createElement('div');
+    cta.setAttribute('data-cta-frontier', 'global');
+    const link = document.createElement('a');
+    link.setAttribute('data-cta-frontier-link', '');
+    link.setAttribute('href', '#');
+    cta.appendChild(link);
+    document.body.appendChild(cta);
+
+    const script = buildGateMarkScript(makeCoursesByLang(), '/foo', 'en');
+    runScript(script, makeFakeWindow('/foobar/ru/01-foo/01-01-intro/'));
+    // basePath should NOT be stripped from '/foobar/...'; lang regex then
+    // also fails to match (path doesn't start with /ru/ or /en/), so the
+    // CTA falls back to defaultLang ('en').
+    expect(link.getAttribute('href')).toBe('/foo/en/01-foo/01-01-intro/');
+  });
+
   it('writes lang-matching titles into CTA slots so RU pages don\'t flash EN titles', () => {
     // Reuses the test fixture (titles identical across langs without a {ru,en}
     // map in YAML), but exercises the lookup path. The same call is also used

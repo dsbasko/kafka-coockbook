@@ -156,4 +156,12 @@ describe('buildGateInitScript', () => {
     runScript(script, fakeWindow('/enfoo/01-something'));
     expect(document.documentElement.hasAttribute(GATE_LOCKED_ATTR)).toBe(false);
   });
+
+  it('does not strip basePath when only a substring prefix matches', () => {
+    // basePath '/foo' must not strip from '/foobar/...': mirrors the same
+    // guarantee LessonAwareLink/frontier-link provide.
+    const script = buildGateInitScript(makeCourse(), '/foo');
+    runScript(script, fakeWindow('/foobar/02-bar/02-02-end'));
+    expect(document.documentElement.hasAttribute(GATE_LOCKED_ATTR)).toBe(false);
+  });
 });
