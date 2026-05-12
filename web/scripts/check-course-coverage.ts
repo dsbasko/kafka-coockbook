@@ -46,7 +46,7 @@ function discoverFromCourse(course: Course): Set<string> {
 }
 
 function main(): void {
-  const course = loadCourse(COURSE_YAML);
+  const course = loadCourse('ru', { filePath: COURSE_YAML });
   const fsSet = discoverFromFs();
   const yamlSet = discoverFromCourse(course);
 

@@ -14,8 +14,8 @@ const COURSE: Course = {
       title: 'Producer',
       description: 'desc',
       lessons: [
-        { slug: '02-03-idempotent-producer', title: 'Idempotent', duration: '30m', tags: [] },
-        { slug: '02-04-batching-and-throughput', title: 'Batching', duration: '30m', tags: [] },
+        { slug: '02-03-idempotent-producer', title: 'Idempotent', duration: '30m', tags: [], hasTranslation: true },
+        { slug: '02-04-batching-and-throughput', title: 'Batching', duration: '30m', tags: [], hasTranslation: true },
       ],
     },
     {
@@ -23,7 +23,7 @@ const COURSE: Course = {
       title: 'Consumer',
       description: 'desc',
       lessons: [
-        { slug: '03-01-groups-and-rebalance', title: 'Groups', duration: '30m', tags: [] },
+        { slug: '03-01-groups-and-rebalance', title: 'Groups', duration: '30m', tags: [], hasTranslation: true },
       ],
     },
   ],

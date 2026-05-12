@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseCourse, type Course } from './course';
+import { type Lang } from './lang';
 
 // Try a few known-good locations so the loader works whether Node was
 // launched from web/ (typical: pnpm scripts, vitest, next build) or from
@@ -18,7 +19,41 @@ function defaultCoursePath(): string {
   return candidates[0];
 }
 
-export function loadCourse(filePath: string = defaultCoursePath()): Course {
+function defaultLecturesRoot(): string {
+  const candidates = [
+    path.resolve(process.cwd(), 'lectures'),
+    path.resolve(process.cwd(), '..', 'lectures'),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return candidates[0];
+}
+
+export interface LoadCourseOptions {
+  filePath?: string;
+  lecturesRoot?: string;
+}
+
+export function loadCourse(lang: Lang, options: LoadCourseOptions = {}): Course {
+  const filePath = options.filePath ?? defaultCoursePath();
+  const lecturesRoot = options.lecturesRoot ?? defaultLecturesRoot();
   const raw = readFileSync(filePath, 'utf8');
-  return parseCourse(raw, filePath);
+  const course = parseCourse(raw, lang, filePath);
+
+  for (const mod of course.modules) {
+    for (const lesson of mod.lessons) {
+      const translationPath = path.join(
+        lecturesRoot,
+        mod.id,
+        lesson.slug,
+        'i18n',
+        lang,
+        'README.md',
+      );
+      lesson.hasTranslation = existsSync(translationPath);
+    }
+  }
+
+  return course;
 }

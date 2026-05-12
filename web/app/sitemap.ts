@@ -4,7 +4,7 @@ import { loadCourse } from '@/lib/course-loader';
 import { buildSiteUrl } from '@/lib/site-url';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [
     {

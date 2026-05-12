@@ -1,4 +1,5 @@
 import yaml from 'js-yaml';
+import { type Lang } from './lang';
 import { isValidSlug } from './slug';
 
 export interface Lesson {
@@ -6,6 +7,7 @@ export interface Lesson {
   title: string;
   duration: string;
   tags: string[];
+  hasTranslation: boolean;
 }
 
 export interface Module {
@@ -29,7 +31,11 @@ export interface FlatLessonEntry {
   index: number;
 }
 
-export function parseCourse(source: string, sourcePath = '<inline>'): Course {
+export function parseCourse(
+  source: string,
+  lang: Lang = 'ru',
+  sourcePath = '<inline>',
+): Course {
   let parsed: unknown;
   try {
     parsed = yaml.load(source);
@@ -42,8 +48,8 @@ export function parseCourse(source: string, sourcePath = '<inline>'): Course {
     throw new Error(`course.yaml: expected top-level mapping in ${sourcePath}`);
   }
 
-  const title = requireString(parsed, 'title');
-  const description = requireString(parsed, 'description');
+  const title = requireLocalized(parsed, 'title', lang);
+  const description = requireLocalized(parsed, 'description', lang);
   const basePath = requireString(parsed, 'basePath');
   const repoUrl = requireString(parsed, 'repoUrl');
 
@@ -68,8 +74,8 @@ export function parseCourse(source: string, sourcePath = '<inline>'): Course {
     }
     seenModuleIds.add(id);
 
-    const moduleTitle = requireString(value, 'title', where);
-    const moduleDescription = requireString(value, 'description', where);
+    const moduleTitle = requireLocalized(value, 'title', lang, where);
+    const moduleDescription = requireLocalized(value, 'description', lang, where);
 
     const rawLessons = value.lessons;
     if (!Array.isArray(rawLessons) || rawLessons.length === 0) {
@@ -91,11 +97,11 @@ export function parseCourse(source: string, sourcePath = '<inline>'): Course {
       }
       seenSlugs.add(slug);
 
-      const lessonTitle = requireString(lessonValue, 'title', lessonWhere);
+      const lessonTitle = requireLocalized(lessonValue, 'title', lang, lessonWhere);
       const duration = requireString(lessonValue, 'duration', lessonWhere);
       const tags = parseTags(lessonValue.tags, lessonWhere);
 
-      return { slug, title: lessonTitle, duration, tags };
+      return { slug, title: lessonTitle, duration, tags, hasTranslation: false };
     });
 
     return {
@@ -182,6 +188,39 @@ function requireString(
     throw new Error(`course.yaml: ${where}.${key} is required and must be a non-empty string`);
   }
   return value.trim();
+}
+
+function requireLocalized(
+  obj: Record<string, unknown>,
+  key: string,
+  lang: Lang,
+  where = '<root>',
+): string {
+  const value = obj[key];
+  if (typeof value === 'string') {
+    if (value.trim().length === 0) {
+      throw new Error(
+        `course.yaml: ${where}.${key} is required and must be a non-empty string`,
+      );
+    }
+    return value.trim();
+  }
+  if (isPlainObject(value)) {
+    const ruRaw = value.ru;
+    if (typeof ruRaw !== 'string' || ruRaw.trim().length === 0) {
+      throw new Error(
+        `course.yaml: ${where}.${key}.ru is required when ${key} is a locale map`,
+      );
+    }
+    const target = value[lang];
+    if (typeof target === 'string' && target.trim().length > 0) {
+      return target.trim();
+    }
+    return ruRaw.trim();
+  }
+  throw new Error(
+    `course.yaml: ${where}.${key} must be a non-empty string or a { ru, en } locale map`,
+  );
 }
 
 function parseTags(value: unknown, where: string): string[] {

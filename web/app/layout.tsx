@@ -40,7 +40,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export function generateMetadata(): Metadata {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const description =
     'Курс по Apache Kafka на Go: продюсеры, консьюмеры, надёжность, контракты, стримы, эксплуатация и use cases.';
   const url = buildSiteUrl(course.basePath);
@@ -66,7 +66,7 @@ export function generateMetadata(): Metadata {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const basePath = getRuntimeBasePath(course.basePath);
   const gateInitScript = buildGateInitScript(course, basePath);
   const gateMarkScript = buildGateMarkScript(course, basePath);

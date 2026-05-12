@@ -9,12 +9,12 @@ type ModulePageProps = {
 };
 
 export function generateStaticParams(): Array<{ module: string }> {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   return course.modules.map((m) => ({ module: m.id }));
 }
 
 export function generateMetadata({ params }: ModulePageProps): Metadata {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const mod = course.modules.find((m) => m.id === params.module);
   if (!mod) {
     return { title: 'Страница не найдена · Kafka Cookbook' };
@@ -51,7 +51,7 @@ export function generateMetadata({ params }: ModulePageProps): Metadata {
 }
 
 export default function ModuleRoute({ params }: ModulePageProps) {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const mod = course.modules.find((m) => m.id === params.module);
   if (!mod) {
     notFound();

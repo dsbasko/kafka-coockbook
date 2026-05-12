@@ -3,7 +3,7 @@ import { loadCourse } from '@/lib/course-loader';
 import { buildSiteUrl } from '@/lib/site-url';
 
 export default function robots(): MetadataRoute.Robots {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   return {
     rules: [
       {

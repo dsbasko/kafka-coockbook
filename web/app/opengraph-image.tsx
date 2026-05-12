@@ -11,7 +11,7 @@ export function generateStaticParams() {
 }
 
 export default function OpengraphImage() {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const description = course.description.replace(/\s+/g, ' ').trim();
   const truncated =
     description.length > 180 ? `${description.slice(0, 179).trimEnd()}…` : description;

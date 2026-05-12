@@ -25,7 +25,7 @@ type LessonPageProps = {
 };
 
 export function generateStaticParams(): Array<{ module: string; lesson: string }> {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   return flattenLessons(course).map((entry) => ({
     module: entry.moduleId,
     lesson: entry.lesson.slug,
@@ -33,7 +33,7 @@ export function generateStaticParams(): Array<{ module: string; lesson: string }
 }
 
 export async function generateMetadata({ params }: LessonPageProps): Promise<Metadata> {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const lesson = findLesson(course, params.module, params.lesson);
   if (!lesson) {
     return { title: 'Страница не найдена · Kafka Cookbook' };
@@ -76,7 +76,7 @@ export async function generateMetadata({ params }: LessonPageProps): Promise<Met
 }
 
 export default async function LessonPage({ params }: LessonPageProps) {
-  const course = loadCourse();
+  const course = loadCourse('ru');
   const lesson = findLesson(course, params.module, params.lesson);
   if (!lesson) {
     notFound();
