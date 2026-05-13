@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useT } from '@/lib/use-i18n';
+import { useLang, useT } from '@/lib/use-i18n';
 
 export default function NotFound() {
   const t = useT();
+  const lang = useLang();
   return (
     <main
       style={{
@@ -33,7 +34,7 @@ export default function NotFound() {
         {t.notFoundDesc}
       </p>
       <Link
-        href="/"
+        href={`/${lang}`}
         style={{
           display: 'inline-block',
           padding: 'var(--space-3) var(--space-6)',
