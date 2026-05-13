@@ -199,8 +199,8 @@ export function ProgramDrawer({
                               href={`/${lang}/${mod.id}/${lesson.slug}`}
                               className={styles.lessonLink}
                               aria-current={isCurrent ? 'page' : undefined}
-                              data-completed={done ? 'true' : 'false'}
-                              data-current={isCurrent ? 'true' : 'false'}
+                              data-completed={done ? 'true' : undefined}
+                              data-current={isCurrent ? 'true' : undefined}
                               data-lesson-key={key}
                               onClick={(e) => {
                                 if (
@@ -213,6 +213,13 @@ export function ProgramDrawer({
                               }}
                               tabIndex={isOpen ? 0 : -1}
                               title={t.lessonLockTitle}
+                              // Why: the gate-mark inline script (runs before
+                              // hydration) strips `tabindex` from unlocked
+                              // rows so they pick up the default focus order
+                              // when the drawer opens. Hydration would
+                              // otherwise warn that the SSR attribute (-1)
+                              // disagrees with the post-script DOM.
+                              suppressHydrationWarning
                             >
                               <span className={styles.lessonNum}>
                                 {String(lIndex + 1).padStart(2, '0')}

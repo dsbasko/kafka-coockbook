@@ -41,6 +41,12 @@ export function LessonAwareLink({
           : undefined
       }
       {...rest}
+      // Why: the inline gate-mark script (runs before hydration) stamps
+      // `data-locked` / `aria-disabled` / `tabindex` on any anchor whose
+      // `data-lesson-key` points at a still-locked lesson. React's
+      // hydration would otherwise flag those as "extra attributes from
+      // the server" because the virtual DOM doesn't include them.
+      suppressHydrationWarning
     >
       {children}
       {dataKey && (

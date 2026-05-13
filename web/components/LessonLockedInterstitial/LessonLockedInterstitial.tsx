@@ -57,6 +57,15 @@ export function LessonLockedInterstitial({
 
   const totalLessons = getTotalLessons(course);
   const firstEntry = flattenLessons(course)[0] ?? null;
+  // Why: the inline gate-mark script (runs before hydration) writes the
+  // frontier module/lesson titles into the hint slots. SSR must match the
+  // no-progress default the script picks (frontier index = 0) so freshly
+  // arrived users — by far the common case — don't see an empty-vs-text
+  // hydration mismatch. Returning users with progress get a different
+  // title from the script and rely on `suppressHydrationWarning` below.
+  const firstEntryModule = firstEntry
+    ? course.modules.find((m) => m.id === firstEntry.moduleId)
+    : null;
   // Bare path — Next `<Link>` prepends basePath; pre-baking it here would
   // produce `/kafka-cookbook/kafka-cookbook/...` on client-side navigation.
   const firstHref = firstEntry
@@ -188,13 +197,17 @@ export function LessonLockedInterstitial({
                 className={styles.frontierModule}
                 data-frontier-hint-module
                 suppressHydrationWarning
-              />
+              >
+                {firstEntryModule?.title ?? ''}
+              </span>
             </div>
             <div
               className={styles.frontierLesson}
               data-frontier-hint-lesson
               suppressHydrationWarning
-            />
+            >
+              {firstEntry?.lesson.title ?? ''}
+            </div>
           </div>
 
           {attemptedIndex >= 0 && (
@@ -209,7 +222,9 @@ export function LessonLockedInterstitial({
                   data-steps-state="hidden"
                   suppressHydrationWarning
                 >
-                  0
+                  {/* SSR matches the gate-mark script's no-progress default
+                      (frontier index = 0), so diff = attemptedIndex. */}
+                  {String(Math.max(0, attemptedIndex))}
                 </div>
               </div>
             </>
