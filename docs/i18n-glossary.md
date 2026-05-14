@@ -129,6 +129,15 @@ Languages and runtimes:
 - Node.js
 - TypeScript
 
+Fonts (product names surfaced in the reading-preferences popover):
+
+- Source Serif
+- Inter
+- Lora
+- JetBrains Mono
+- Fira Code
+- IBM Plex Mono
+
 Code identifiers, file names, command names, env var names, CLI flags — keep verbatim regardless of language (e.g., `KAFKA_BOOTSTRAP`, `make lecture`, `go.mod`, `docker-compose.yml`).
 
 ## Style rules

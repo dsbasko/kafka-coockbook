@@ -62,10 +62,6 @@ function stepUp(step: SizeStep): SizeStep {
   return (step < 4 ? step + 1 : 4) as SizeStep;
 }
 
-function formatPx(value: number): string {
-  return Number.isInteger(value) ? `${value}px` : `${value}px`;
-}
-
 export function ReadingPrefsToggle() {
   const t = useT();
   const { prefs, setProseSize, setCodeSize, setProseFont, setCodeFont, reset } =
@@ -97,8 +93,8 @@ export function ReadingPrefsToggle() {
     setOpen(false);
   }
 
-  const proseSizeLabel = formatPx(PROSE_SIZE_PX[prefs.proseSize]);
-  const codeSizeLabel = formatPx(CODE_SIZE_PX[prefs.codeSize]);
+  const proseSizeLabel = `${PROSE_SIZE_PX[prefs.proseSize]}px`;
+  const codeSizeLabel = `${CODE_SIZE_PX[prefs.codeSize]}px`;
   const proseMin = prefs.proseSize === 0;
   const proseMax = prefs.proseSize === 4;
   const codeMin = prefs.codeSize === 0;
@@ -137,7 +133,6 @@ export function ReadingPrefsToggle() {
                 className={styles.sizeButton}
                 aria-label={t.readingPrefsDecrease}
                 disabled={proseMin}
-                tabIndex={open ? 0 : -1}
                 onClick={() => setProseSize(stepDown(prefs.proseSize))}
                 data-kind="prose-decrease"
               >
@@ -151,7 +146,6 @@ export function ReadingPrefsToggle() {
                 className={styles.sizeButton}
                 aria-label={t.readingPrefsIncrease}
                 disabled={proseMax}
-                tabIndex={open ? 0 : -1}
                 onClick={() => setProseSize(stepUp(prefs.proseSize))}
                 data-kind="prose-increase"
               >
@@ -183,8 +177,7 @@ export function ReadingPrefsToggle() {
                     className={styles.pill}
                     data-active={active ? 'true' : 'false'}
                     data-prose-font={value}
-                    tabIndex={open ? 0 : -1}
-                    onClick={() => setProseFont(value)}
+                        onClick={() => setProseFont(value)}
                     style={previewStyle}
                   >
                     {label}
@@ -206,7 +199,6 @@ export function ReadingPrefsToggle() {
                 className={styles.sizeButton}
                 aria-label={t.readingPrefsDecrease}
                 disabled={codeMin}
-                tabIndex={open ? 0 : -1}
                 onClick={() => setCodeSize(stepDown(prefs.codeSize))}
                 data-kind="code-decrease"
               >
@@ -220,7 +212,6 @@ export function ReadingPrefsToggle() {
                 className={styles.sizeButton}
                 aria-label={t.readingPrefsIncrease}
                 disabled={codeMax}
-                tabIndex={open ? 0 : -1}
                 onClick={() => setCodeSize(stepUp(prefs.codeSize))}
                 data-kind="code-increase"
               >
@@ -252,8 +243,7 @@ export function ReadingPrefsToggle() {
                     className={styles.pill}
                     data-active={active ? 'true' : 'false'}
                     data-code-font={value}
-                    tabIndex={open ? 0 : -1}
-                    onClick={() => setCodeFont(value)}
+                        onClick={() => setCodeFont(value)}
                     style={previewStyle}
                   >
                     {label}

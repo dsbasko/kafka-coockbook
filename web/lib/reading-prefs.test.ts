@@ -1,7 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   applyPrefs,
-  clampSize,
   DEFAULT_PREFS,
   isCodeFont,
   isProseFont,
@@ -84,39 +83,6 @@ describe('isSizeStep', () => {
     expect(isSizeStep(1.5)).toBe(false);
     expect(isSizeStep('2')).toBe(false);
     expect(isSizeStep(null)).toBe(false);
-  });
-});
-
-describe('clampSize', () => {
-  it('returns valid step unchanged', () => {
-    expect(clampSize(0)).toBe(0);
-    expect(clampSize(2)).toBe(2);
-    expect(clampSize(4)).toBe(4);
-  });
-
-  it('clamps below to 0', () => {
-    expect(clampSize(-5)).toBe(0);
-    expect(clampSize(-1)).toBe(0);
-  });
-
-  it('clamps above to 4', () => {
-    expect(clampSize(5)).toBe(4);
-    expect(clampSize(100)).toBe(4);
-  });
-
-  it('rounds floats', () => {
-    expect(clampSize(1.4)).toBe(1);
-    expect(clampSize(1.6)).toBe(2);
-  });
-
-  it('falls back for non-finite values', () => {
-    expect(clampSize(NaN)).toBe(DEFAULT_PREFS.proseSize);
-    expect(clampSize(Infinity)).toBe(DEFAULT_PREFS.proseSize);
-    expect(clampSize('abc')).toBe(DEFAULT_PREFS.proseSize);
-  });
-
-  it('parses numeric string', () => {
-    expect(clampSize('3')).toBe(3);
   });
 });
 

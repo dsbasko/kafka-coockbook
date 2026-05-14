@@ -39,7 +39,7 @@
 
 .prose {
   font-family: var(--prose-font-active), Georgia, 'Source Serif Pro', serif;
-  font-size: 18px;
+  font-size: var(--prose-font-size);
   line-height: 1.7;
   color: var(--content-primary);
 }
@@ -113,7 +113,6 @@
   }
 
   .prose {
-    font-size: 16px;
     line-height: 1.65;
   }
 

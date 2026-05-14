@@ -16,7 +16,7 @@ export const CODE_FONTS = ['jetbrains', 'fira', 'plex'] as const;
 export const SIZE_STEPS = [0, 1, 2, 3, 4] as const;
 
 export const DEFAULT_PREFS: ReadingPrefs = {
-  proseSize: 2,
+  proseSize: 3,
   codeSize: 2,
   proseFont: 'serif',
   codeFont: 'jetbrains',
@@ -32,19 +32,6 @@ export function isCodeFont(value: unknown): value is CodeFont {
 
 export function isSizeStep(value: unknown): value is SizeStep {
   return value === 0 || value === 1 || value === 2 || value === 3 || value === 4;
-}
-
-export function clampSize(value: unknown): SizeStep {
-  const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n)) return DEFAULT_PREFS.proseSize;
-  const rounded = Math.round(n);
-  if (rounded <= 0) return 0;
-  if (rounded >= 4) return 4;
-  return rounded as SizeStep;
-}
-
-function validateField<T>(value: unknown, guard: (v: unknown) => v is T, fallback: T): T {
-  return guard(value) ? value : fallback;
 }
 
 export function readStoredPrefs(): ReadingPrefs {
@@ -65,10 +52,10 @@ export function readStoredPrefs(): ReadingPrefs {
   if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_PREFS };
   const obj = parsed as Record<string, unknown>;
   return {
-    proseSize: validateField(obj.proseSize, isSizeStep, DEFAULT_PREFS.proseSize),
-    codeSize: validateField(obj.codeSize, isSizeStep, DEFAULT_PREFS.codeSize),
-    proseFont: validateField(obj.proseFont, isProseFont, DEFAULT_PREFS.proseFont),
-    codeFont: validateField(obj.codeFont, isCodeFont, DEFAULT_PREFS.codeFont),
+    proseSize: isSizeStep(obj.proseSize) ? obj.proseSize : DEFAULT_PREFS.proseSize,
+    codeSize: isSizeStep(obj.codeSize) ? obj.codeSize : DEFAULT_PREFS.codeSize,
+    proseFont: isProseFont(obj.proseFont) ? obj.proseFont : DEFAULT_PREFS.proseFont,
+    codeFont: isCodeFont(obj.codeFont) ? obj.codeFont : DEFAULT_PREFS.codeFont,
   };
 }
 

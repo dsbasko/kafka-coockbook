@@ -291,12 +291,4 @@ describe('ReadingPrefsToggle', () => {
     expect(trigger().getAttribute('aria-label')).toBe('Reading preferences');
   });
 
-  it('all controls become tabbable when popover is open and untabbable when closed', () => {
-    renderToggle();
-    expect(buttonByKind('prose-increase').getAttribute('tabindex')).toBe('-1');
-    expect(pillByCodeFont('plex').getAttribute('tabindex')).toBe('-1');
-    click(trigger());
-    expect(buttonByKind('prose-increase').getAttribute('tabindex')).toBe('0');
-    expect(pillByCodeFont('plex').getAttribute('tabindex')).toBe('0');
-  });
 });

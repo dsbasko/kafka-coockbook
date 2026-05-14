@@ -38,7 +38,6 @@ describe('UI_STRINGS', () => {
       // ReadingPrefs: button glyphs and font names are language-neutral.
       'readingPrefsDecrease',
       'readingPrefsIncrease',
-      'readingPrefsCodeSection',
       'readingPrefsFontSerif',
       'readingPrefsFontSans',
       'readingPrefsFontLora',

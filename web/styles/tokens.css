@@ -66,7 +66,7 @@
   --z-popover: 110;
 
   /* Reading preferences — overridden by data-* on <html>. Defaults match current production rendering. */
-  --prose-font-size: 16px;
+  --prose-font-size: 18px;
   --code-font-size: 13.5px;
   --prose-font-active: var(--font-serif);
   --code-font-active: var(--font-mono);
