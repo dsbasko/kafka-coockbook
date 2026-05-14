@@ -177,7 +177,7 @@ export function ReadingPrefsToggle() {
                     className={styles.pill}
                     data-active={active ? 'true' : 'false'}
                     data-prose-font={value}
-                        onClick={() => setProseFont(value)}
+                    onClick={() => setProseFont(value)}
                     style={previewStyle}
                   >
                     {label}
@@ -243,7 +243,7 @@ export function ReadingPrefsToggle() {
                     className={styles.pill}
                     data-active={active ? 'true' : 'false'}
                     data-code-font={value}
-                        onClick={() => setCodeFont(value)}
+                    onClick={() => setCodeFont(value)}
                     style={previewStyle}
                   >
                     {label}
@@ -259,7 +259,6 @@ export function ReadingPrefsToggle() {
             type="button"
             className={styles.resetButton}
             onClick={handleReset}
-            tabIndex={open ? 0 : -1}
             data-kind="reset"
           >
             {t.readingPrefsReset}
