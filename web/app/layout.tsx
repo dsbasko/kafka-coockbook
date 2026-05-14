@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Fira_Code, IBM_Plex_Mono, Inter, Lora, Manrope, Source_Serif_4 } from 'next/font/google';
 import localFont from 'next/font/local';
+import { ReadingPrefsProvider } from '@/components/ReadingPrefsProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import type { Course } from '@/lib/course';
 import { loadCourse } from '@/lib/course-loader';
@@ -159,7 +160,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <ReadingPrefsProvider>{children}</ReadingPrefsProvider>
+        </ThemeProvider>
         {/* Runs as the last body child — by that point every [data-lesson-key]
             element from server-rendered lists is in the DOM, so we can stamp
             data-locked before the browser paints. Stops the flash where rows

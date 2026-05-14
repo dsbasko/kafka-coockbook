@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { ReadingPrefsToggle } from '@/components/ReadingPrefsToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { stripLangFromPath } from '@/lib/lang';
 import { useLang, useT } from '@/lib/use-i18n';
@@ -48,6 +49,7 @@ export function Sidebar({ onProgramClick, isProgramOpen, repoUrl }: SidebarProps
 
       <div className={styles.footer}>
         <LanguageToggle />
+        <ReadingPrefsToggle />
         <ThemeToggle />
         <a
           className={styles.button}

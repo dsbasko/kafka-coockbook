@@ -22,6 +22,10 @@ vi.mock('@/components/LanguageToggle', () => ({
   LanguageToggle: () => <div data-testid="language-toggle-stub" />,
 }));
 
+vi.mock('@/components/ReadingPrefsToggle', () => ({
+  ReadingPrefsToggle: () => <div data-testid="reading-prefs-toggle-stub" />,
+}));
+
 const { Sidebar } = await import('./Sidebar');
 const { UI_STRINGS } = await import('@/lib/i18n');
 
@@ -92,14 +96,19 @@ describe('Sidebar', () => {
     expect(repo?.getAttribute('href')).toBe('https://example.com/repo');
   });
 
-  it('renders LanguageToggle above ThemeToggle in the footer', () => {
+  it('renders LanguageToggle, ReadingPrefsToggle, and ThemeToggle in order in the footer', () => {
     renderSidebar();
     const language = container.querySelector('[data-testid="language-toggle-stub"]');
+    const readingPrefs = container.querySelector('[data-testid="reading-prefs-toggle-stub"]');
     const theme = container.querySelector('[data-testid="theme-toggle-stub"]');
     expect(language).not.toBeNull();
+    expect(readingPrefs).not.toBeNull();
     expect(theme).not.toBeNull();
     expect(
-      language!.compareDocumentPosition(theme!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      language!.compareDocumentPosition(readingPrefs!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      readingPrefs!.compareDocumentPosition(theme!) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 });
