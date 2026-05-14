@@ -8,7 +8,7 @@ The goal: go from "what is a topic and a partition" to production-grade patterns
 
 ## Site
 
-The same material as a static site with program navigation, syntax highlighting, language toggle (RU / EN), and theme switch:
+The same material as a static site with program navigation, syntax highlighting, language toggle (RU / EN), theme switch, and reading preferences (font size and family — separately for prose and code):
 
 **https://dsbasko.github.io/kafka-cookbook/**
 
