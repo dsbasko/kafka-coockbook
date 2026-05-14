@@ -64,6 +64,64 @@
   --z-overlay: 90;
   --z-header: 80;
   --z-popover: 110;
+
+  /* Reading preferences — overridden by data-* on <html>. Defaults match current production rendering. */
+  --prose-font-size: 16px;
+  --code-font-size: 13.5px;
+  --prose-font-active: var(--font-serif);
+  --code-font-active: var(--font-mono);
+}
+
+[data-prose-size='0'] {
+  --prose-font-size: 14px;
+}
+[data-prose-size='1'] {
+  --prose-font-size: 15px;
+}
+[data-prose-size='2'] {
+  --prose-font-size: 16px;
+}
+[data-prose-size='3'] {
+  --prose-font-size: 18px;
+}
+[data-prose-size='4'] {
+  --prose-font-size: 20px;
+}
+
+[data-code-size='0'] {
+  --code-font-size: 12px;
+}
+[data-code-size='1'] {
+  --code-font-size: 13px;
+}
+[data-code-size='2'] {
+  --code-font-size: 13.5px;
+}
+[data-code-size='3'] {
+  --code-font-size: 15px;
+}
+[data-code-size='4'] {
+  --code-font-size: 17px;
+}
+
+[data-prose-font='serif'] {
+  --prose-font-active: var(--font-serif);
+}
+[data-prose-font='sans'] {
+  --prose-font-active: var(--font-prose-inter);
+}
+[data-prose-font='lora'] {
+  --prose-font-active: var(--font-prose-lora);
+}
+
+[data-code-font='jetbrains'] {
+  --code-font-active: var(--font-mono);
+}
+[data-code-font='fira'] {
+  --code-font-active: var(--font-code-fira);
+}
+[data-code-font='plex'] {
+  --code-font-active: var(--font-code-plex);
 }
 
 /* Light theme — neo-academic cream + deep moss accent. */
