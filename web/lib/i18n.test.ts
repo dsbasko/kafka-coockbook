@@ -35,6 +35,16 @@ describe('UI_STRINGS', () => {
       'heroTitleLead',
       // CodeBlock "copy" label happens to read the same in both languages.
       'codeBlockCopy',
+      // ReadingPrefs: button glyphs and font names are language-neutral.
+      'readingPrefsDecrease',
+      'readingPrefsIncrease',
+      'readingPrefsCodeSection',
+      'readingPrefsFontSerif',
+      'readingPrefsFontSans',
+      'readingPrefsFontLora',
+      'readingPrefsFontJetBrains',
+      'readingPrefsFontFira',
+      'readingPrefsFontPlex',
     ]);
     for (const key of Object.keys(ru) as (keyof UIDict)[]) {
       if (allowedEqual.has(key)) continue;

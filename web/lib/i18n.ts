@@ -140,6 +140,22 @@ export type UIDict = {
   codeBlockCopied: string;
   codeBlockCopyAriaLabel: string;
   codeBlockCopiedAriaLabel: string;
+
+  // ReadingPrefsToggle
+  readingPrefsLabel: string;
+  readingPrefsProseSection: string;
+  readingPrefsCodeSection: string;
+  readingPrefsSize: string;
+  readingPrefsFont: string;
+  readingPrefsDecrease: string;
+  readingPrefsIncrease: string;
+  readingPrefsReset: string;
+  readingPrefsFontSerif: string;
+  readingPrefsFontSans: string;
+  readingPrefsFontLora: string;
+  readingPrefsFontJetBrains: string;
+  readingPrefsFontFira: string;
+  readingPrefsFontPlex: string;
 };
 
 export const UI_STRINGS: Record<Lang, UIDict> = {
@@ -252,6 +268,21 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     codeBlockCopied: '✓ скопировано',
     codeBlockCopyAriaLabel: 'Скопировать код',
     codeBlockCopiedAriaLabel: 'Скопировано',
+
+    readingPrefsLabel: 'Настройки шрифтов',
+    readingPrefsProseSection: 'Текст лекции',
+    readingPrefsCodeSection: 'Код',
+    readingPrefsSize: 'Размер',
+    readingPrefsFont: 'Шрифт',
+    readingPrefsDecrease: 'A−',
+    readingPrefsIncrease: 'A+',
+    readingPrefsReset: 'Сбросить',
+    readingPrefsFontSerif: 'Source Serif',
+    readingPrefsFontSans: 'Inter',
+    readingPrefsFontLora: 'Lora',
+    readingPrefsFontJetBrains: 'JetBrains Mono',
+    readingPrefsFontFira: 'Fira Code',
+    readingPrefsFontPlex: 'IBM Plex Mono',
   },
   en: {
     sidebarLabel: 'Side navigation',
@@ -362,6 +393,21 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     codeBlockCopied: '✓ copied',
     codeBlockCopyAriaLabel: 'Copy code',
     codeBlockCopiedAriaLabel: 'Copied',
+
+    readingPrefsLabel: 'Reading preferences',
+    readingPrefsProseSection: 'Lesson text',
+    readingPrefsCodeSection: 'Code',
+    readingPrefsSize: 'Size',
+    readingPrefsFont: 'Font',
+    readingPrefsDecrease: 'A−',
+    readingPrefsIncrease: 'A+',
+    readingPrefsReset: 'Reset',
+    readingPrefsFontSerif: 'Source Serif',
+    readingPrefsFontSans: 'Inter',
+    readingPrefsFontLora: 'Lora',
+    readingPrefsFontJetBrains: 'JetBrains Mono',
+    readingPrefsFontFira: 'Fira Code',
+    readingPrefsFontPlex: 'IBM Plex Mono',
   },
 };
 
