@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Manrope, Source_Serif_4 } from 'next/font/google';
+import { Fira_Code, IBM_Plex_Mono, Inter, Lora, Manrope, Source_Serif_4 } from 'next/font/google';
 import localFont from 'next/font/local';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import type { Course } from '@/lib/course';
@@ -7,6 +7,7 @@ import { loadCourse } from '@/lib/course-loader';
 import { buildGateInitScript } from '@/lib/gate-init-script';
 import { buildGateMarkScript } from '@/lib/gate-mark-script';
 import { DEFAULT_LANG, LANGS, type Lang } from '@/lib/lang';
+import { READING_PREFS_INIT_SCRIPT } from '@/lib/reading-prefs';
 import { buildSiteUrl, getRuntimeBasePath, getSiteUrl } from '@/lib/site-url';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import '@/styles/globals.css';
@@ -37,6 +38,42 @@ const sourceSerif = Source_Serif_4({
   display: 'swap',
   variable: '--font-serif',
   weight: ['400', '500', '600'],
+});
+
+// Optional reading-prefs fonts. Weights are pinned explicitly so next/font does
+// not pull the full axis (cyrillic subsets balloon otherwise). Only the CSS
+// variable is exposed; the actual font kicks in once the user picks the
+// matching prose/code option in <ReadingPrefsToggle>.
+const loraProse = Lora({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '600', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-prose-lora',
+});
+
+const interProse = Inter({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal'],
+  display: 'swap',
+  variable: '--font-prose-inter',
+});
+
+const firaCode = Fira_Code({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  style: ['normal'],
+  display: 'swap',
+  variable: '--font-code-fira',
+});
+
+const plexCode = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-code-plex',
 });
 
 export function generateMetadata(): Metadata {
@@ -95,7 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang={DEFAULT_LANG}
       data-theme="light"
-      className={`${manrope.variable} ${jetbrains.variable} ${sourceSerif.variable}`}
+      className={`${manrope.variable} ${jetbrains.variable} ${sourceSerif.variable} ${loraProse.variable} ${interProse.variable} ${firaCode.variable} ${plexCode.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -103,6 +140,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           id="theme-init"
           // FOUC-free: applies stored/system theme to <html data-theme> before hydration.
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
+        <script
+          id="reading-prefs-init"
+          // FOUC-free: stamps four data-prose-*/data-code-* attributes on <html>
+          // from localStorage before hydration. Sits between theme-init and
+          // gate-init so personal-preferences scripts group together.
+          dangerouslySetInnerHTML={{ __html: READING_PREFS_INIT_SCRIPT }}
         />
         <script
           id="gate-init"
