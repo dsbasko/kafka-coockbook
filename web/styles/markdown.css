@@ -8,7 +8,8 @@
  */
 
 .markdown {
-  font-size: var(--font-size-md);
+  font-family: var(--prose-font-active), Georgia, serif;
+  font-size: var(--prose-font-size);
   line-height: var(--line-height-relaxed);
   color: var(--content-primary);
   word-wrap: break-word;
@@ -143,7 +144,7 @@
 }
 
 .markdown :not(pre) > code {
-  font-family: var(--font-mono), ui-monospace, monospace;
+  font-family: var(--code-font-active), ui-monospace, monospace;
   font-size: 0.86em;
   padding: 1px 6px;
   background-color: var(--bg-subtle);
@@ -202,7 +203,7 @@
   margin: 0;
   padding: var(--space-5);
   overflow-x: auto;
-  font-size: 13.5px;
+  font-size: var(--code-font-size);
   line-height: 1.6;
   background: transparent;
   tab-size: 2;
@@ -210,7 +211,7 @@
 
 .markdown figure[data-rehype-pretty-code-figure] code {
   display: block;
-  font-family: var(--font-mono), ui-monospace, monospace;
+  font-family: var(--code-font-active), ui-monospace, monospace;
   background: transparent;
   font-variant-ligatures: none;
 }

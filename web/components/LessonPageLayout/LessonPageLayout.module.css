@@ -38,7 +38,7 @@
 }
 
 .prose {
-  font-family: var(--font-serif), Georgia, 'Source Serif Pro', serif;
+  font-family: var(--prose-font-active), Georgia, 'Source Serif Pro', serif;
   font-size: 18px;
   line-height: 1.7;
   color: var(--content-primary);
