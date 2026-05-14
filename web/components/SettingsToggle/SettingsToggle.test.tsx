@@ -7,24 +7,27 @@ import { createRoot, type Root } from 'react-dom/client';
 const paramsRef: { current: Record<string, string | string[] | undefined> | null } = {
   current: { lang: 'ru' },
 };
+const pathnameRef: { current: string | null } = { current: '/ru/' };
+const pushSpy = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useParams: () => paramsRef.current,
+  usePathname: () => pathnameRef.current,
+  useRouter: () => ({ push: pushSpy }),
 }));
 
 const setProseSize = vi.fn();
 const setCodeSize = vi.fn();
 const setProseFont = vi.fn();
 const setCodeFont = vi.fn();
-const reset = vi.fn();
 
 const ctxRef: {
   current: {
-    prefs: { proseSize: 0 | 1 | 2 | 3 | 4; codeSize: 0 | 1 | 2 | 3 | 4; proseFont: 'serif' | 'sans' | 'lora'; codeFont: 'jetbrains' | 'fira' | 'plex' };
+    prefs: { proseSize: 0 | 1 | 2 | 3; codeSize: 0 | 1 | 2 | 3; proseFont: 'serif' | 'sans' | 'lora'; codeFont: 'jetbrains' | 'fira' | 'plex' };
   };
 } = {
   current: {
-    prefs: { proseSize: 2, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' },
+    prefs: { proseSize: 1, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' },
   },
 };
 
@@ -35,24 +38,48 @@ vi.mock('@/components/ReadingPrefsProvider', () => ({
     setCodeSize,
     setProseFont,
     setCodeFont,
-    reset,
   }),
 }));
 
-const { ReadingPrefsToggle } = await import('./ReadingPrefsToggle');
+const themePreferenceRef: { current: 'light' | 'dark' | 'system' } = { current: 'system' };
+const setThemePreference = vi.fn();
+
+vi.mock('@/components/ThemeProvider', () => ({
+  useTheme: () => ({
+    preference: themePreferenceRef.current,
+    resolvedTheme: 'light',
+    setPreference: setThemePreference,
+  }),
+}));
+
+const writeStoredLangSpy = vi.fn();
+
+vi.mock('@/lib/lang', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/lang')>('@/lib/lang');
+  return {
+    ...actual,
+    writeStoredLang: writeStoredLangSpy,
+  };
+});
+
+const { SettingsToggle } = await import('./SettingsToggle');
 
 let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
   paramsRef.current = { lang: 'ru' };
+  pathnameRef.current = '/ru/';
+  themePreferenceRef.current = 'system';
   setProseSize.mockReset();
   setCodeSize.mockReset();
   setProseFont.mockReset();
   setCodeFont.mockReset();
-  reset.mockReset();
+  setThemePreference.mockReset();
+  writeStoredLangSpy.mockReset();
+  pushSpy.mockReset();
   ctxRef.current = {
-    prefs: { proseSize: 2, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' },
+    prefs: { proseSize: 1, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' },
   };
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -68,7 +95,7 @@ afterEach(() => {
 
 function renderToggle() {
   act(() => {
-    root.render(<ReadingPrefsToggle />);
+    root.render(<SettingsToggle />);
   });
 }
 
@@ -102,6 +129,18 @@ function pillByCodeFont(value: string): HTMLButtonElement {
   return node;
 }
 
+function pillByTheme(value: string): HTMLButtonElement {
+  const node = container.querySelector<HTMLButtonElement>(`button[data-theme-pref="${value}"]`);
+  if (!node) throw new Error(`theme pill ${value} not rendered`);
+  return node;
+}
+
+function pillByLang(value: string): HTMLButtonElement {
+  const node = container.querySelector<HTMLButtonElement>(`button[data-lang-pref="${value}"]`);
+  if (!node) throw new Error(`lang pill ${value} not rendered`);
+  return node;
+}
+
 function click(node: HTMLElement) {
   act(() => {
     node.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
@@ -115,11 +154,11 @@ function pressKey(key: string) {
   });
 }
 
-describe('ReadingPrefsToggle', () => {
+describe('SettingsToggle', () => {
   it('renders the trigger with localized aria-label and a closed popover', () => {
     renderToggle();
     expect(trigger().getAttribute('aria-expanded')).toBe('false');
-    expect(trigger().getAttribute('aria-label')).toBe('Настройки шрифтов');
+    expect(trigger().getAttribute('aria-label')).toBe('Настройки');
     expect(popover().hasAttribute('hidden')).toBe(true);
   });
 
@@ -154,30 +193,73 @@ describe('ReadingPrefsToggle', () => {
     outside.remove();
   });
 
+  it('marks the active theme pill via aria-checked and data-active', () => {
+    themePreferenceRef.current = 'dark';
+    renderToggle();
+    click(trigger());
+    expect(pillByTheme('dark').getAttribute('aria-checked')).toBe('true');
+    expect(pillByTheme('dark').getAttribute('data-active')).toBe('true');
+    expect(pillByTheme('light').getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('clicking a theme pill calls setPreference but keeps the popover open', () => {
+    renderToggle();
+    click(trigger());
+    click(pillByTheme('dark'));
+    expect(setThemePreference).toHaveBeenCalledWith('dark');
+    expect(popover().hasAttribute('hidden')).toBe(false);
+  });
+
+  it('marks the active language pill based on the current pathname', () => {
+    pathnameRef.current = '/en/some-lesson';
+    renderToggle();
+    click(trigger());
+    expect(pillByLang('en').getAttribute('aria-checked')).toBe('true');
+    expect(pillByLang('ru').getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('clicking a non-current language pill writes the stored lang and navigates', () => {
+    pathnameRef.current = '/ru/module-1/lesson-2';
+    renderToggle();
+    click(trigger());
+    click(pillByLang('en'));
+    expect(writeStoredLangSpy).toHaveBeenCalledWith('en');
+    expect(pushSpy).toHaveBeenCalledWith('/en/module-1/lesson-2');
+  });
+
+  it('clicking the current language pill does not navigate', () => {
+    pathnameRef.current = '/ru/';
+    renderToggle();
+    click(trigger());
+    click(pillByLang('ru'));
+    expect(writeStoredLangSpy).toHaveBeenCalledWith('ru');
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
   it('renders the current prose size label in px', () => {
-    ctxRef.current.prefs = { proseSize: 3, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' };
+    ctxRef.current.prefs = { proseSize: 2, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     expect(container.querySelector('[data-kind="prose-value"]')?.textContent).toBe('18px');
   });
 
   it('renders the current code size label in px', () => {
-    ctxRef.current.prefs = { proseSize: 2, codeSize: 4, proseFont: 'serif', codeFont: 'jetbrains' };
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 3, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
-    expect(container.querySelector('[data-kind="code-value"]')?.textContent).toBe('17px');
+    expect(container.querySelector('[data-kind="code-value"]')?.textContent).toBe('20px');
   });
 
   it('disables A− for prose when proseSize === 0', () => {
-    ctxRef.current.prefs = { proseSize: 0, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' };
+    ctxRef.current.prefs = { proseSize: 0, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     expect(buttonByKind('prose-decrease').disabled).toBe(true);
     expect(buttonByKind('prose-increase').disabled).toBe(false);
   });
 
-  it('disables A+ for prose when proseSize === 4', () => {
-    ctxRef.current.prefs = { proseSize: 4, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' };
+  it('disables A+ for prose when proseSize === 3', () => {
+    ctxRef.current.prefs = { proseSize: 3, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     expect(buttonByKind('prose-decrease').disabled).toBe(false);
@@ -185,15 +267,15 @@ describe('ReadingPrefsToggle', () => {
   });
 
   it('disables A− for code when codeSize === 0', () => {
-    ctxRef.current.prefs = { proseSize: 2, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' };
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     expect(buttonByKind('code-decrease').disabled).toBe(true);
     expect(buttonByKind('code-increase').disabled).toBe(false);
   });
 
-  it('disables A+ for code when codeSize === 4', () => {
-    ctxRef.current.prefs = { proseSize: 2, codeSize: 4, proseFont: 'serif', codeFont: 'jetbrains' };
+  it('disables A+ for code when codeSize === 3', () => {
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 3, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     expect(buttonByKind('code-decrease').disabled).toBe(false);
@@ -201,16 +283,16 @@ describe('ReadingPrefsToggle', () => {
   });
 
   it('A+ for prose calls setProseSize with the next step', () => {
-    ctxRef.current.prefs = { proseSize: 2, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' };
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     click(buttonByKind('prose-increase'));
     expect(setProseSize).toHaveBeenCalledTimes(1);
-    expect(setProseSize).toHaveBeenCalledWith(3);
+    expect(setProseSize).toHaveBeenCalledWith(2);
   });
 
   it('A− for prose calls setProseSize with the previous step', () => {
-    ctxRef.current.prefs = { proseSize: 2, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' };
+    ctxRef.current.prefs = { proseSize: 2, codeSize: 0, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     click(buttonByKind('prose-decrease'));
@@ -218,13 +300,15 @@ describe('ReadingPrefsToggle', () => {
   });
 
   it('A+ for code calls setCodeSize with the next step', () => {
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 1, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     click(buttonByKind('code-increase'));
-    expect(setCodeSize).toHaveBeenCalledWith(3);
+    expect(setCodeSize).toHaveBeenCalledWith(2);
   });
 
   it('A− for code calls setCodeSize with the previous step', () => {
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 2, proseFont: 'serif', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     click(buttonByKind('code-decrease'));
@@ -261,7 +345,7 @@ describe('ReadingPrefsToggle', () => {
   });
 
   it('marks the active prose-font pill via aria-checked and data-active', () => {
-    ctxRef.current.prefs = { proseSize: 2, codeSize: 2, proseFont: 'lora', codeFont: 'jetbrains' };
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 0, proseFont: 'lora', codeFont: 'jetbrains' };
     renderToggle();
     click(trigger());
     expect(pillByProseFont('lora').getAttribute('aria-checked')).toBe('true');
@@ -270,25 +354,17 @@ describe('ReadingPrefsToggle', () => {
   });
 
   it('marks the active code-font pill via aria-checked and data-active', () => {
-    ctxRef.current.prefs = { proseSize: 2, codeSize: 2, proseFont: 'serif', codeFont: 'plex' };
+    ctxRef.current.prefs = { proseSize: 1, codeSize: 0, proseFont: 'serif', codeFont: 'plex' };
     renderToggle();
     click(trigger());
     expect(pillByCodeFont('plex').getAttribute('aria-checked')).toBe('true');
     expect(pillByCodeFont('jetbrains').getAttribute('aria-checked')).toBe('false');
   });
 
-  it('reset button calls reset() and closes the popover', () => {
-    renderToggle();
-    click(trigger());
-    click(buttonByKind('reset'));
-    expect(reset).toHaveBeenCalledTimes(1);
-    expect(popover().hasAttribute('hidden')).toBe(true);
-  });
-
   it('falls into english labels when lang param is en', () => {
     paramsRef.current = { lang: 'en' };
+    pathnameRef.current = '/en/';
     renderToggle();
-    expect(trigger().getAttribute('aria-label')).toBe('Reading preferences');
+    expect(trigger().getAttribute('aria-label')).toBe('Settings');
   });
-
 });

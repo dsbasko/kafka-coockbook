@@ -108,11 +108,11 @@ describe('ReadingPrefsProvider', () => {
     const captured: { current: Captured } = { current: null };
     render(captured);
     act(() => {
-      captured.current?.setCodeSize(4);
+      captured.current?.setCodeSize(3);
     });
-    expect(captured.current?.prefs.codeSize).toBe(4);
-    expect(document.documentElement.dataset.codeSize).toBe('4');
-    expect(JSON.parse(window.localStorage.getItem(READING_PREFS_STORAGE_KEY)!).codeSize).toBe(4);
+    expect(captured.current?.prefs.codeSize).toBe(3);
+    expect(document.documentElement.dataset.codeSize).toBe('3');
+    expect(JSON.parse(window.localStorage.getItem(READING_PREFS_STORAGE_KEY)!).codeSize).toBe(3);
   });
 
   it('setProseFont updates state, <html>, and localStorage', () => {
@@ -141,14 +141,14 @@ describe('ReadingPrefsProvider', () => {
     const captured: { current: Captured } = { current: null };
     render(captured);
     act(() => {
-      captured.current?.setProseSize(4);
+      captured.current?.setProseSize(3);
     });
     act(() => {
       captured.current?.setCodeFont('fira');
     });
     const stored = JSON.parse(window.localStorage.getItem(READING_PREFS_STORAGE_KEY)!);
     expect(stored).toEqual({
-      proseSize: 4,
+      proseSize: 3,
       codeSize: DEFAULT_PREFS.codeSize,
       proseFont: DEFAULT_PREFS.proseFont,
       codeFont: 'fira',
@@ -170,7 +170,7 @@ describe('ReadingPrefsProvider', () => {
   it('syncs state from localStorage when a storage event for the prefs key fires', () => {
     const captured: { current: Captured } = { current: null };
     render(captured);
-    const incoming = { proseSize: 4, codeSize: 0, proseFont: 'lora', codeFont: 'plex' };
+    const incoming = { proseSize: 3, codeSize: 0, proseFont: 'lora', codeFont: 'plex' };
     window.localStorage.setItem(READING_PREFS_STORAGE_KEY, JSON.stringify(incoming));
     act(() => {
       window.dispatchEvent(
@@ -181,30 +181,12 @@ describe('ReadingPrefsProvider', () => {
       );
     });
     expect(captured.current?.prefs).toEqual(incoming);
-    expect(document.documentElement.dataset.proseSize).toBe('4');
+    expect(document.documentElement.dataset.proseSize).toBe('3');
     expect(document.documentElement.dataset.codeSize).toBe('0');
     expect(document.documentElement.dataset.proseFont).toBe('lora');
     expect(document.documentElement.dataset.codeFont).toBe('plex');
   });
 
-  it('reset() restores defaults on state and <html>, and removes the storage key', () => {
-    const captured: { current: Captured } = { current: null };
-    render(captured);
-    act(() => {
-      captured.current?.setProseSize(4);
-      captured.current?.setProseFont('lora');
-    });
-    expect(window.localStorage.getItem(READING_PREFS_STORAGE_KEY)).not.toBeNull();
-    act(() => {
-      captured.current?.reset();
-    });
-    expect(captured.current?.prefs).toEqual(DEFAULT_PREFS);
-    expect(document.documentElement.dataset.proseSize).toBe(String(DEFAULT_PREFS.proseSize));
-    expect(document.documentElement.dataset.codeSize).toBe(String(DEFAULT_PREFS.codeSize));
-    expect(document.documentElement.dataset.proseFont).toBe(DEFAULT_PREFS.proseFont);
-    expect(document.documentElement.dataset.codeFont).toBe(DEFAULT_PREFS.codeFont);
-    expect(window.localStorage.getItem(READING_PREFS_STORAGE_KEY)).toBeNull();
-  });
 });
 
 describe('useReadingPrefs', () => {

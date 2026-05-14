@@ -7,9 +7,9 @@ import { type Lang } from './lang';
  *
  * Scope: strings rendered by components listed in Task 10 of the i18n
  * plan (Header/Breadcrumbs, Sidebar, ProgramDrawer, LessonNav, Toc,
- * ReadingProgress, LessonLockedInterstitial, ThemeToggle, HomePage,
+ * ReadingProgress, LessonLockedInterstitial, SettingsToggle, HomePage,
  * LessonPageLayout, not-found) plus a few keys for adjacent surfaces
- * already touched by lang switching (LanguageToggle aria, theme labels
+ * already touched by lang switching (settings popover, theme labels
  * previously lived in `lib/theme.ts`).
  */
 export type UIDict = {
@@ -60,8 +60,7 @@ export type UIDict = {
   nextStep: string;
   untilThisLesson: string;
 
-  // ThemeToggle (labels moved out of lib/theme.ts in Task 15)
-  themeToggleLabel: string;
+  // SettingsToggle — theme section labels
   themeLight: string;
   themeDark: string;
   themeSystem: string;
@@ -87,7 +86,7 @@ export type UIDict = {
   notFoundDesc: string;
   goHome: string;
 
-  // LanguageToggle (mounted in Task 11, aria-label drawn from here)
+  // SettingsToggle — language section title (also used as radiogroup aria-label)
   language: string;
 
   // TranslationBanner (rendered on EN lesson pages that fall back to RU)
@@ -141,21 +140,26 @@ export type UIDict = {
   codeBlockCopyAriaLabel: string;
   codeBlockCopiedAriaLabel: string;
 
-  // ReadingPrefsToggle
-  readingPrefsLabel: string;
+  // SettingsToggle — trigger label and section titles
+  settingsLabel: string;
+  settingsEyebrow: string;
+  settingsThemeSection: string;
+
+  // SettingsToggle — prose/code sections
   readingPrefsProseSection: string;
   readingPrefsCodeSection: string;
   readingPrefsSize: string;
   readingPrefsFont: string;
   readingPrefsDecrease: string;
   readingPrefsIncrease: string;
-  readingPrefsReset: string;
   readingPrefsFontSerif: string;
   readingPrefsFontSans: string;
   readingPrefsFontLora: string;
   readingPrefsFontJetBrains: string;
   readingPrefsFontFira: string;
   readingPrefsFontPlex: string;
+  readingPrefsPreviewProse: string;
+  readingPrefsPreviewCode: string;
 };
 
 export const UI_STRINGS: Record<Lang, UIDict> = {
@@ -200,7 +204,6 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     nextStep: 'Следующий шаг',
     untilThisLesson: 'До этого урока',
 
-    themeToggleLabel: 'Тема оформления',
     themeLight: 'Светлая',
     themeDark: 'Тёмная',
     themeSystem: 'Системная',
@@ -223,7 +226,7 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     notFoundDesc: 'Похоже, такой лекции в курсе нет. Вернитесь на главную.',
     goHome: 'На главную',
 
-    language: 'Язык интерфейса',
+    language: 'Язык',
 
     translationFallbackTitle: 'Перевод в процессе',
     translationFallbackBody:
@@ -269,20 +272,24 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     codeBlockCopyAriaLabel: 'Скопировать код',
     codeBlockCopiedAriaLabel: 'Скопировано',
 
-    readingPrefsLabel: 'Настройки шрифтов',
+    settingsLabel: 'Настройки',
+    settingsEyebrow: '/ config',
+    settingsThemeSection: 'Тема',
     readingPrefsProseSection: 'Текст лекции',
-    readingPrefsCodeSection: 'Код',
+    readingPrefsCodeSection: 'Текст кода',
     readingPrefsSize: 'Размер',
     readingPrefsFont: 'Шрифт',
     readingPrefsDecrease: 'A−',
     readingPrefsIncrease: 'A+',
-    readingPrefsReset: 'Сбросить',
-    readingPrefsFontSerif: 'Source Serif',
+    readingPrefsFontSerif: 'Source',
     readingPrefsFontSans: 'Inter',
     readingPrefsFontLora: 'Lora',
-    readingPrefsFontJetBrains: 'JetBrains Mono',
-    readingPrefsFontFira: 'Fira Code',
-    readingPrefsFontPlex: 'IBM Plex Mono',
+    readingPrefsFontJetBrains: 'JetBrains',
+    readingPrefsFontFira: 'Fira',
+    readingPrefsFontPlex: 'IBM Plex',
+    readingPrefsPreviewProse:
+      'Apache Kafka — распределённая платформа потоковой передачи событий.',
+    readingPrefsPreviewCode: 'consumer.subscribe(topics)',
   },
   en: {
     sidebarLabel: 'Side navigation',
@@ -325,10 +332,9 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     nextStep: 'Next step',
     untilThisLesson: 'Until this lesson',
 
-    themeToggleLabel: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
-    themeSystem: 'System',
+    themeSystem: 'Auto',
 
     heroTitleLead: 'Kafka',
     heroTitleAccent: 'for people who',
@@ -348,7 +354,7 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     notFoundDesc: 'There is no such lesson in the course. Head back home.',
     goHome: 'Go home',
 
-    language: 'Interface language',
+    language: 'Language',
 
     translationFallbackTitle: 'Translation in progress',
     translationFallbackBody:
@@ -394,20 +400,23 @@ export const UI_STRINGS: Record<Lang, UIDict> = {
     codeBlockCopyAriaLabel: 'Copy code',
     codeBlockCopiedAriaLabel: 'Copied',
 
-    readingPrefsLabel: 'Reading preferences',
+    settingsLabel: 'Settings',
+    settingsEyebrow: '/ config',
+    settingsThemeSection: 'Theme',
     readingPrefsProseSection: 'Lesson text',
-    readingPrefsCodeSection: 'Code',
+    readingPrefsCodeSection: 'Code text',
     readingPrefsSize: 'Size',
     readingPrefsFont: 'Font',
     readingPrefsDecrease: 'A−',
     readingPrefsIncrease: 'A+',
-    readingPrefsReset: 'Reset',
-    readingPrefsFontSerif: 'Source Serif',
+    readingPrefsFontSerif: 'Source',
     readingPrefsFontSans: 'Inter',
     readingPrefsFontLora: 'Lora',
-    readingPrefsFontJetBrains: 'JetBrains Mono',
-    readingPrefsFontFira: 'Fira Code',
-    readingPrefsFontPlex: 'IBM Plex Mono',
+    readingPrefsFontJetBrains: 'JetBrains',
+    readingPrefsFontFira: 'Fira',
+    readingPrefsFontPlex: 'IBM Plex',
+    readingPrefsPreviewProse: 'Apache Kafka is a distributed event streaming platform.',
+    readingPrefsPreviewCode: 'consumer.subscribe(topics)',
   },
 };
 

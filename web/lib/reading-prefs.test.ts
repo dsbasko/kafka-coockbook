@@ -69,16 +69,16 @@ describe('isCodeFont', () => {
 });
 
 describe('isSizeStep', () => {
-  it('accepts 0..4', () => {
+  it('accepts 0..3', () => {
     expect(isSizeStep(0)).toBe(true);
     expect(isSizeStep(1)).toBe(true);
     expect(isSizeStep(2)).toBe(true);
     expect(isSizeStep(3)).toBe(true);
-    expect(isSizeStep(4)).toBe(true);
   });
 
   it('rejects out of range and non-integers', () => {
     expect(isSizeStep(-1)).toBe(false);
+    expect(isSizeStep(4)).toBe(false);
     expect(isSizeStep(5)).toBe(false);
     expect(isSizeStep(1.5)).toBe(false);
     expect(isSizeStep('2')).toBe(false);
@@ -111,14 +111,14 @@ describe('readStoredPrefs / writeStoredPrefs', () => {
     window.localStorage.setItem(
       READING_PREFS_STORAGE_KEY,
       JSON.stringify({
-        proseSize: 4,
+        proseSize: 3,
         codeSize: 99,
         proseFont: 'lora',
         codeFont: 'unknown',
       }),
     );
     expect(readStoredPrefs()).toEqual({
-      proseSize: 4,
+      proseSize: 3,
       codeSize: DEFAULT_PREFS.codeSize,
       proseFont: 'lora',
       codeFont: DEFAULT_PREFS.codeFont,
@@ -139,9 +139,9 @@ describe('applyPrefs', () => {
   });
 
   it('writes all four data-* attributes', () => {
-    applyPrefs({ proseSize: 3, codeSize: 4, proseFont: 'sans', codeFont: 'plex' });
+    applyPrefs({ proseSize: 3, codeSize: 2, proseFont: 'sans', codeFont: 'plex' });
     expect(document.documentElement.dataset.proseSize).toBe('3');
-    expect(document.documentElement.dataset.codeSize).toBe('4');
+    expect(document.documentElement.dataset.codeSize).toBe('2');
     expect(document.documentElement.dataset.proseFont).toBe('sans');
     expect(document.documentElement.dataset.codeFont).toBe('plex');
   });
@@ -168,10 +168,10 @@ describe('READING_PREFS_INIT_SCRIPT', () => {
   it('uses stored values when fully valid', () => {
     window.localStorage.setItem(
       READING_PREFS_STORAGE_KEY,
-      JSON.stringify({ proseSize: 4, codeSize: 1, proseFont: 'lora', codeFont: 'plex' }),
+      JSON.stringify({ proseSize: 3, codeSize: 1, proseFont: 'lora', codeFont: 'plex' }),
     );
     new Function(READING_PREFS_INIT_SCRIPT)();
-    expect(document.documentElement.dataset.proseSize).toBe('4');
+    expect(document.documentElement.dataset.proseSize).toBe('3');
     expect(document.documentElement.dataset.codeSize).toBe('1');
     expect(document.documentElement.dataset.proseFont).toBe('lora');
     expect(document.documentElement.dataset.codeFont).toBe('plex');

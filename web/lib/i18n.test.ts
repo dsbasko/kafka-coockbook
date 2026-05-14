@@ -44,6 +44,10 @@ describe('UI_STRINGS', () => {
       'readingPrefsFontJetBrains',
       'readingPrefsFontFira',
       'readingPrefsFontPlex',
+      // SettingsToggle eyebrow is a code-style path that stays the same.
+      'settingsEyebrow',
+      // Code preview is a literal code snippet — same in both languages.
+      'readingPrefsPreviewCode',
     ]);
     for (const key of Object.keys(ru) as (keyof UIDict)[]) {
       if (allowedEqual.has(key)) continue;

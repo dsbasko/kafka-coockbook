@@ -24,4 +24,14 @@
   .shell {
     flex-direction: column;
   }
+
+  /* Sidebar becomes a floating bottom pill on mobile (see Sidebar.module.css),
+     so the body reclaims full width and the main column reserves space for it. */
+  .body {
+    width: 100%;
+  }
+
+  .main {
+    padding-bottom: calc(64px + var(--space-6) + env(safe-area-inset-bottom));
+  }
 }

@@ -44,7 +44,7 @@ const sourceSerif = Source_Serif_4({
 // Optional reading-prefs fonts. Weights are pinned explicitly so next/font does
 // not pull the full axis (cyrillic subsets balloon otherwise). Only the CSS
 // variable is exposed; the actual font kicks in once the user picks the
-// matching prose/code option in <ReadingPrefsToggle>.
+// matching prose/code option in <SettingsToggle>.
 const loraProse = Lora({
   subsets: ['latin', 'cyrillic'],
   weight: ['400', '600', '700'],

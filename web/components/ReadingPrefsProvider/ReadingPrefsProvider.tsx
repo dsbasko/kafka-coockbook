@@ -30,7 +30,6 @@ type ReadingPrefsContextValue = {
   setCodeSize: (next: SizeStep) => void;
   setProseFont: (next: ProseFont) => void;
   setCodeFont: (next: CodeFont) => void;
-  reset: () => void;
 };
 
 const ReadingPrefsContext = createContext<ReadingPrefsContextValue | null>(null);
@@ -83,23 +82,9 @@ export function ReadingPrefsProvider({ children }: { children: ReactNode }) {
   const setProseFont = useCallback((next: ProseFont) => updateField('proseFont', next), [updateField]);
   const setCodeFont = useCallback((next: CodeFont) => updateField('codeFont', next), [updateField]);
 
-  const reset = useCallback(() => {
-    const next: ReadingPrefs = { ...DEFAULT_PREFS };
-    prefsRef.current = next;
-    applyPrefs(next);
-    setPrefs(next);
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.removeItem(READING_PREFS_STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-    }
-  }, []);
-
   return (
     <ReadingPrefsContext.Provider
-      value={{ prefs, setProseSize, setCodeSize, setProseFont, setCodeFont, reset }}
+      value={{ prefs, setProseSize, setCodeSize, setProseFont, setCodeFont }}
     >
       {children}
     </ReadingPrefsContext.Provider>

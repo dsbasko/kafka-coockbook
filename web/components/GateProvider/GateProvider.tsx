@@ -79,7 +79,7 @@ export function GateProvider({ course, basePath, children }: GateProviderProps) 
   // routes only re-renders the script element — browsers do not execute
   // <script> tags inserted via DOM mutation, so the static `<html lang>`
   // from the root layout would stay wrong for screen readers and Intl APIs
-  // after a LanguageToggle. Mirror the route lang from a client effect.
+  // after a language switch. Mirror the route lang from a client effect.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const { lang } = stripLangFromPath(pathname ?? '/');

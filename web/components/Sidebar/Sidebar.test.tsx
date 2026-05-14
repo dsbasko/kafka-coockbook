@@ -14,16 +14,8 @@ vi.mock('next/navigation', () => ({
   usePathname: () => pathnameRef.current,
 }));
 
-vi.mock('@/components/ThemeToggle', () => ({
-  ThemeToggle: () => <div data-testid="theme-toggle-stub" />,
-}));
-
-vi.mock('@/components/LanguageToggle', () => ({
-  LanguageToggle: () => <div data-testid="language-toggle-stub" />,
-}));
-
-vi.mock('@/components/ReadingPrefsToggle', () => ({
-  ReadingPrefsToggle: () => <div data-testid="reading-prefs-toggle-stub" />,
+vi.mock('@/components/SettingsToggle', () => ({
+  SettingsToggle: () => <div data-testid="settings-toggle-stub" />,
 }));
 
 const { Sidebar } = await import('./Sidebar');
@@ -96,19 +88,14 @@ describe('Sidebar', () => {
     expect(repo?.getAttribute('href')).toBe('https://example.com/repo');
   });
 
-  it('renders LanguageToggle, ReadingPrefsToggle, and ThemeToggle in order in the footer', () => {
+  it('renders SettingsToggle followed by the GitHub link in the footer', () => {
     renderSidebar();
-    const language = container.querySelector('[data-testid="language-toggle-stub"]');
-    const readingPrefs = container.querySelector('[data-testid="reading-prefs-toggle-stub"]');
-    const theme = container.querySelector('[data-testid="theme-toggle-stub"]');
-    expect(language).not.toBeNull();
-    expect(readingPrefs).not.toBeNull();
-    expect(theme).not.toBeNull();
+    const settings = container.querySelector('[data-testid="settings-toggle-stub"]');
+    const github = container.querySelector<HTMLAnchorElement>(`a[aria-label="${UI_STRINGS.en.githubRepo}"]`);
+    expect(settings).not.toBeNull();
+    expect(github).not.toBeNull();
     expect(
-      language!.compareDocumentPosition(readingPrefs!) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      readingPrefs!.compareDocumentPosition(theme!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      settings!.compareDocumentPosition(github!) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 });
