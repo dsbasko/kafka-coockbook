@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -49,15 +50,19 @@ function readFromHtml(): ReadingPrefs {
 
 export function ReadingPrefsProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<ReadingPrefs>(DEFAULT_PREFS);
+  const prefsRef = useRef<ReadingPrefs>(DEFAULT_PREFS);
 
   useEffect(() => {
-    setPrefs(readFromHtml());
+    const next = readFromHtml();
+    prefsRef.current = next;
+    setPrefs(next);
   }, []);
 
   useEffect(() => {
     function handleStorage(event: StorageEvent) {
       if (event.key !== READING_PREFS_STORAGE_KEY) return;
       const next = readStoredPrefs();
+      prefsRef.current = next;
       applyPrefs(next);
       setPrefs(next);
     }
@@ -66,12 +71,11 @@ export function ReadingPrefsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateField = useCallback(<K extends keyof ReadingPrefs>(key: K, value: ReadingPrefs[K]) => {
-    setPrefs((current) => {
-      const next: ReadingPrefs = { ...current, [key]: value };
-      applyPrefs(next);
-      writeStoredPrefs(next);
-      return next;
-    });
+    const next: ReadingPrefs = { ...prefsRef.current, [key]: value };
+    prefsRef.current = next;
+    applyPrefs(next);
+    writeStoredPrefs(next);
+    setPrefs(next);
   }, []);
 
   const setProseSize = useCallback((next: SizeStep) => updateField('proseSize', next), [updateField]);
@@ -81,8 +85,9 @@ export function ReadingPrefsProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback(() => {
     const next: ReadingPrefs = { ...DEFAULT_PREFS };
-    setPrefs(next);
+    prefsRef.current = next;
     applyPrefs(next);
+    setPrefs(next);
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.removeItem(READING_PREFS_STORAGE_KEY);

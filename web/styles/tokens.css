@@ -88,6 +88,29 @@
   --prose-font-size: 20px;
 }
 
+/* Mobile: shift the prose scale down one step so the default (step 3)
+ * renders at 16px, matching pre-feature mobile lesson rendering. */
+@media (max-width: 720px) {
+  :root {
+    --prose-font-size: 16px;
+  }
+  [data-prose-size='0'] {
+    --prose-font-size: 13px;
+  }
+  [data-prose-size='1'] {
+    --prose-font-size: 14px;
+  }
+  [data-prose-size='2'] {
+    --prose-font-size: 15px;
+  }
+  [data-prose-size='3'] {
+    --prose-font-size: 16px;
+  }
+  [data-prose-size='4'] {
+    --prose-font-size: 18px;
+  }
+}
+
 [data-code-size='0'] {
   --code-font-size: 12px;
 }

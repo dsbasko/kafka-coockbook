@@ -67,6 +67,7 @@ export function ReadingPrefsToggle() {
   const { prefs, setProseSize, setCodeSize, setProseFont, setCodeFont, reset } =
     useReadingPrefs();
   const [open, setOpen] = useState(false);
+  const [renderedSizes, setRenderedSizes] = useState<{ prose: string; code: string } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const popoverId = useId();
 
@@ -88,13 +89,32 @@ export function ReadingPrefsToggle() {
     };
   }, [open]);
 
+  // Read the actually rendered prose/code font sizes from CSS so the labels stay
+  // truthful even when a viewport-specific media query (e.g. mobile <=720px)
+  // shifts the scale away from the desktop steps.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    function readActual() {
+      const cs = window.getComputedStyle(document.documentElement);
+      const prose = cs.getPropertyValue('--prose-font-size').trim();
+      const code = cs.getPropertyValue('--code-font-size').trim();
+      if (prose && code) setRenderedSizes({ prose, code });
+      else setRenderedSizes(null);
+    }
+    readActual();
+    if (typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(max-width: 720px)');
+    mq.addEventListener('change', readActual);
+    return () => mq.removeEventListener('change', readActual);
+  }, [prefs.proseSize, prefs.codeSize]);
+
   function handleReset() {
     reset();
     setOpen(false);
   }
 
-  const proseSizeLabel = `${PROSE_SIZE_PX[prefs.proseSize]}px`;
-  const codeSizeLabel = `${CODE_SIZE_PX[prefs.codeSize]}px`;
+  const proseSizeLabel = renderedSizes?.prose ?? `${PROSE_SIZE_PX[prefs.proseSize]}px`;
+  const codeSizeLabel = renderedSizes?.code ?? `${CODE_SIZE_PX[prefs.codeSize]}px`;
   const proseMin = prefs.proseSize === 0;
   const proseMax = prefs.proseSize === 4;
   const codeMin = prefs.codeSize === 0;
